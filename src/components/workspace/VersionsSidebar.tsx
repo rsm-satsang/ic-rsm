@@ -7,8 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Clock, RotateCcw, GitCompare, Trash2, Edit2 } from "lucide-react";
+import { Clock, RotateCcw, GitCompare, Trash2, Edit2, Star } from "lucide-react";
 import { toast } from "sonner";
+import VersionCompareDialog from "./VersionCompareDialog";
 
 interface Version {
   id: string;
@@ -31,9 +32,15 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
   const [editingVersion, setEditingVersion] = useState<Version | null>(null);
   const [editedTitle, setEditedTitle] = useState("");
   const [deletingVersion, setDeletingVersion] = useState<Version | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+  const [compareInitialVersion, setCompareInitialVersion] = useState<string | undefined>();
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchVersions();
+    fetchFavorites();
     
     // Subscribe to version changes
     const channel = supabase
@@ -52,10 +59,37 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
       )
       .subscribe();
 
+    // Subscribe to favorites changes
+    const favChannel = supabase
+      .channel(`version_favorites:${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "version_favorites",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          fetchFavorites();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(favChannel);
     };
   }, [projectId]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    } catch (error: any) {
+      console.error("Error fetching user:", error);
+    }
+  };
 
   const fetchVersions = async () => {
     try {
@@ -73,6 +107,68 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
       toast.error("Failed to load versions");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("version_favorites")
+        .select("version_id")
+        .eq("project_id", projectId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setFavorites(new Set(data.map(f => f.version_id)));
+    } catch (error: any) {
+      console.error("Error fetching favorites:", error);
+    }
+  };
+
+  const toggleFavorite = async (versionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in to favorite versions");
+        return;
+      }
+
+      const isFavorite = favorites.has(versionId);
+
+      if (isFavorite) {
+        // Remove favorite
+        const { error } = await supabase
+          .from("version_favorites")
+          .delete()
+          .eq("version_id", versionId)
+          .eq("user_id", user.id);
+
+        if (error) throw error;
+        toast.success("Removed from favorites");
+      } else {
+        // Add favorite
+        const { error } = await supabase
+          .from("version_favorites")
+          .insert({
+            version_id: versionId,
+            project_id: projectId,
+            user_id: user.id,
+          });
+
+        if (error) throw error;
+        toast.success("Added to favorites");
+      }
+
+      fetchFavorites();
+    } catch (error: any) {
+      console.error("Error toggling favorite:", error);
+      toast.error("Failed to update favorite");
     }
   };
 
@@ -193,7 +289,23 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
               }}
             >
               <div className="flex items-start justify-between mb-2">
-                <Badge variant="secondary">v{version.version_number}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">v{version.version_number}</Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => toggleFavorite(version.id, e)}
+                  >
+                    <Star 
+                      className={`h-4 w-4 ${
+                        favorites.has(version.id) 
+                          ? 'fill-yellow-400 text-yellow-400' 
+                          : 'text-muted-foreground'
+                      }`} 
+                    />
+                  </Button>
+                </div>
                 <span className="text-xs text-muted-foreground">
                   {new Date(version.created_at).toLocaleDateString()}
                 </span>
@@ -238,7 +350,8 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toast.info("Compare feature coming soon!");
+                    setCompareInitialVersion(version.id);
+                    setCompareDialogOpen(true);
                   }}
                 >
                   <GitCompare className="h-3 w-3" />
@@ -320,6 +433,14 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Version Compare Dialog */}
+      <VersionCompareDialog
+        projectId={projectId}
+        open={compareDialogOpen}
+        onOpenChange={setCompareDialogOpen}
+        initialVersionId={compareInitialVersion}
+      />
     </div>
   );
 };
