@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2 } from "lucide-react";
 import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import AIToolsPanel from "@/components/workspace/AIToolsPanel";
@@ -38,6 +39,7 @@ const Workspace = () => {
   const [editorRef, setEditorRef] = useState<any>(null);
   const [showVersionDialog, setShowVersionDialog] = useState(false);
   const [versionName, setVersionName] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
@@ -300,6 +302,25 @@ const Workspace = () => {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!project || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      toast.success("Project deleted successfully");
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      toast.error(error?.message || "Failed to delete project");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
@@ -360,6 +381,14 @@ const Workspace = () => {
                 onClick={() => navigate("/settings")}
               >
                 <Settings className="h-4 w-4" />
+              </Button>
+
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
 
               <Button onClick={handleSaveClick} disabled={saving}>
@@ -438,6 +467,24 @@ const Workspace = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{projectTitle}"? This action cannot be undone and will delete all versions, comments, and related data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

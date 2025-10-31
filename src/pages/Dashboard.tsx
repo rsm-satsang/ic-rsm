@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   FileText,
@@ -17,7 +18,15 @@ import {
   Settings,
   StickyNote,
   Bell,
+  Trash2,
+  MoreVertical,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -37,6 +46,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -183,6 +193,26 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!deletingProject) return;
+
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", deletingProject.id);
+
+      if (error) throw error;
+
+      toast.success("Project deleted successfully");
+      setProjects(projects.filter(p => p.id !== deletingProject.id));
+      setDeletingProject(null);
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      toast.error(error?.message || "Failed to delete project");
+    }
+  };
+
   const filteredProjects = projects.filter((project) =>
     project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -292,13 +322,34 @@ const Dashboard = () => {
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
-              className="hover:shadow-lg transition-all cursor-pointer"
-              onClick={() => navigate(`/workspace/${project.id}`)}
+              className="hover:shadow-lg transition-all group relative"
             >
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <Badge variant="secondary">{project.type}</Badge>
-                  <Badge
+              <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/workspace/${project.id}`)}>
+                      Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setDeletingProject(project)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div onClick={() => navigate(`/workspace/${project.id}`)} className="cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-start justify-between mb-2 pr-8">
+                    <Badge variant="secondary">{project.type}</Badge>
+                    <Badge
                     variant={
                       project.status === "published"
                         ? "default"
@@ -327,6 +378,7 @@ const Dashboard = () => {
                   </div>
                 </div>
               </CardContent>
+              </div>
             </Card>
           ))}
         </div>
@@ -349,6 +401,24 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingProject} onOpenChange={() => setDeletingProject(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingProject?.title}"? This action cannot be undone and will delete all versions, comments, and related data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
