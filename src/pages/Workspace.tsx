@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Settings } from "lucide-react";
 import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
@@ -34,6 +36,8 @@ const Workspace = () => {
   const [saving, setSaving] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [editorRef, setEditorRef] = useState<any>(null);
+  const [showVersionDialog, setShowVersionDialog] = useState(false);
+  const [versionName, setVersionName] = useState("");
 
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
@@ -105,9 +109,15 @@ const Workspace = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!project || !user) return;
+  const handleSaveClick = () => {
+    setShowVersionDialog(true);
+    setVersionName("");
+  };
 
+  const handleSave = async () => {
+    if (!project || !user || !versionName.trim()) return;
+
+    setShowVersionDialog(false);
     setSaving(true);
     try {
       console.log("Starting save operation...");
@@ -169,11 +179,11 @@ const Workspace = () => {
 
       const newVersionNumber = (maxVersionData?.version_number || 0) + 1;
 
-      // Create new version
+      // Create new version with custom name
       const { error: versionError } = await supabase.from("versions").insert({
         project_id: project.id,
         version_number: newVersionNumber,
-        title: `Version ${newVersionNumber}`,
+        title: versionName.trim(),
         content: content,
         created_by: user.id,
       });
@@ -190,12 +200,13 @@ const Workspace = () => {
       await supabase.from("timeline").insert({
         project_id: project.id,
         event_type: "edited",
-        event_details: { action: "saved", version: newVersionNumber },
+        event_details: { action: "saved", version: newVersionNumber, versionName: versionName.trim() },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
       });
 
       toast.success("Project saved successfully!");
+      setVersionName("");
     } catch (error: any) {
       console.error("Save failed:", error);
       const errorMessage = error?.message || "Failed to save project";
@@ -351,7 +362,7 @@ const Workspace = () => {
                 <Settings className="h-4 w-4" />
               </Button>
 
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSaveClick} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? "Saving..." : "Save"}
               </Button>
@@ -391,6 +402,42 @@ const Workspace = () => {
       <div className="border-t bg-card">
         <TimelineFeed projectId={project.id} />
       </div>
+
+      {/* Version Name Dialog */}
+      <Dialog open={showVersionDialog} onOpenChange={setShowVersionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save New Version</DialogTitle>
+            <DialogDescription>
+              Give this version a meaningful name to help identify it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="version-name">Version Name</Label>
+              <Input
+                id="version-name"
+                placeholder="e.g., Final Draft, Client Review, etc."
+                value={versionName}
+                onChange={(e) => setVersionName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && versionName.trim()) {
+                    handleSave();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVersionDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={!versionName.trim() || saving}>
+              {saving ? "Saving..." : "Save Version"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
