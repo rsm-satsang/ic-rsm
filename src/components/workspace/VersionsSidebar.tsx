@@ -288,55 +288,54 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
                 setSelectedVersionId(version.id);
               }}
             >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">v{version.version_number}</Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={(e) => toggleFavorite(version.id, e)}
-                  >
-                    <Star 
-                      className={`h-4 w-4 ${
-                        favorites.has(version.id) 
-                          ? 'fill-yellow-400 text-yellow-400' 
-                          : 'text-muted-foreground'
-                      }`} 
-                    />
-                  </Button>
-                </div>
-                <span className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">v{version.version_number}</Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => toggleFavorite(version.id, e)}
+                >
+                  <Star 
+                    className={`h-4 w-4 ${
+                      favorites.has(version.id) 
+                        ? 'fill-yellow-400 text-yellow-400' 
+                        : 'text-muted-foreground'
+                    }`} 
+                  />
+                </Button>
+                <span className="text-xs text-muted-foreground ml-auto">
                   {new Date(version.created_at).toLocaleDateString()}
                 </span>
               </div>
               
-              <h4 className="font-medium text-sm mb-1">
+              <h4 className="font-medium text-sm mb-3">
                 {version.title || `Version ${version.version_number}`}
               </h4>
               
               {version.description && (
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                   {version.description}
                 </p>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex gap-1 flex-wrap">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 min-w-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRestore(version);
                   }}
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
-                  Restore
+                  <span className="truncate">Restore</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="h-8 w-8 p-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingVersion(version);
@@ -348,6 +347,7 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="h-8 w-8 p-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setCompareInitialVersion(version.id);
@@ -359,6 +359,7 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="h-8 w-8 p-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeletingVersion(version);
