@@ -14,16 +14,615 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_logs: {
+        Row: {
+          action_type: string
+          compiled_prompt: string
+          created_at: string
+          created_by: string
+          id: string
+          metadata: Json | null
+          project_id: string
+          response: string | null
+          version_id: string | null
+        }
+        Insert: {
+          action_type: string
+          compiled_prompt: string
+          created_at?: string
+          created_by: string
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          response?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          compiled_prompt?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          response?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_logs_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collaborators: {
+        Row: {
+          access_level: Database["public"]["Enums"]["access_level"]
+          added_by: string | null
+          created_at: string
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["access_level"]
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["access_level"]
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaborators_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collaborators_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          created_at: string
+          id: string
+          inline_reference: Json | null
+          project_id: string
+          resolved: boolean | null
+          text: string
+          updated_at: string
+          user_id: string
+          version_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inline_reference?: Json | null
+          project_id: string
+          resolved?: boolean | null
+          text: string
+          updated_at?: string
+          user_id: string
+          version_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inline_reference?: Json | null
+          project_id?: string
+          resolved?: boolean | null
+          text?: string
+          updated_at?: string
+          user_id?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      files: {
+        Row: {
+          created_at: string
+          file_size: number | null
+          file_url: string
+          id: string
+          is_vocabulary: boolean | null
+          metadata: Json | null
+          mime_type: string | null
+          name: string
+          parsed_keywords: Json | null
+          project_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          is_vocabulary?: boolean | null
+          metadata?: Json | null
+          mime_type?: string | null
+          name: string
+          parsed_keywords?: Json | null
+          project_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          is_vocabulary?: boolean | null
+          metadata?: Json | null
+          mime_type?: string | null
+          name?: string
+          parsed_keywords?: Json | null
+          project_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          value_encrypted: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          value_encrypted: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          value_encrypted?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          language: string | null
+          metadata: Json | null
+          owner_id: string
+          status: Database["public"]["Enums"]["project_status"]
+          title: string
+          type: Database["public"]["Enums"]["project_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string | null
+          metadata?: Json | null
+          owner_id: string
+          status?: Database["public"]["Enums"]["project_status"]
+          title: string
+          type?: Database["public"]["Enums"]["project_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          language?: string | null
+          metadata?: Json | null
+          owner_id?: string
+          status?: Database["public"]["Enums"]["project_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["project_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompts: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          scope: Database["public"]["Enums"]["prompt_scope"]
+          scope_id: string | null
+          template: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          scope: Database["public"]["Enums"]["prompt_scope"]
+          scope_id?: string | null
+          template: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          scope?: Database["public"]["Enums"]["prompt_scope"]
+          scope_id?: string | null
+          template?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          new_status: Database["public"]["Enums"]["project_status"]
+          old_status: Database["public"]["Enums"]["project_status"] | null
+          project_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          new_status: Database["public"]["Enums"]["project_status"]
+          old_status?: Database["public"]["Enums"]["project_status"] | null
+          project_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["project_status"]
+          old_status?: Database["public"]["Enums"]["project_status"] | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline: {
+        Row: {
+          created_at: string
+          event_details: Json
+          event_type: Database["public"]["Enums"]["event_type"]
+          id: string
+          project_id: string
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          event_details?: Json
+          event_type: Database["public"]["Enums"]["event_type"]
+          id?: string
+          project_id: string
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          event_details?: Json
+          event_type?: Database["public"]["Enums"]["event_type"]
+          id?: string
+          project_id?: string
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          preferences: Json | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          preferences?: Json | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          preferences?: Json | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      versions: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          project_id: string
+          title: string | null
+          version_number: number
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          project_id: string
+          title?: string | null
+          version_number: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          title?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocabularies: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          file_url: string | null
+          id: string
+          name: string
+          parsed_keywords: Json
+          project_id: string | null
+          updated_at: string
+          visibility: Database["public"]["Enums"]["vocab_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          name: string
+          parsed_keywords?: Json
+          project_id?: string | null
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["vocab_visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          name?: string
+          parsed_keywords?: Json
+          project_id?: string | null
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["vocab_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocabularies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vocabularies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_project_access: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      access_level: "owner" | "editor" | "viewer"
+      app_role: "admin" | "user"
+      event_type:
+        | "created"
+        | "edited"
+        | "ai_action"
+        | "comment"
+        | "status_change"
+        | "version_created"
+        | "collaborator_added"
+        | "file_uploaded"
+        | "vocab_added"
+      project_status:
+        | "draft"
+        | "in_progress"
+        | "review"
+        | "approved"
+        | "published"
+      project_type: "document" | "note" | "article" | "email"
+      prompt_scope: "user" | "project" | "org"
+      vocab_visibility: "project" | "org" | "public"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +749,30 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_level: ["owner", "editor", "viewer"],
+      app_role: ["admin", "user"],
+      event_type: [
+        "created",
+        "edited",
+        "ai_action",
+        "comment",
+        "status_change",
+        "version_created",
+        "collaborator_added",
+        "file_uploaded",
+        "vocab_added",
+      ],
+      project_status: [
+        "draft",
+        "in_progress",
+        "review",
+        "approved",
+        "published",
+      ],
+      project_type: ["document", "note", "article", "email"],
+      prompt_scope: ["user", "project", "org"],
+      vocab_visibility: ["project", "org", "public"],
+    },
   },
 } as const
