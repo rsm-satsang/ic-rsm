@@ -274,6 +274,47 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          access_level: Database["public"]["Enums"]["access_level"]
+          created_at: string
+          id: string
+          invited_by: string
+          invited_user_id: string
+          project_id: string
+          status: Database["public"]["Enums"]["invitation_status"]
+          updated_at: string
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["access_level"]
+          created_at?: string
+          id?: string
+          invited_by: string
+          invited_user_id: string
+          project_id: string
+          status?: Database["public"]["Enums"]["invitation_status"]
+          updated_at?: string
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["access_level"]
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invited_user_id?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["invitation_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
@@ -598,6 +639,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { invitation_id: string }; Returns: undefined }
       has_project_access: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
@@ -617,6 +659,7 @@ export type Database = {
         | "collaborator_added"
         | "file_uploaded"
         | "vocab_added"
+      invitation_status: "pending" | "accepted" | "rejected"
       project_status:
         | "draft"
         | "in_progress"
@@ -766,6 +809,7 @@ export const Constants = {
         "file_uploaded",
         "vocab_added",
       ],
+      invitation_status: ["pending", "accepted", "rejected"],
       project_status: [
         "draft",
         "in_progress",

@@ -252,7 +252,11 @@ const Workspace = () => {
                 currentUserId={user?.id || ""}
               />
 
-              <Button variant="outline" size="icon">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => navigate("/settings")}
+              >
                 <Settings className="h-4 w-4" />
               </Button>
 

@@ -16,6 +16,7 @@ import {
   Users,
   Settings,
   StickyNote,
+  Bell,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
@@ -35,6 +36,7 @@ const Dashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,6 +54,7 @@ const Dashboard = () => {
 
       setUser(currentUser);
       await fetchProjects(currentUser.id);
+      await fetchPendingInvites(currentUser.id);
     } catch (error) {
       console.error("Error checking user:", error);
       navigate("/auth");
@@ -107,6 +110,21 @@ const Dashboard = () => {
     } catch (error: any) {
       toast.error("Failed to load projects");
       console.error(error);
+    }
+  };
+
+  const fetchPendingInvites = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id")
+        .eq("invited_user_id", userId)
+        .eq("status", "pending");
+
+      if (error) throw error;
+      setPendingInvitesCount(data?.length || 0);
+    } catch (error) {
+      console.error("Error fetching pending invites:", error);
     }
   };
 
@@ -196,6 +214,19 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/notifications")}
+                className="relative"
+              >
+                <Bell className="h-5 w-5" />
+                {pendingInvitesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {pendingInvitesCount}
+                  </span>
+                )}
+              </Button>
               <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
                 <Settings className="h-5 w-5" />
               </Button>
