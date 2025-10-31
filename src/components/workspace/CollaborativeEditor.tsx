@@ -32,7 +32,7 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[500px] max-w-none p-8",
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[500px] max-w-full w-full p-8",
       },
     },
     onUpdate: ({ editor }) => {
@@ -176,8 +176,8 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto bg-background">
-        <EditorContent editor={editor} className="h-full" />
+      <div className="flex-1 overflow-y-auto bg-background w-full">
+        <EditorContent editor={editor} className="h-full w-full" />
       </div>
     </div>
   );

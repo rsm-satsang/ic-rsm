@@ -403,13 +403,13 @@ const Workspace = () => {
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Versions */}
-        <div className="w-64 border-r bg-card overflow-y-auto">
+        <div className="w-64 flex-shrink-0 border-r bg-card overflow-y-auto">
           <VersionsSidebar projectId={project.id} />
         </div>
 
         {/* Center - Editor */}
-        <div className="flex-1 overflow-y-auto">
-          <CollaborativeEditor 
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          <CollaborativeEditor
             projectId={project.id} 
             userId={user?.id || ""} 
             onTextSelection={handleTextSelection}
@@ -418,8 +418,8 @@ const Workspace = () => {
         </div>
 
         {/* Right Sidebar - AI Tools */}
-        <div className="w-80 border-l bg-card overflow-y-auto">
-          <AIToolsPanel 
+        <div className="w-80 flex-shrink-0 border-l bg-card overflow-y-auto">
+          <AIToolsPanel
             projectId={project.id}
             selectedText={selectedText}
             onInsertText={handleInsertText}
