@@ -57,9 +57,9 @@ serve(async (req) => {
 
     console.log('Calling Gemini API with action:', action);
 
-    // Call Gemini API
+    // Call Gemini API - using gemini-1.5-flash (correct model name)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userData.gemini_api_key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userData.gemini_api_key}`,
       {
         method: 'POST',
         headers: {
