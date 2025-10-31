@@ -86,9 +86,20 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Gemini API response received');
+    console.log('Gemini API response received:', JSON.stringify(data));
+
+    // Check if response has candidates
+    if (!data.candidates || data.candidates.length === 0) {
+      console.error('No candidates in Gemini response:', JSON.stringify(data));
+      throw new Error('Gemini API returned no content. This may be due to safety filters or an invalid API key.');
+    }
 
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    if (!generatedText) {
+      console.error('Empty text in Gemini response:', JSON.stringify(data));
+      throw new Error('Gemini API returned empty content.');
+    }
 
     // Log AI usage
     const { error: logError } = await supabase.from('ai_logs').insert({
