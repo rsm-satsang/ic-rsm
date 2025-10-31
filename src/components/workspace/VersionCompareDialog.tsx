@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DiffMatchPatch } from "diff-match-patch";
+import DiffMatchPatch from "diff-match-patch";
 
 interface Version {
   id: string;
@@ -74,8 +74,9 @@ const VersionCompareDialog = ({ projectId, open, onOpenChange, initialVersionId 
         return;
       }
 
-      const dmp = new DiffMatchPatch();
-      const diff = dmp.diff_main(v1.content, v2.content);
+      // Create diff instance and perform comparison
+      const dmp = new (DiffMatchPatch as any)();
+      const diff = dmp.diff_main(v1.content || '', v2.content || '');
       dmp.diff_cleanupSemantic(diff);
 
       // Convert diff to HTML

@@ -222,13 +222,22 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
 
       if (error) throw error;
 
+      // Update local state immediately for instant UI update
+      setVersions(prevVersions => 
+        prevVersions.map(v => 
+          v.id === editingVersion.id 
+            ? { ...v, title: editedTitle.trim() } 
+            : v
+        )
+      );
+
       toast.success("Version name updated successfully!");
       setEditingVersion(null);
       setEditedTitle("");
-      fetchVersions();
     } catch (error: any) {
       console.error("Error updating version:", error);
       toast.error("Failed to update version name");
+      fetchVersions(); // Refetch on error to restore correct state
     }
   };
 
