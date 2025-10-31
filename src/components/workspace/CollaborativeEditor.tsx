@@ -18,9 +18,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface CollaborativeEditorProps {
   projectId: string;
   userId: string;
+  onTextSelection?: (text: string) => void;
 }
 
-const CollaborativeEditor = ({ projectId, userId }: CollaborativeEditorProps) => {
+const CollaborativeEditor = ({ projectId, userId, onTextSelection }: CollaborativeEditorProps) => {
   const [content, setContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
 
@@ -35,6 +36,13 @@ const CollaborativeEditor = ({ projectId, userId }: CollaborativeEditorProps) =>
     },
     onUpdate: ({ editor }) => {
       setContent(editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      const text = editor.state.doc.textBetween(from, to, ' ');
+      if (onTextSelection && text.trim()) {
+        onTextSelection(text);
+      }
     },
   });
 

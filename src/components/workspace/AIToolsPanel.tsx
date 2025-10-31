@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sparkles,
   Languages,
@@ -20,30 +19,107 @@ import { toast } from "sonner";
 
 interface AIToolsPanelProps {
   projectId: string;
+  selectedText: string;
+  onInsertText: (text: string) => void;
 }
 
-const AIToolsPanel = ({ projectId }: AIToolsPanelProps) => {
+const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelProps) => {
   const [selectedTool, setSelectedTool] = useState("translate");
   const [compiledPrompt, setCompiledPrompt] = useState("");
   const [language, setLanguage] = useState("es");
   const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const runAITool = async (toolType: string) => {
+  useEffect(() => {
+    if (selectedText) {
+      generatePrompt(selectedTool);
+    }
+  }, [selectedText, selectedTool]);
+
+  const generatePrompt = (toolType: string) => {
+    let prompt = "";
+    const text = selectedText || "[No text selected]";
+
+    switch (toolType) {
+      case "translate":
+        prompt = `Translate the following text to ${language}:\n\n${text}\n\nProvide only the translation, no additional explanation.`;
+        break;
+      case "rephrase":
+        prompt = `Rephrase the following text in a different way while maintaining the same meaning:\n\n${text}\n\nProvide only the rephrased text.`;
+        break;
+      case "summarize":
+        prompt = `Summarize the following text concisely:\n\n${text}\n\nProvide a clear and concise summary.`;
+        break;
+      case "generate":
+        prompt = `Continue writing based on this text:\n\n${text}\n\nGenerate a natural continuation.`;
+        break;
+      case "email":
+        prompt = `Write a professional email based on this content:\n\n${text}\n\nFormat as a complete professional email.`;
+        break;
+      default:
+        prompt = text;
+    }
+
+    setCompiledPrompt(prompt);
+  };
+
+  const sendToAI = async () => {
+    if (!compiledPrompt.trim()) {
+      toast.error("Please enter a prompt");
+      return;
+    }
+
+    if (!selectedText.trim()) {
+      toast.error("Please select some text in the editor first");
+      return;
+    }
+
     setLoading(true);
+    setAiResponse("");
+
     try {
-      // Simulate AI call (will be replaced with actual Gemini API call)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const { data: { session } } = await supabase.auth.getSession();
       
-      const mockPrompt = `[Vocabulary Terms]\nRSM: Risk & Sustainability Management\nInnerContent: Internal content collaboration\n\n[Action: ${toolType}]\nSelected text: Lorem ipsum dolor sit amet...\n\n[Instructions]\nPlease ${toolType} the selected text according to the specifications.`;
-      
-      setCompiledPrompt(mockPrompt);
-      setAiResponse(`This is a simulated ${toolType} response. In production, this will be the actual Gemini API response.`);
-      toast.success(`${toolType} completed!`);
-    } catch (error) {
-      toast.error(`Failed to run ${toolType}`);
+      if (!session) {
+        toast.error("Please log in to use AI features");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+        body: { 
+          prompt: compiledPrompt,
+          action: selectedTool
+        },
+        headers: {
+          'x-project-id': projectId
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data.text) {
+        setAiResponse(data.text);
+        toast.success("AI response generated!");
+      }
+    } catch (error: any) {
+      console.error("AI error:", error);
+      toast.error(error.message || "Failed to generate AI response");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAcceptAndInsert = () => {
+    if (aiResponse) {
+      onInsertText(aiResponse);
+      setAiResponse("");
+      setCompiledPrompt("");
+      toast.success("Text inserted into editor!");
     }
   };
 
@@ -87,53 +163,48 @@ const AIToolsPanel = ({ projectId }: AIToolsPanelProps) => {
             })}
           </div>
 
+          {/* Selected Text Info */}
+          {selectedText ? (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-3">
+                <p className="text-xs font-medium mb-1">Selected Text:</p>
+                <p className="text-xs text-muted-foreground line-clamp-3">{selectedText}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+              <CardContent className="p-3 flex gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-900 dark:text-amber-100">
+                  Select some text in the editor to use AI tools
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Tool Options */}
           {selectedTool === "translate" && (
             <div className="space-y-2">
               <Label>Target Language</Label>
-              <Select value={language} onValueChange={setLanguage}>
+              <Select value={language} onValueChange={(val) => {
+                setLanguage(val);
+                generatePrompt(selectedTool);
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="it">Italian</SelectItem>
-                  <SelectItem value="pt">Portuguese</SelectItem>
-                  <SelectItem value="zh">Chinese</SelectItem>
-                  <SelectItem value="ja">Japanese</SelectItem>
+                  <SelectItem value="Spanish">Spanish</SelectItem>
+                  <SelectItem value="French">French</SelectItem>
+                  <SelectItem value="German">German</SelectItem>
+                  <SelectItem value="Italian">Italian</SelectItem>
+                  <SelectItem value="Portuguese">Portuguese</SelectItem>
+                  <SelectItem value="Chinese">Chinese</SelectItem>
+                  <SelectItem value="Japanese">Japanese</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
-
-          {/* Warning about Gemini API */}
-          <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
-            <CardContent className="p-3 flex gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-900 dark:text-amber-100">
-                <p className="font-medium mb-1">Gemini API Required</p>
-                <p>Admin must configure the Gemini API key in Settings to enable AI features.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Run Button */}
-          <Button
-            className="w-full"
-            onClick={() => runAITool(selectedTool)}
-            disabled={loading}
-          >
-            {loading ? (
-              "Processing..."
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Run {tools.find((t) => t.id === selectedTool)?.label}
-              </>
-            )}
-          </Button>
 
           {/* Compiled Prompt Preview */}
           {compiledPrompt && (
@@ -151,14 +222,21 @@ const AIToolsPanel = ({ projectId }: AIToolsPanelProps) => {
                   rows={6}
                   className="text-xs font-mono"
                 />
-                <div className="flex gap-2 mt-2">
-                  <Button size="sm" variant="outline" className="flex-1">
-                    Save as Template
-                  </Button>
-                  <Button size="sm" className="flex-1">
-                    Send to AI
-                  </Button>
-                </div>
+                <Button 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={sendToAI}
+                  disabled={loading || !selectedText}
+                >
+                  {loading ? (
+                    <>Processing...</>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Send to AI
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -173,12 +251,23 @@ const AIToolsPanel = ({ projectId }: AIToolsPanelProps) => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm whitespace-pre-wrap">{aiResponse}</div>
-                <div className="flex gap-2 mt-3">
-                  <Button size="sm" variant="outline" className="flex-1">
+                <ScrollArea className="h-40 w-full rounded border p-3 mb-3">
+                  <div className="text-sm whitespace-pre-wrap">{aiResponse}</div>
+                </ScrollArea>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setAiResponse("")}
+                  >
                     Reject
                   </Button>
-                  <Button size="sm" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={handleAcceptAndInsert}
+                  >
                     Accept & Insert
                   </Button>
                 </div>

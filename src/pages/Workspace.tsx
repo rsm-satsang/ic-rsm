@@ -32,6 +32,18 @@ const Workspace = () => {
   const [currentStatus, setCurrentStatus] = useState<"draft" | "in_progress" | "review" | "approved" | "published">("draft");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+  const [editorRef, setEditorRef] = useState<any>(null);
+
+  const handleTextSelection = (text: string) => {
+    setSelectedText(text);
+  };
+
+  const handleInsertText = (text: string) => {
+    if (editorRef?.commands) {
+      editorRef.commands.insertContent(text);
+    }
+  };
 
   useEffect(() => {
     checkUserAndLoadProject();
@@ -262,12 +274,20 @@ const Workspace = () => {
 
         {/* Center - Editor */}
         <div className="flex-1 overflow-y-auto">
-          <CollaborativeEditor projectId={project.id} userId={user?.id || ""} />
+          <CollaborativeEditor 
+            projectId={project.id} 
+            userId={user?.id || ""} 
+            onTextSelection={handleTextSelection}
+          />
         </div>
 
         {/* Right Sidebar - AI Tools */}
         <div className="w-80 border-l bg-card overflow-y-auto">
-          <AIToolsPanel projectId={project.id} />
+          <AIToolsPanel 
+            projectId={project.id}
+            selectedText={selectedText}
+            onInsertText={handleInsertText}
+          />
         </div>
       </div>
 
