@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Users, Settings } from "lucide-react";
+import { ArrowLeft, Save, Settings } from "lucide-react";
 import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import AIToolsPanel from "@/components/workspace/AIToolsPanel";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
+import InviteDialog from "@/components/workspace/InviteDialog";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -233,9 +234,11 @@ const Workspace = () => {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" size="icon">
-                <Users className="h-4 w-4" />
-              </Button>
+              <InviteDialog 
+                projectId={project.id} 
+                projectOwnerId={project.owner_id}
+                currentUserId={user?.id || ""}
+              />
 
               <Button variant="outline" size="icon">
                 <Settings className="h-4 w-4" />
