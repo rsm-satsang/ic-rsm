@@ -62,15 +62,48 @@ const Dashboard = () => {
 
   const fetchProjects = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Get projects where user is owner
+      const { data: ownedProjects, error: ownedError } = await supabase
         .from("projects")
         .select("*")
-        .or(`owner_id.eq.${userId},collaborators.user_id.eq.${userId}`)
-        .order("updated_at", { ascending: false });
+        .eq("owner_id", userId);
 
-      if (error) throw error;
+      if (ownedError) throw ownedError;
 
-      setProjects(data || []);
+      // Get projects where user is a collaborator
+      const { data: collabData, error: collabError } = await supabase
+        .from("collaborators")
+        .select("project_id")
+        .eq("user_id", userId);
+
+      if (collabError) throw collabError;
+
+      const collabProjectIds = collabData?.map((c) => c.project_id) || [];
+
+      // Get the actual project data for collaborated projects
+      let collabProjects: Project[] = [];
+      if (collabProjectIds.length > 0) {
+        const { data: collabProjectsData, error: collabProjectsError } = await supabase
+          .from("projects")
+          .select("*")
+          .in("id", collabProjectIds);
+
+        if (collabProjectsError) throw collabProjectsError;
+        collabProjects = collabProjectsData || [];
+      }
+
+      // Combine and deduplicate projects
+      const allProjects = [...(ownedProjects || []), ...collabProjects];
+      const uniqueProjects = Array.from(
+        new Map(allProjects.map((p) => [p.id, p])).values()
+      );
+
+      // Sort by updated_at
+      uniqueProjects.sort((a, b) => 
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+
+      setProjects(uniqueProjects);
     } catch (error: any) {
       toast.error("Failed to load projects");
       console.error(error);
