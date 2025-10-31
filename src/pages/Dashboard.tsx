@@ -107,6 +107,31 @@ const Dashboard = () => {
     }
   };
 
+  const createNewProject = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          title: `New Project - ${new Date().toLocaleDateString()}`,
+          type: "document",
+          owner_id: user.id,
+          status: "draft",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Project created!");
+      navigate(`/workspace/${data.id}`);
+    } catch (error: any) {
+      toast.error("Failed to create project");
+      console.error(error);
+    }
+  };
+
   const filteredProjects = projects.filter((project) =>
     project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -167,7 +192,7 @@ const Dashboard = () => {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={() => navigate("/new-project")}>
+          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewProject}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-gradient-accent rounded-xl">
