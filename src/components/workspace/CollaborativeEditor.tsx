@@ -19,9 +19,10 @@ interface CollaborativeEditorProps {
   projectId: string;
   userId: string;
   onTextSelection?: (text: string) => void;
+  onEditorReady?: (editor: any) => void;
 }
 
-const CollaborativeEditor = ({ projectId, userId, onTextSelection }: CollaborativeEditorProps) => {
+const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady }: CollaborativeEditorProps) => {
   const [content, setContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
 
@@ -45,6 +46,12 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection }: Collaborati
       }
     },
   });
+
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   useEffect(() => {
     loadLatestVersion();

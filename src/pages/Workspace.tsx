@@ -40,9 +40,23 @@ const Workspace = () => {
   };
 
   const handleInsertText = (text: string) => {
+    console.log("Inserting text:", text.substring(0, 50) + "...");
+    console.log("Editor ref:", editorRef);
+    
     if (editorRef?.commands) {
+      // Insert text at current cursor position
       editorRef.commands.insertContent(text);
+      editorRef.commands.focus();
+      toast.success("Text inserted successfully!");
+    } else {
+      console.error("Editor reference not available");
+      toast.error("Editor not ready. Please try again.");
     }
+  };
+
+  const handleEditorReady = (editor: any) => {
+    console.log("Editor ready, setting ref");
+    setEditorRef(editor);
   };
 
   useEffect(() => {
@@ -359,6 +373,7 @@ const Workspace = () => {
             projectId={project.id} 
             userId={user?.id || ""} 
             onTextSelection={handleTextSelection}
+            onEditorReady={handleEditorReady}
           />
         </div>
 
