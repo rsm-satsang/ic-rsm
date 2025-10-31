@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Users, X, Mail } from "lucide-react";
+import { Users, X, Mail, Search } from "lucide-react";
 
 interface Collaborator {
   id: string;
@@ -25,7 +25,15 @@ interface Collaborator {
   users: {
     name: string;
     email: string;
+    role?: string;
   };
+}
+
+interface UserSearchResult {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 interface InviteDialogProps {
@@ -36,11 +44,15 @@ interface InviteDialogProps {
 
 const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [accessLevel, setAccessLevel] = useState<"viewer" | "editor" | "owner">("viewer");
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [projectOwner, setProjectOwner] = useState<any>(null);
   const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -48,9 +60,45 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
     }
   }, [open]);
 
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      searchUsers();
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
+
+  const searchUsers = async () => {
+    setSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, name, email, role")
+        .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .limit(10);
+
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (error: any) {
+      console.error("Error searching users:", error);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const fetchCollaborators = async () => {
     try {
-      // Fetch collaborators
+      // Fetch project owner
+      const { data: ownerData, error: ownerError } = await supabase
+        .from("users")
+        .select("id, name, email, role")
+        .eq("id", projectOwnerId)
+        .single();
+
+      if (ownerError) throw ownerError;
+      setProjectOwner(ownerData);
+
+      // Fetch collaborators (including admins)
       const { data, error } = await supabase
         .from("collaborators")
         .select(`
@@ -59,7 +107,8 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
           access_level,
           users!collaborators_user_id_fkey (
             name,
-            email
+            email,
+            role
           )
         `)
         .eq("project_id", projectId);
@@ -105,25 +154,14 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
   };
 
   const handleInvite = async () => {
-    if (!email) {
-      toast.error("Please enter an email");
+    if (!selectedUser) {
+      toast.error("Please select a user to invite");
       return;
     }
 
     setLoading(true);
     try {
-      // Find user by email
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id, name, email")
-        .eq("email", email)
-        .single();
-
-      if (userError || !userData) {
-        toast.error("User not found. They need to sign up first.");
-        setLoading(false);
-        return;
-      }
+      const userData = selectedUser;
 
       // Check if already invited
       const { data: existingInvite } = await supabase
@@ -190,7 +228,9 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
       });
 
       toast.success(`Invitation sent to ${userData.name}`);
-      setEmail("");
+      setSearchQuery("");
+      setSelectedUser(null);
+      setSearchResults([]);
       fetchCollaborators();
     } catch (error: any) {
       console.error("Error inviting user:", error);
@@ -252,15 +292,73 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
         {isOwner && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Email Address</Label>
-              <div className="flex gap-2">
+              <Label>Search User by Name or Email</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  type="email"
-                  placeholder="user@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
                 />
               </div>
+              
+              {/* Search Results Dropdown */}
+              {searchResults.length > 0 && (
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                  {searchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setSearchQuery(user.name);
+                        setSearchResults([]);
+                      }}
+                      className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-accent ${
+                        selectedUser?.id === user.id ? 'bg-accent' : ''
+                      }`}
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      </div>
+                      {user.role === 'admin' && (
+                        <Badge variant="secondary" className="text-xs">Admin</Badge>
+                      )}
+                    </div>
+                  ))}
+                </ScrollArea>
+              )}
+
+              {selectedUser && (
+                <div className="flex items-center gap-2 p-2 border rounded-md bg-accent/50">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {selectedUser.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{selectedUser.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setSearchQuery("");
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -277,7 +375,7 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
               </Select>
             </div>
 
-            <Button onClick={handleInvite} disabled={loading} className="w-full">
+            <Button onClick={handleInvite} disabled={loading || !selectedUser} className="w-full">
               <Mail className="mr-2 h-4 w-4" />
               {loading ? "Inviting..." : "Send Invite"}
             </Button>
@@ -285,14 +383,36 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
         )}
 
         <div className="space-y-2">
-          <Label>Current Collaborators & Invitations</Label>
+          <Label>Project Members</Label>
           <ScrollArea className="h-[300px] pr-4">
-            {collaborators.length === 0 && pendingInvites.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No collaborators yet
-              </p>
-            ) : (
-              <div className="space-y-4">
+            <div className="space-y-4">
+              {/* Project Owner */}
+              {projectOwner && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 text-muted-foreground">
+                    Project Owner
+                  </h4>
+                  <div className="p-3 border rounded-lg bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {projectOwner.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{projectOwner.name}</p>
+                        <p className="text-xs text-muted-foreground">{projectOwner.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default">Owner</Badge>
+                        {projectOwner.role === 'admin' && (
+                          <Badge variant="secondary">Admin</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
                 {/* Pending Invitations */}
                 {pendingInvites.length > 0 && (
                   <div>
@@ -361,6 +481,9 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">{collab.access_level}</Badge>
+                            {collab.users.role === 'admin' && (
+                              <Badge variant="secondary">Admin</Badge>
+                            )}
                             {isOwner && collab.user_id !== projectOwnerId && (
                               <Button
                                 variant="ghost"
@@ -378,7 +501,6 @@ const InviteDialog = ({ projectId, projectOwnerId, currentUserId }: InviteDialog
                   </div>
                 )}
               </div>
-            )}
           </ScrollArea>
         </div>
       </DialogContent>

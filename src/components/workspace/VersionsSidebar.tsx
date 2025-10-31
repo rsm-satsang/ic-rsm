@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Clock, RotateCcw, GitCompare } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Clock, RotateCcw, GitCompare, Trash2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Version {
@@ -24,6 +28,9 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [editingVersion, setEditingVersion] = useState<Version | null>(null);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [deletingVersion, setDeletingVersion] = useState<Version | null>(null);
 
   useEffect(() => {
     fetchVersions();
@@ -108,6 +115,47 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
     }
   };
 
+  const handleEditVersion = async () => {
+    if (!editingVersion || !editedTitle.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from("versions")
+        .update({ title: editedTitle.trim() })
+        .eq("id", editingVersion.id);
+
+      if (error) throw error;
+
+      toast.success("Version name updated successfully!");
+      setEditingVersion(null);
+      setEditedTitle("");
+      fetchVersions();
+    } catch (error: any) {
+      console.error("Error updating version:", error);
+      toast.error("Failed to update version name");
+    }
+  };
+
+  const handleDeleteVersion = async () => {
+    if (!deletingVersion) return;
+
+    try {
+      const { error } = await supabase
+        .from("versions")
+        .delete()
+        .eq("id", deletingVersion.id);
+
+      if (error) throw error;
+
+      toast.success("Version deleted successfully!");
+      setDeletingVersion(null);
+      fetchVersions();
+    } catch (error: any) {
+      console.error("Error deleting version:", error);
+      toast.error("Failed to delete version");
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4">
@@ -179,10 +227,31 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setEditingVersion(version);
+                    setEditedTitle(version.title || `Version ${version.version_number}`);
+                  }}
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     toast.info("Compare feature coming soon!");
                   }}
                 >
                   <GitCompare className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeletingVersion(version);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 text-destructive" />
                 </Button>
               </div>
             </div>
@@ -197,6 +266,60 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
           )}
         </div>
       </ScrollArea>
+
+      {/* Edit Version Dialog */}
+      <Dialog open={!!editingVersion} onOpenChange={(open) => !open && setEditingVersion(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Version Name</DialogTitle>
+            <DialogDescription>
+              Change the name of version {editingVersion?.version_number}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="version-title">Version Name</Label>
+              <Input
+                id="version-title"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editedTitle.trim()) {
+                    handleEditVersion();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingVersion(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditVersion} disabled={!editedTitle.trim()}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Version Alert Dialog */}
+      <AlertDialog open={!!deletingVersion} onOpenChange={(open) => !open && setDeletingVersion(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Version</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete version {deletingVersion?.version_number} ({deletingVersion?.title || 'Untitled'})?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteVersion} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

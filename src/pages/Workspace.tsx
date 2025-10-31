@@ -44,14 +44,14 @@ const Workspace = () => {
   };
 
   const handleInsertText = (text: string) => {
-    console.log("Inserting text:", text.substring(0, 50) + "...");
+    console.log("Replacing selected text with AI output:", text.substring(0, 50) + "...");
     console.log("Editor ref:", editorRef);
     
     if (editorRef?.commands) {
-      // Insert text at current cursor position
-      editorRef.commands.insertContent(text);
-      editorRef.commands.focus();
-      toast.success("Text inserted successfully!");
+      // Replace selected text with AI-generated content
+      // If there's a selection, deleteSelection removes it, then insertContent adds new text
+      editorRef.chain().focus().deleteSelection().insertContent(text).run();
+      toast.success("Content replaced successfully!");
     } else {
       console.error("Editor reference not available");
       toast.error("Editor not ready. Please try again.");
