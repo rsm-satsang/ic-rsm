@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-project-id',
 };
 
 serve(async (req) => {
@@ -49,7 +49,7 @@ serve(async (req) => {
       );
     }
 
-    const { prompt, action } = await req.json();
+    const { prompt, action, projectId } = await req.json();
 
     if (!prompt) {
       throw new Error('Prompt is required');
@@ -93,7 +93,7 @@ serve(async (req) => {
 
     // Log AI usage
     const { error: logError } = await supabase.from('ai_logs').insert({
-      project_id: req.headers.get('x-project-id') || null,
+      project_id: projectId || null,
       action_type: action || 'generate',
       compiled_prompt: prompt,
       response: generatedText,

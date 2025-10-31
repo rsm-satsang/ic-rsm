@@ -94,10 +94,8 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
         body: { 
           prompt: compiledPrompt,
-          action: selectedTool
-        },
-        headers: {
-          'x-project-id': projectId
+          action: selectedTool,
+          projectId: projectId
         }
       });
 
