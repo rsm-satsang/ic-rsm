@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import {
   Mail,
   Wand2,
   AlertCircle,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,17 +26,45 @@ interface AIToolsPanelProps {
 }
 
 const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelProps) => {
+  const navigate = useNavigate();
   const [selectedTool, setSelectedTool] = useState("translate");
   const [compiledPrompt, setCompiledPrompt] = useState("");
   const [language, setLanguage] = useState("es");
   const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkApiKey();
+  }, []);
 
   useEffect(() => {
     if (selectedText) {
       generatePrompt(selectedTool);
     }
   }, [selectedText, selectedTool]);
+
+  const checkApiKey = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('gemini_api_key')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && data?.gemini_api_key) {
+        setHasApiKey(true);
+      } else {
+        setHasApiKey(false);
+      }
+    } catch (error) {
+      console.error('Error checking API key:', error);
+      setHasApiKey(false);
+    }
+  };
 
   const generatePrompt = (toolType: string) => {
     let prompt = "";
@@ -108,7 +138,22 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
       }
 
       if (data?.error) {
-        toast.error(data.error);
+        console.error('AI error from edge function:', data.error);
+        
+        // Check if it's the API key missing error
+        if (data.error.includes('Gemini API key not configured')) {
+          setHasApiKey(false);
+          toast.error(
+            "Gemini API key not configured", 
+            {
+              description: "Click the Settings button below to add your API key",
+              duration: 5000,
+            }
+          );
+        } else {
+          toast.error(data.error);
+        }
+        
         setLoading(false);
         return;
       }
@@ -176,6 +221,34 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
             })}
           </div>
 
+          {/* API Key Warning */}
+          {hasApiKey === false && (
+            <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-red-900 dark:text-red-100">
+                      Gemini API Key Required
+                    </p>
+                    <p className="text-xs text-red-700 dark:text-red-200 mt-1">
+                      Configure your API key to use AI features
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs"
+                  onClick={() => navigate('/settings')}
+                >
+                  <Settings className="mr-2 h-3 w-3" />
+                  Go to Settings
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Selected Text Info */}
           {selectedText ? (
             <Card className="border-primary/20 bg-primary/5">
@@ -234,10 +307,15 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
                   size="sm" 
                   className="w-full mt-2"
                   onClick={sendToAI}
-                  disabled={loading || !selectedText}
+                  disabled={loading || !selectedText || hasApiKey === false}
                 >
                   {loading ? (
                     <>Processing...</>
+                  ) : hasApiKey === false ? (
+                    <>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configure API Key
+                    </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
@@ -245,6 +323,11 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
                     </>
                   )}
                 </Button>
+                {hasApiKey === false && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Add your Gemini API key in Settings to continue
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
