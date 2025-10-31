@@ -96,16 +96,49 @@ const Workspace = () => {
 
     setSaving(true);
     try {
-      // Update project title
-      const { error: projectError } = await supabase
-        .from("projects")
-        .update({ 
-          title: projectTitle,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", project.id);
+      console.log("Starting save operation...");
+      
+      // Retry logic for project update
+      let updateSuccess = false;
+      let lastError = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`Attempt ${attempt} to update project...`);
+          
+          const { error: projectError } = await supabase
+            .from("projects")
+            .update({ 
+              title: projectTitle,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", project.id);
 
-      if (projectError) throw projectError;
+          if (projectError) {
+            console.error(`Attempt ${attempt} failed:`, projectError);
+            lastError = projectError;
+            if (attempt < 3) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              continue;
+            }
+            throw projectError;
+          }
+          
+          console.log("Project updated successfully");
+          updateSuccess = true;
+          break;
+        } catch (err: any) {
+          console.error(`Update attempt ${attempt} error:`, err);
+          lastError = err;
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          }
+        }
+      }
+
+      if (!updateSuccess) {
+        throw lastError || new Error("Failed to update project after 3 attempts");
+      }
 
       // Get editor content
       const editorElement = document.querySelector('.ProseMirror');
@@ -150,8 +183,17 @@ const Workspace = () => {
 
       toast.success("Project saved successfully!");
     } catch (error: any) {
-      toast.error("Failed to save project");
-      console.error(error);
+      console.error("Save failed:", error);
+      const errorMessage = error?.message || "Failed to save project";
+      toast.error(errorMessage);
+      
+      // Show more detailed error in console
+      if (error?.code) {
+        console.error("Error code:", error.code);
+      }
+      if (error?.details) {
+        console.error("Error details:", error.details);
+      }
     } finally {
       setSaving(false);
     }
@@ -161,12 +203,46 @@ const Workspace = () => {
     if (!project || !user) return;
 
     try {
-      const { error: statusError } = await supabase
-        .from("projects")
-        .update({ status: newStatus })
-        .eq("id", project.id);
+      console.log("Updating status to:", newStatus);
+      
+      // Retry logic for status update
+      let updateSuccess = false;
+      let lastError = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`Attempt ${attempt} to update status...`);
+          
+          const { error: statusError } = await supabase
+            .from("projects")
+            .update({ status: newStatus })
+            .eq("id", project.id);
 
-      if (statusError) throw statusError;
+          if (statusError) {
+            console.error(`Attempt ${attempt} failed:`, statusError);
+            lastError = statusError;
+            if (attempt < 3) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              continue;
+            }
+            throw statusError;
+          }
+          
+          console.log("Status updated successfully");
+          updateSuccess = true;
+          break;
+        } catch (err: any) {
+          console.error(`Status update attempt ${attempt} error:`, err);
+          lastError = err;
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          }
+        }
+      }
+
+      if (!updateSuccess) {
+        throw lastError || new Error("Failed to update status after 3 attempts");
+      }
 
       // Log status change
       const { data: userData } = await supabase
@@ -193,8 +269,9 @@ const Workspace = () => {
       setCurrentStatus(newStatus);
       toast.success(`Status updated to ${newStatus}`);
     } catch (error: any) {
-      toast.error("Failed to update status");
-      console.error(error);
+      console.error("Status update failed:", error);
+      const errorMessage = error?.message || "Failed to update status";
+      toast.error(errorMessage);
     }
   };
 
