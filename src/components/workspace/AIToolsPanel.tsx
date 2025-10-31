@@ -78,12 +78,18 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
     setAiResponse("");
 
     try {
+      console.log('Getting session...');
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         toast.error("Please log in to use AI features");
+        setLoading(false);
         return;
       }
+
+      console.log('Session found, calling edge function...');
+      console.log('Project ID:', projectId);
+      console.log('Action:', selectedTool);
 
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
         body: { 
@@ -95,20 +101,29 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
         }
       });
 
-      if (error) throw error;
+      console.log('Edge function response:', data);
+      console.log('Edge function error:', error);
 
-      if (data.error) {
+      if (error) {
+        console.error('Edge function error details:', error);
+        throw new Error(error.message || 'Failed to call edge function');
+      }
+
+      if (data?.error) {
         toast.error(data.error);
+        setLoading(false);
         return;
       }
 
-      if (data.text) {
+      if (data?.text) {
         setAiResponse(data.text);
         toast.success("AI response generated!");
+      } else {
+        toast.error("No response from AI");
       }
     } catch (error: any) {
-      console.error("AI error:", error);
-      toast.error(error.message || "Failed to generate AI response");
+      console.error("AI error details:", error);
+      toast.error(error.message || "Failed to send request to Edge Function");
     } finally {
       setLoading(false);
     }
