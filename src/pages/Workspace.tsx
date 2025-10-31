@@ -94,6 +94,47 @@ const Workspace = () => {
 
       if (projectError) throw projectError;
 
+      // Get editor content
+      const editorElement = document.querySelector('.ProseMirror');
+      const content = editorElement?.innerHTML || "";
+
+      // Get current max version number
+      const { data: maxVersionData } = await supabase
+        .from("versions")
+        .select("version_number")
+        .eq("project_id", project.id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      const newVersionNumber = (maxVersionData?.version_number || 0) + 1;
+
+      // Create new version
+      const { error: versionError } = await supabase.from("versions").insert({
+        project_id: project.id,
+        version_number: newVersionNumber,
+        title: `Version ${newVersionNumber}`,
+        content: content,
+        created_by: user.id,
+      });
+
+      if (versionError) throw versionError;
+
+      // Log to timeline
+      const { data: userData } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "edited",
+        event_details: { action: "saved", version: newVersionNumber },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
+
       toast.success("Project saved successfully!");
     } catch (error: any) {
       toast.error("Failed to save project");

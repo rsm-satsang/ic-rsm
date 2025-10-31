@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   Redo,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CollaborativeEditorProps {
   projectId: string;
@@ -19,16 +21,50 @@ interface CollaborativeEditorProps {
 }
 
 const CollaborativeEditor = ({ projectId, userId }: CollaborativeEditorProps) => {
+  const [content, setContent] = useState("");
+  const [loadingContent, setLoadingContent] = useState(true);
+
   const editor = useEditor({
     extensions: [StarterKit],
-    content: "<p>Start writing your content here...</p>",
+    content: "",
     editorProps: {
       attributes: {
         class:
           "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[500px] max-w-none p-8",
       },
     },
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML());
+    },
   });
+
+  useEffect(() => {
+    loadLatestVersion();
+  }, [projectId]);
+
+  const loadLatestVersion = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("versions")
+        .select("content")
+        .eq("project_id", projectId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data && editor) {
+        editor.commands.setContent(data.content || "<p>Start writing your content here...</p>");
+      } else if (editor) {
+        editor.commands.setContent("<p>Start writing your content here...</p>");
+      }
+    } catch (error) {
+      console.error("Error loading content:", error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
 
   if (!editor) {
     return null;

@@ -36,17 +36,9 @@ const Auth = () => {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        // Create user profile
-        const { error: profileError } = await supabase.from("users").insert({
-          id: signUpData.user.id,
-          name,
-          email,
-          role: "user",
-        });
-
-        if (profileError) throw profileError;
-
         toast.success("Account created! Please check your email to verify.");
+        // User profile is automatically created by database trigger
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to sign up");
