@@ -58,20 +58,38 @@ const Notifications = () => {
 
   const loadInvitations = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      console.log("Loading invitations for user:", userId);
+      
+      // First, fetch invitations
+      const { data: invitationsData, error: invitationsError } = await supabase
         .from("invitations")
-        .select(`
-          *,
-          projects:project_id (title, description, type)
-        `)
+        .select("*")
         .eq("invited_user_id", userId)
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (invitationsError) {
+        console.error("Error fetching invitations:", invitationsError);
+        throw invitationsError;
+      }
 
-      // Fetch inviter details separately
-      const invitationsWithInviters = await Promise.all(
-        (data || []).map(async (invite) => {
+      console.log("Invitations data:", invitationsData);
+
+      if (!invitationsData || invitationsData.length === 0) {
+        setInvitations([]);
+        return;
+      }
+
+      // Fetch project and inviter details for each invitation
+      const enrichedInvitations = await Promise.all(
+        invitationsData.map(async (invite) => {
+          // Fetch project details
+          const { data: projectData } = await supabase
+            .from("projects")
+            .select("title, description, type")
+            .eq("id", invite.project_id)
+            .single();
+          
+          // Fetch inviter details
           const { data: inviterData } = await supabase
             .from("users")
             .select("name, email")
@@ -80,15 +98,18 @@ const Notifications = () => {
           
           return {
             ...invite,
+            projects: projectData || { title: "Unknown Project", description: null, type: "document" },
             inviter: inviterData || { name: "Unknown", email: "" }
           };
         })
       );
 
-      setInvitations(invitationsWithInviters);
+      console.log("Enriched invitations:", enrichedInvitations);
+      setInvitations(enrichedInvitations);
     } catch (error: any) {
       console.error("Error loading invitations:", error);
       toast.error("Failed to load invitations");
+      setInvitations([]);
     }
   };
 
