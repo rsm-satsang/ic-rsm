@@ -32,7 +32,7 @@ interface AIToolsPanelProps {
 interface Vocabulary {
   id: string;
   name: string;
-  file_url: string;
+  file_url: string | null;
 }
 
 const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelProps) => {
@@ -120,17 +120,12 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('vocabulary-files')
-        .getPublicUrl(filePath);
-
-      // Create vocabulary entry
+      // Create vocabulary entry (store storage path, not URL)
       const { error: dbError } = await supabase
         .from('vocabularies')
         .insert({
           name: file.name.replace('.txt', ''),
-          file_url: publicUrl,
+          file_url: filePath, // Store the storage path
           parsed_keywords: [],
           created_by: user.id,
           visibility: 'public'
@@ -168,11 +163,19 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
       // Load all selected vocabulary files
       for (const vocabId of selectedVocabs) {
         const vocab = vocabularies.find(v => v.id === vocabId);
-        if (!vocab) continue;
+        if (!vocab || !vocab.file_url) continue;
 
-        // Fetch file content
-        const response = await fetch(vocab.file_url);
-        const content = await response.text();
+        // Fetch file content from storage using authenticated request
+        const { data, error } = await supabase.storage
+          .from('vocabulary-files')
+          .download(vocab.file_url);
+
+        if (error || !data) {
+          console.error('Error downloading vocabulary file:', error);
+          continue;
+        }
+
+        const content = await data.text();
 
         // Parse vocabulary (support both - and = separators)
         const lines = content.split('\n');
