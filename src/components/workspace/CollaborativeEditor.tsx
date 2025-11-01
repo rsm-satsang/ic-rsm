@@ -20,11 +20,13 @@ interface CollaborativeEditorProps {
   userId: string;
   onTextSelection?: (text: string) => void;
   onEditorReady?: (editor: any) => void;
+  onVersionChange?: (versionId: string | null) => void;
 }
 
-const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady }: CollaborativeEditorProps) => {
+const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady, onVersionChange }: CollaborativeEditorProps) => {
   const [content, setContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -61,7 +63,7 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
     try {
       const { data, error } = await supabase
         .from("versions")
-        .select("content")
+        .select("id, content")
         .eq("project_id", projectId)
         .order("version_number", { ascending: false })
         .limit(1)
@@ -70,8 +72,16 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data && editor) {
+        setCurrentVersionId(data.id);
+        if (onVersionChange) {
+          onVersionChange(data.id);
+        }
         editor.commands.setContent(data.content || "<p>Start writing your content here...</p>");
       } else if (editor) {
+        setCurrentVersionId(null);
+        if (onVersionChange) {
+          onVersionChange(null);
+        }
         editor.commands.setContent("<p>Start writing your content here...</p>");
       }
     } catch (error) {

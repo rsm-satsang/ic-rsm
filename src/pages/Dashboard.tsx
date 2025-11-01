@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import CollaboratorCount from "@/components/workspace/CollaboratorCount";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -374,7 +375,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    <span>Solo</span>
+                    <CollaboratorCount projectId={project.id} ownerId={project.owner_id} userId={user?.id || ""} />
                   </div>
                 </div>
               </CardContent>

@@ -40,23 +40,100 @@ const Workspace = () => {
   const [showVersionDialog, setShowVersionDialog] = useState(false);
   const [versionName, setVersionName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
+  const [savingTitle, setSavingTitle] = useState(false);
 
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
   };
 
-  const handleInsertText = (text: string) => {
-    console.log("Replacing selected text with AI output:", text.substring(0, 50) + "...");
-    console.log("Editor ref:", editorRef);
+  const handleInsertText = async (text: string, aiFeatureName: string) => {
+    console.log("Creating new version with AI output from:", aiFeatureName);
     
-    if (editorRef?.commands) {
-      // Replace selected text with AI-generated content
-      // If there's a selection, deleteSelection removes it, then insertContent adds new text
-      editorRef.chain().focus().deleteSelection().insertContent(text).run();
-      toast.success("Content replaced successfully!");
-    } else {
-      console.error("Editor reference not available");
+    if (!editorRef?.commands || !project || !user) {
+      console.error("Editor reference or project not available");
       toast.error("Editor not ready. Please try again.");
+      return;
+    }
+
+    try {
+      // Replace text in editor first
+      editorRef.chain().focus().deleteSelection().insertContent(text).run();
+      
+      // Get the updated content
+      const editorElement = document.querySelector('.ProseMirror');
+      const content = editorElement?.innerHTML || "";
+
+      // Get current version name
+      const { data: currentVersion } = await supabase
+        .from("versions")
+        .select("title, version_number")
+        .eq("id", currentVersionId || "")
+        .single();
+
+      // Get max version number for this feature name pattern
+      const baseVersionName = `${aiFeatureName} - ${currentVersion?.title || "untitled"}`;
+      const { data: existingVersions } = await supabase
+        .from("versions")
+        .select("title")
+        .eq("project_id", project.id)
+        .ilike("title", `${baseVersionName}%`);
+
+      // Calculate next number
+      let nextNumber = 1;
+      if (existingVersions && existingVersions.length > 0) {
+        const numbers = existingVersions
+          .map(v => {
+            const match = v.title.match(/\s(\d+)$/);
+            return match ? parseInt(match[1]) : 0;
+          })
+          .filter(n => n > 0);
+        nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+      }
+
+      const newVersionName = `${baseVersionName} ${nextNumber}`;
+
+      // Get current max version number
+      const { data: maxVersionData } = await supabase
+        .from("versions")
+        .select("version_number")
+        .eq("project_id", project.id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      const newVersionNumber = (maxVersionData?.version_number || 0) + 1;
+
+      // Create new version
+      const { error: versionError } = await supabase.from("versions").insert({
+        project_id: project.id,
+        version_number: newVersionNumber,
+        title: newVersionName,
+        content: content,
+        created_by: user.id,
+      });
+
+      if (versionError) throw versionError;
+
+      // Log to timeline
+      const { data: userData } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "edited",
+        event_details: { action: "ai_version_created", version: newVersionNumber, versionName: newVersionName, aiFeature: aiFeatureName },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
+
+      toast.success(`New version "${newVersionName}" created successfully!`);
+    } catch (error: any) {
+      console.error("Error creating AI version:", error);
+      toast.error("Failed to create new version");
     }
   };
 
@@ -111,12 +188,63 @@ const Workspace = () => {
     }
   };
 
-  const handleSaveClick = () => {
+  const handleSaveAsClick = () => {
     setShowVersionDialog(true);
     setVersionName("");
   };
 
-  const handleSave = async () => {
+  const handleSaveCurrentVersion = async () => {
+    if (!project || !user || !currentVersionId) {
+      toast.error("No active version to save");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Get editor content
+      const editorElement = document.querySelector('.ProseMirror');
+      const content = editorElement?.innerHTML || "";
+
+      // Update current version
+      const { error: versionError } = await supabase
+        .from("versions")
+        .update({ content: content })
+        .eq("id", currentVersionId);
+
+      if (versionError) throw versionError;
+
+      toast.success("Version updated successfully!");
+    } catch (error: any) {
+      console.error("Save failed:", error);
+      toast.error(error?.message || "Failed to save version");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveTitle = async () => {
+    if (!project || !user) return;
+
+    setSavingTitle(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ title: projectTitle, updated_at: new Date().toISOString() })
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      toast.success("Project title saved!");
+      setProject({ ...project, title: projectTitle });
+    } catch (error: any) {
+      console.error("Title save failed:", error);
+      toast.error(error?.message || "Failed to save title");
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
+  const handleSaveAs = async () => {
     if (!project || !user || !versionName.trim()) return;
 
     setShowVersionDialog(false);
@@ -347,12 +475,22 @@ const Workspace = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <Separator orientation="vertical" className="h-6" />
-              <Input
-                value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
-                className="max-w-md font-semibold text-lg border-none shadow-none focus-visible:ring-0"
-                placeholder="Project title..."
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  value={projectTitle}
+                  onChange={(e) => setProjectTitle(e.target.value)}
+                  className="max-w-md font-semibold text-lg border-none shadow-none focus-visible:ring-0"
+                  placeholder="Project title..."
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveTitle}
+                  disabled={savingTitle || projectTitle === project?.title}
+                >
+                  {savingTitle ? "Saving..." : "Save Title"}
+                </Button>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -391,9 +529,18 @@ const Workspace = () => {
                 <Trash2 className="h-4 w-4" />
               </Button>
 
-              <Button onClick={handleSaveClick} disabled={saving}>
+              <Button 
+                onClick={handleSaveCurrentVersion} 
+                disabled={saving || !currentVersionId}
+                variant="outline"
+              >
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? "Saving..." : "Save"}
+              </Button>
+
+              <Button onClick={handleSaveAsClick} disabled={saving}>
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? "Saving..." : "Save As"}
               </Button>
             </div>
           </div>
@@ -414,6 +561,7 @@ const Workspace = () => {
             userId={user?.id || ""} 
             onTextSelection={handleTextSelection}
             onEditorReady={handleEditorReady}
+            onVersionChange={setCurrentVersionId}
           />
         </div>
 
@@ -436,7 +584,7 @@ const Workspace = () => {
       <Dialog open={showVersionDialog} onOpenChange={setShowVersionDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save New Version</DialogTitle>
+            <DialogTitle>Save As New Version</DialogTitle>
             <DialogDescription>
               Give this version a meaningful name to help identify it later.
             </DialogDescription>
@@ -451,7 +599,7 @@ const Workspace = () => {
                 onChange={(e) => setVersionName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && versionName.trim()) {
-                    handleSave();
+                    handleSaveAs();
                   }
                 }}
               />
@@ -461,7 +609,7 @@ const Workspace = () => {
             <Button variant="outline" onClick={() => setShowVersionDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!versionName.trim() || saving}>
+            <Button onClick={handleSaveAs} disabled={!versionName.trim() || saving}>
               {saving ? "Saving..." : "Save Version"}
             </Button>
           </DialogFooter>

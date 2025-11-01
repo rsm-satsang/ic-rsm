@@ -3,17 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Key } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { User } from "@supabase/supabase-js";
 
 const Settings = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [geminiKey, setGeminiKey] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,42 +27,10 @@ const Settings = () => {
       }
 
       setUser(currentUser);
-      
-      // Try to fetch existing API key from user metadata or a settings table
-      const { data: userData } = await supabase
-        .from("users")
-        .select("gemini_api_key")
-        .eq("id", currentUser.id)
-        .single();
-
-      if (userData?.gemini_api_key) {
-        setGeminiKey(userData.gemini_api_key);
-      }
     } catch (error) {
       console.error("Error checking user:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("users")
-        .update({ gemini_api_key: geminiKey })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      toast.success("Settings saved successfully!");
-    } catch (error: any) {
-      toast.error("Failed to save settings");
-      console.error(error);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -96,43 +61,19 @@ const Settings = () => {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-primary rounded-lg">
-                <Key className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle>API Configuration</CardTitle>
-                <CardDescription>Configure your Gemini API key for AI features</CardDescription>
-              </div>
-            </div>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>Customize the appearance of the application</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="gemini-key">Gemini API Key</Label>
-              <Input
-                id="gemini-key"
-                type="password"
-                placeholder="Enter your Gemini API key"
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Get your API key from{" "}
-                <a
-                  href="https://makersuite.google.com/app/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Google AI Studio
-                </a>
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Theme</p>
+                <p className="text-sm text-muted-foreground">
+                  Switch between light and dark mode
+                </p>
+              </div>
+              <ThemeToggle />
             </div>
-
-            <Button onClick={handleSave} disabled={saving} className="w-full">
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving..." : "Save Settings"}
-            </Button>
           </CardContent>
         </Card>
       </div>

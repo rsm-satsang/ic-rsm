@@ -26,7 +26,7 @@ import { toast } from "sonner";
 interface AIToolsPanelProps {
   projectId: string;
   selectedText: string;
-  onInsertText: (text: string) => void;
+  onInsertText: (text: string, aiFeatureName: string) => void;
 }
 
 interface Vocabulary {
@@ -42,13 +42,11 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
   const [language, setLanguage] = useState("es");
   const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
   const [selectedVocabs, setSelectedVocabs] = useState<Set<string>>(new Set());
   const [uploadingVocab, setUploadingVocab] = useState(false);
 
   useEffect(() => {
-    checkApiKey();
     fetchVocabularies();
   }, []);
 
@@ -57,28 +55,6 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
       generatePrompt(selectedTool);
     }
   }, [selectedText, selectedTool]);
-
-  const checkApiKey = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('gemini_api_key')
-        .eq('id', user.id)
-        .single();
-
-      if (!error && data?.gemini_api_key) {
-        setHasApiKey(true);
-      } else {
-        setHasApiKey(false);
-      }
-    } catch (error) {
-      console.error('Error checking API key:', error);
-      setHasApiKey(false);
-    }
-  };
 
   const fetchVocabularies = async () => {
     try {
@@ -228,9 +204,27 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
     let prompt = "";
     const text = selectedText || "[No text selected]";
 
+    // Language name mapping
+    const languageNames: Record<string, string> = {
+      en: "English",
+      es: "Spanish",
+      fr: "French",
+      de: "German",
+      it: "Italian",
+      pt: "Portuguese",
+      ru: "Russian",
+      ja: "Japanese",
+      ko: "Korean",
+      zh: "Chinese",
+      hi: "Hindi",
+      ar: "Arabic"
+    };
+
+    const targetLanguageName = languageNames[language] || language;
+
     switch (toolType) {
       case "translate":
-        prompt = `Translate the following text to ${language}:\n\n${text}\n\nProvide only the translation, no additional explanation.`;
+        prompt = `Translate the following text to ${targetLanguageName}:\n\n${text}\n\nProvide only the translation, no additional explanation.`;
         break;
       case "rephrase":
         prompt = `Rephrase the following text in a different way while maintaining the same meaning:\n\n${text}\n\nProvide only the rephrased text.`;
@@ -327,21 +321,7 @@ Provide the complete translated and formatted newsletter.`;
 
       if (data?.error) {
         console.error('AI error from edge function:', data.error);
-        
-        // Check if it's the API key missing error
-        if (data.error.includes('Gemini API key not configured')) {
-          setHasApiKey(false);
-          toast.error(
-            "Gemini API key not configured", 
-            {
-              description: "Click the Settings button below to add your API key",
-              duration: 5000,
-            }
-          );
-        } else {
-          toast.error(data.error);
-        }
-        
+        toast.error(data.error);
         setLoading(false);
         return;
       }
@@ -362,10 +342,21 @@ Provide the complete translated and formatted newsletter.`;
 
   const handleAcceptAndInsert = () => {
     if (aiResponse) {
-      onInsertText(aiResponse);
+      // Map tool IDs to friendly names
+      const toolNames: Record<string, string> = {
+        translate: "translated",
+        rephrase: "rephrased",
+        summarize: "summarized",
+        generate: "generated",
+        email: "email",
+        newsletter: "newsletter"
+      };
+      
+      const featureName = toolNames[selectedTool] || selectedTool;
+      onInsertText(aiResponse, featureName);
       setAiResponse("");
       setCompiledPrompt("");
-      toast.success("Text inserted into editor!");
+      toast.success("New version created successfully!");
     }
   };
 
@@ -420,34 +411,6 @@ Provide the complete translated and formatted newsletter.`;
                 <p className="text-xs text-cyan-700 dark:text-cyan-200">
                   Input Hindi text → Translate to English → Format as Substack newsletter
                 </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* API Key Warning */}
-          {hasApiKey === false && (
-            <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
-              <CardContent className="p-3 space-y-2">
-                <div className="flex gap-2">
-                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-red-900 dark:text-red-100">
-                      Gemini API Key Required
-                    </p>
-                    <p className="text-xs text-red-700 dark:text-red-200 mt-1">
-                      Configure your API key to use AI features
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full text-xs"
-                  onClick={() => navigate('/settings')}
-                >
-                  <Settings className="mr-2 h-3 w-3" />
-                  Go to Settings
-                </Button>
               </CardContent>
             </Card>
           )}
@@ -582,15 +545,10 @@ Provide the complete translated and formatted newsletter.`;
                   size="sm" 
                   className="w-full mt-2"
                   onClick={sendToAI}
-                  disabled={loading || !selectedText || hasApiKey === false}
+                  disabled={loading || !selectedText}
                 >
                   {loading ? (
                     <>Processing...</>
-                  ) : hasApiKey === false ? (
-                    <>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Configure API Key
-                    </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
@@ -598,11 +556,6 @@ Provide the complete translated and formatted newsletter.`;
                     </>
                   )}
                 </Button>
-                {hasApiKey === false && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Add your Gemini API key in Settings to continue
-                  </p>
-                )}
               </CardContent>
             </Card>
           )}
