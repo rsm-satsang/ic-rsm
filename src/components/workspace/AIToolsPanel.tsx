@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sparkles,
@@ -17,6 +18,8 @@ import {
   AlertCircle,
   Settings,
   Newspaper,
+  Upload,
+  Book,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +27,12 @@ interface AIToolsPanelProps {
   projectId: string;
   selectedText: string;
   onInsertText: (text: string) => void;
+}
+
+interface Vocabulary {
+  id: string;
+  name: string;
+  file_url: string;
 }
 
 const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelProps) => {
@@ -34,9 +43,13 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
   const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+  const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
+  const [selectedVocabs, setSelectedVocabs] = useState<Set<string>>(new Set());
+  const [uploadingVocab, setUploadingVocab] = useState(false);
 
   useEffect(() => {
     checkApiKey();
+    fetchVocabularies();
   }, []);
 
   useEffect(() => {
@@ -64,6 +77,147 @@ const AIToolsPanel = ({ projectId, selectedText, onInsertText }: AIToolsPanelPro
     } catch (error) {
       console.error('Error checking API key:', error);
       setHasApiKey(false);
+    }
+  };
+
+  const fetchVocabularies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vocabularies')
+        .select('id, name, file_url')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setVocabularies(data);
+      }
+    } catch (error) {
+      console.error('Error fetching vocabularies:', error);
+    }
+  };
+
+  const handleVocabUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.txt')) {
+      toast.error('Please upload a .txt file');
+      return;
+    }
+
+    setUploadingVocab(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in to upload vocabulary files');
+        return;
+      }
+
+      // Upload to storage
+      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('vocabulary-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('vocabulary-files')
+        .getPublicUrl(filePath);
+
+      // Create vocabulary entry
+      const { error: dbError } = await supabase
+        .from('vocabularies')
+        .insert({
+          name: file.name.replace('.txt', ''),
+          file_url: publicUrl,
+          parsed_keywords: [],
+          created_by: user.id,
+          visibility: 'public'
+        });
+
+      if (dbError) throw dbError;
+
+      toast.success('Vocabulary file uploaded successfully!');
+      fetchVocabularies();
+      event.target.value = '';
+    } catch (error: any) {
+      console.error('Error uploading vocabulary:', error);
+      toast.error(error.message || 'Failed to upload vocabulary file');
+    } finally {
+      setUploadingVocab(false);
+    }
+  };
+
+  const toggleVocabSelection = (vocabId: string) => {
+    const newSelected = new Set(selectedVocabs);
+    if (newSelected.has(vocabId)) {
+      newSelected.delete(vocabId);
+    } else {
+      newSelected.add(vocabId);
+    }
+    setSelectedVocabs(newSelected);
+  };
+
+  const preprocessWithVocabulary = async (text: string): Promise<string> => {
+    if (selectedVocabs.size === 0) return text;
+
+    try {
+      const vocabularyMap = new Map<string, string>();
+
+      // Load all selected vocabulary files
+      for (const vocabId of selectedVocabs) {
+        const vocab = vocabularies.find(v => v.id === vocabId);
+        if (!vocab) continue;
+
+        // Fetch file content
+        const response = await fetch(vocab.file_url);
+        const content = await response.text();
+
+        // Parse vocabulary (support both - and = separators)
+        const lines = content.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          let [term, translation] = trimmed.includes(' - ') 
+            ? trimmed.split(' - ') 
+            : trimmed.split(' = ');
+
+          if (term && translation) {
+            term = term.trim();
+            translation = translation.trim();
+            // Case-insensitive key, last one wins on conflicts
+            vocabularyMap.set(term.toLowerCase(), translation);
+          }
+        }
+      }
+
+      if (vocabularyMap.size === 0) return text;
+
+      let processedText = text;
+
+      // Sort terms by length (longest first) for better partial matching
+      const sortedTerms = Array.from(vocabularyMap.keys()).sort((a, b) => b.length - a.length);
+
+      // First pass: whole word matching (case-insensitive)
+      for (const term of sortedTerms) {
+        const translation = vocabularyMap.get(term)!;
+        const regex = new RegExp(`\\b${term}\\b`, 'gi');
+        processedText = processedText.replace(regex, translation);
+      }
+
+      // Second pass: partial matching (case-insensitive)
+      for (const term of sortedTerms) {
+        const translation = vocabularyMap.get(term)!;
+        const regex = new RegExp(term, 'gi');
+        processedText = processedText.replace(regex, translation);
+      }
+
+      return processedText;
+    } catch (error) {
+      console.error('Error preprocessing with vocabulary:', error);
+      return text; // Return original text on error
     }
   };
 
@@ -138,13 +292,23 @@ Provide the complete translated and formatted newsletter.`;
         return;
       }
 
+      // Preprocess text with selected vocabularies
+      const preprocessedText = await preprocessWithVocabulary(selectedText);
+      
+      // Regenerate prompt with preprocessed text
+      let finalPrompt = compiledPrompt;
+      if (preprocessedText !== selectedText) {
+        finalPrompt = compiledPrompt.replace(selectedText, preprocessedText);
+      }
+
       console.log('Session found, calling edge function...');
       console.log('Project ID:', projectId);
       console.log('Action:', selectedTool);
+      console.log('Vocabularies applied:', selectedVocabs.size);
 
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
         body: { 
-          prompt: compiledPrompt,
+          prompt: finalPrompt,
           action: selectedTool,
           projectId: projectId
         }
@@ -303,6 +467,78 @@ Provide the complete translated and formatted newsletter.`;
               </CardContent>
             </Card>
           )}
+
+          {/* Reference Vocabulary Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Book className="h-4 w-4" />
+                Reference Vocabulary
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Upload and select vocabulary files for term matching
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Upload Button */}
+              <div>
+                <input
+                  type="file"
+                  accept=".txt"
+                  onChange={handleVocabUpload}
+                  className="hidden"
+                  id="vocab-upload"
+                  disabled={uploadingVocab}
+                />
+                <label htmlFor="vocab-upload">
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    disabled={uploadingVocab}
+                    asChild
+                  >
+                    <span>
+                      <Upload className="mr-2 h-3 w-3" />
+                      {uploadingVocab ? 'Uploading...' : 'Upload Vocabulary (.txt)'}
+                    </span>
+                  </Button>
+                </label>
+              </div>
+
+              {/* Vocabulary List */}
+              {vocabularies.length > 0 ? (
+                <ScrollArea className="h-32 rounded border p-2">
+                  <div className="space-y-2">
+                    {vocabularies.map((vocab) => (
+                      <div key={vocab.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`vocab-${vocab.id}`}
+                          checked={selectedVocabs.has(vocab.id)}
+                          onCheckedChange={() => toggleVocabSelection(vocab.id)}
+                        />
+                        <label
+                          htmlFor={`vocab-${vocab.id}`}
+                          className="text-xs cursor-pointer flex-1"
+                        >
+                          {vocab.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  No vocabulary files yet. Upload one to get started!
+                </p>
+              )}
+
+              {selectedVocabs.size > 0 && (
+                <p className="text-xs text-primary font-medium">
+                  {selectedVocabs.size} vocabular{selectedVocabs.size === 1 ? 'y' : 'ies'} selected
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Tool Options */}
           {selectedTool === "translate" && (
