@@ -60,12 +60,9 @@ const Notifications = () => {
     try {
       console.log("Loading invitations for user:", userId);
       
-      // First, fetch invitations
+      // Use the database function to get invitations with all details
       const { data: invitationsData, error: invitationsError } = await supabase
-        .from("invitations")
-        .select("*")
-        .eq("invited_user_id", userId)
-        .order("created_at", { ascending: false });
+        .rpc("get_user_invitations", { user_id: userId });
       
       if (invitationsError) {
         console.error("Error fetching invitations:", invitationsError);
@@ -79,30 +76,24 @@ const Notifications = () => {
         return;
       }
 
-      // Fetch project and inviter details for each invitation
-      const enrichedInvitations = await Promise.all(
-        invitationsData.map(async (invite) => {
-          // Fetch project details
-          const { data: projectData } = await supabase
-            .from("projects")
-            .select("title, description, type")
-            .eq("id", invite.project_id)
-            .single();
-          
-          // Fetch inviter details
-          const { data: inviterData } = await supabase
-            .from("users")
-            .select("name, email")
-            .eq("id", invite.invited_by)
-            .single();
-          
-          return {
-            ...invite,
-            projects: projectData || { title: "Unknown Project", description: null, type: "document" },
-            inviter: inviterData || { name: "Unknown", email: "" }
-          };
-        })
-      );
+      // Transform the data to match the expected format
+      const enrichedInvitations = invitationsData.map((invite) => ({
+        id: invite.id,
+        project_id: invite.project_id,
+        invited_by: invite.invited_by,
+        access_level: invite.access_level,
+        status: invite.status,
+        created_at: invite.created_at,
+        projects: {
+          title: invite.project_title || "Unknown Project",
+          description: invite.project_description,
+          type: invite.project_type || "document"
+        },
+        inviter: {
+          name: invite.inviter_name || "Unknown",
+          email: invite.inviter_email || ""
+        }
+      }));
 
       console.log("Enriched invitations:", enrichedInvitations);
       setInvitations(enrichedInvitations);

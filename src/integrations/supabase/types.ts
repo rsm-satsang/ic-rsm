@@ -679,6 +679,23 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { invitation_id: string }; Returns: undefined }
+      get_user_invitations: {
+        Args: { user_id: string }
+        Returns: {
+          access_level: Database["public"]["Enums"]["access_level"]
+          created_at: string
+          id: string
+          invited_by: string
+          inviter_email: string
+          inviter_name: string
+          project_description: string
+          project_id: string
+          project_title: string
+          project_type: Database["public"]["Enums"]["project_type"]
+          status: Database["public"]["Enums"]["invitation_status"]
+          updated_at: string
+        }[]
+      }
       has_project_access: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
