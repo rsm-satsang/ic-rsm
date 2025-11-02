@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CollaborativeEditorProps {
   projectId: string;
@@ -21,9 +22,10 @@ interface CollaborativeEditorProps {
   onTextSelection?: (text: string) => void;
   onEditorReady?: (editor: any) => void;
   onVersionChange?: (versionId: string | null) => void;
+  selectedVersionId?: string | null;
 }
 
-const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady, onVersionChange }: CollaborativeEditorProps) => {
+const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady, onVersionChange, selectedVersionId }: CollaborativeEditorProps) => {
   const [content, setContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
@@ -56,8 +58,12 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
   }, [editor, onEditorReady]);
 
   useEffect(() => {
-    loadLatestVersion();
-  }, [projectId]);
+    if (selectedVersionId) {
+      loadSpecificVersion(selectedVersionId);
+    } else {
+      loadLatestVersion();
+    }
+  }, [projectId, selectedVersionId]);
 
   const loadLatestVersion = async () => {
     try {
@@ -86,6 +92,33 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
       }
     } catch (error) {
       console.error("Error loading content:", error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const loadSpecificVersion = async (versionId: string) => {
+    try {
+      setLoadingContent(true);
+      const { data, error } = await supabase
+        .from("versions")
+        .select("id, content")
+        .eq("id", versionId)
+        .single();
+
+      if (error) throw error;
+
+      if (data && editor) {
+        setCurrentVersionId(data.id);
+        if (onVersionChange) {
+          onVersionChange(data.id);
+        }
+        editor.commands.setContent(data.content || "<p>Start writing your content here...</p>");
+        toast.success("Version loaded successfully!");
+      }
+    } catch (error) {
+      console.error("Error loading specific version:", error);
+      toast.error("Failed to load version");
     } finally {
       setLoadingContent(false);
     }

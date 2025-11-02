@@ -23,9 +23,10 @@ interface Version {
 
 interface VersionsSidebarProps {
   projectId: string;
+  onVersionSelect?: (versionId: string) => void;
 }
 
-const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
+const VersionsSidebar = ({ projectId, onVersionSelect }: VersionsSidebarProps) => {
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
@@ -295,6 +296,9 @@ const VersionsSidebar = ({ projectId }: VersionsSidebarProps) => {
               }`}
               onClick={() => {
                 setSelectedVersionId(version.id);
+                if (onVersionSelect) {
+                  onVersionSelect(version.id);
+                }
               }}
             >
               <div className="flex items-center gap-2 mb-2">

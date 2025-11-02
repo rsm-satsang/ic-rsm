@@ -42,6 +42,7 @@ const Workspace = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [savingTitle, setSavingTitle] = useState(false);
+  const [selectedVersionForView, setSelectedVersionForView] = useState<string | null>(null);
 
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
@@ -140,6 +141,11 @@ const Workspace = () => {
   const handleEditorReady = (editor: any) => {
     console.log("Editor ready, setting ref");
     setEditorRef(editor);
+  };
+
+  const handleVersionSelect = (versionId: string) => {
+    console.log("Version selected:", versionId);
+    setSelectedVersionForView(versionId);
   };
 
   useEffect(() => {
@@ -551,7 +557,7 @@ const Workspace = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Versions */}
         <div className="w-64 flex-shrink-0 border-r bg-card overflow-y-auto">
-          <VersionsSidebar projectId={project.id} />
+          <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
         </div>
 
         {/* Center - Editor */}
@@ -562,6 +568,7 @@ const Workspace = () => {
             onTextSelection={handleTextSelection}
             onEditorReady={handleEditorReady}
             onVersionChange={setCurrentVersionId}
+            selectedVersionId={selectedVersionForView}
           />
         </div>
 
