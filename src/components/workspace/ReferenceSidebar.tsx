@@ -53,8 +53,8 @@ export const ReferenceSidebar = ({ projectId }: ReferenceSidebarProps) => {
 
   return (
     <>
-      <div className="flex flex-col h-full">
-        <div className="p-4 border-b">
+      <div className="flex flex-col h-full w-full">
+        <div className="p-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-lg">Reference Files</h2>
             <Button
@@ -104,7 +104,7 @@ export const ReferenceSidebar = ({ projectId }: ReferenceSidebarProps) => {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t flex-shrink-0">
           <Button
             size="sm"
             variant="outline"

@@ -573,7 +573,7 @@ const Workspace = () => {
         </div>
 
         {/* Right Sidebar - AI Tools & References (Tabbed) */}
-        <div className="w-80 lg:w-96 flex-shrink-0 border-l bg-card overflow-hidden hidden lg:flex">
+        <div className="w-80 lg:w-96 flex-shrink-0 border-l bg-card overflow-hidden hidden lg:block">
           <WorkspaceSidebar 
             projectId={project.id}
             selectedText={selectedText}
