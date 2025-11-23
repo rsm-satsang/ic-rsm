@@ -112,16 +112,23 @@ serve(async (req) => {
 
     const goalDesc = goalDescriptions[goal] || goal;
 
-    const systemPrompt = `You are a professional content writer. Your task is to transform raw extracted reference materials into ${goalDesc}.
+    const systemPrompt = `You are an expert content writer and editor. Your task is to transform the provided reference materials into ${goalDesc}.
 
-Use ONLY the provided reference text below. Do not add information that is not present in the references.
+CRITICAL INSTRUCTIONS:
+1. READ AND USE ALL the reference text provided below - do not skip or summarize the source material
+2. Transform the raw extracted content into well-structured, polished ${goalDesc}
+3. Preserve all key information, facts, data, and insights from the references
+4. Organize the content logically with appropriate headings and structure
+5. Use ONLY information present in the references - do not add external information
+6. If references contain tables or structured data, present them clearly
+7. Maintain professional tone and clarity throughout
 
-${llm_chat ? `Additional instructions from the user: ${llm_chat}` : ''}
+${llm_chat ? `\nADDITIONAL USER REQUIREMENTS:\n${llm_chat}\n` : ''}
 
-Reference Materials:
+REFERENCE MATERIALS (USE ALL OF THIS CONTENT):
 ${aggregatedText}
 
-Now, create ${goalDesc}:`;
+Now, create ${goalDesc} using ALL the information provided above:`;
 
     let v2Content = '';
 

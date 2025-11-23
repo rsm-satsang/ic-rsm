@@ -65,6 +65,7 @@ serve(async (req) => {
           extractedText = await extractTXT(supabase, refFile);
           break;
         case 'image_ocr':
+        case 'image_parse':
           extractedText = await extractImageOCR(supabase, refFile);
           break;
         case 'audio_transcribe':
@@ -147,7 +148,17 @@ async function extractPDF(supabase: any, refFile: any): Promise<string> {
         contents: [{
           parts: [
             {
-              text: 'Extract all text from this PDF document. Preserve structure and formatting as much as possible. Return only the extracted text without any additional commentary.'
+              text: `You are a professional document extraction AI. Extract ALL text content from this PDF document with the following requirements:
+
+1. Extract EVERY word, sentence, and paragraph - do not skip any content
+2. Preserve the original structure including headings, bullet points, and lists
+3. Maintain the logical flow and organization of the document
+4. If there are tables, extract them in a readable format
+5. If there are charts or diagrams with text labels, extract those labels
+6. Include all footnotes, headers, and footers
+7. Return ONLY the extracted text without any commentary, explanations, or meta-information
+
+Begin extraction now:`
             },
             {
               inline_data: {
@@ -201,7 +212,15 @@ async function extractDOCX(supabase: any, refFile: any): Promise<string> {
         contents: [{
           parts: [
             {
-              text: 'Extract all text from this Word document. Preserve structure and return only the text.'
+              text: `Extract ALL text content from this Word document:
+
+1. Extract every word, sentence, and paragraph
+2. Preserve headings, bullet points, numbered lists, and formatting structure
+3. Include all tables in a readable format
+4. Maintain the document's logical flow
+5. Return ONLY the extracted text without any commentary
+
+Begin extraction:`
             },
             {
               inline_data: {
@@ -270,7 +289,15 @@ async function extractImageOCR(supabase: any, refFile: any): Promise<string> {
         contents: [{
           parts: [
             {
-              text: 'Extract all text visible in this image using OCR. Return only the extracted text without additional commentary.'
+              text: `Perform precise OCR on this image:
+
+1. Extract ALL visible text exactly as it appears
+2. Preserve the layout and structure (headings, paragraphs, lists)
+3. Include text from tables, charts, diagrams, and labels
+4. Maintain the reading order (top to bottom, left to right)
+5. Return ONLY the extracted text without commentary
+
+Begin OCR extraction:`
             },
             {
               inline_data: {
@@ -329,7 +356,15 @@ async function transcribeAudioVideo(supabase: any, refFile: any): Promise<string
         contents: [{
           parts: [
             {
-              text: 'Transcribe all speech from this audio/video file. Return only the transcription.'
+              text: `Transcribe this audio/video file with precision:
+
+1. Transcribe ALL spoken words accurately
+2. Include speaker changes if multiple speakers are present
+3. Preserve natural speech patterns and pauses where significant
+4. Format the transcription for readability with paragraphs
+5. Return ONLY the transcription without commentary
+
+Begin transcription:`
             },
             {
               inline_data: {
