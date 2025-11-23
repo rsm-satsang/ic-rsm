@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Workspace from "./pages/Workspace";
+import IntakePage from "./pages/project/IntakePage";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/project/:projectId/intake" element={<IntakePage />} />
           <Route path="/workspace/:projectId" element={<Workspace />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />

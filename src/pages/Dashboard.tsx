@@ -162,7 +162,7 @@ const Dashboard = () => {
       if (error) throw error;
 
       toast.success("Quick notepad created!");
-      navigate(`/workspace/${data.id}`);
+      navigate(`/project/${data.id}/intake`);
     } catch (error: any) {
       toast.error("Failed to create note");
       console.error(error);
@@ -187,7 +187,7 @@ const Dashboard = () => {
       if (error) throw error;
 
       toast.success("Project created!");
-      navigate(`/workspace/${data.id}`);
+      navigate(`/project/${data.id}/intake`);
     } catch (error: any) {
       toast.error("Failed to create project");
       console.error(error);
@@ -333,7 +333,7 @@ const Dashboard = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate(`/workspace/${project.id}`)}>
+                    <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
                       Open
                     </DropdownMenuItem>
                     <DropdownMenuItem 
@@ -346,7 +346,7 @@ const Dashboard = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div onClick={() => navigate(`/workspace/${project.id}`)} className="cursor-pointer">
+              <div onClick={() => navigate(`/project/${project.id}/intake`)} className="cursor-pointer">
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2 pr-8">
                     <Badge variant="secondary">{project.type}</Badge>
