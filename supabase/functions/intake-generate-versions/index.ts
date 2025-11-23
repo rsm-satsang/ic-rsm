@@ -135,7 +135,7 @@ Now, create ${goalDesc} using ALL the information provided above:`;
     if (GEMINI_API_KEY) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -148,10 +148,25 @@ Now, create ${goalDesc} using ALL the information provided above:`;
         );
 
         const data = await response.json();
-        v2Content = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Error generating draft';
+
+        if (!response.ok || data.error) {
+          console.error('Gemini draft generation error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: data.error,
+          });
+          throw new Error(data.error?.message || `Gemini draft generation failed with HTTP ${response.status}`);
+        }
+
+        v2Content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!v2Content || !v2Content.trim()) {
+          console.error('Gemini draft generation returned empty content', data);
+          v2Content = `[Draft generation failed: empty response from Gemini]\n\n${aggregatedText}`;
+        }
       } catch (error: any) {
-        console.error('Gemini API error:', error);
-        v2Content = `[Draft generation failed: ${error.message}]\n\n${aggregatedText}`;
+        console.error('Gemini API error in intake-generate-versions:', error);
+        v2Content = `[Draft generation failed: ${error.message ?? 'Unknown error'}]\n\n${aggregatedText}`;
       }
     } else {
       v2Content = `[Gemini API key not configured]\n\n${aggregatedText}`;
