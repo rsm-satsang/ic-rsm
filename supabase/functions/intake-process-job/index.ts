@@ -126,9 +126,16 @@ async function extractPDF(supabase: any, refFile: any): Promise<string> {
     throw new Error('Gemini API key not configured');
   }
 
-  // Convert PDF to base64 for Gemini
+  // Convert PDF to base64 for Gemini (handle large files)
   const arrayBuffer = await fileData.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  const base64 = btoa(binary);
 
   // Call Gemini Vision for OCR (send entire PDF)
   const response = await fetch(
@@ -176,7 +183,14 @@ async function extractDOCX(supabase: any, refFile: any): Promise<string> {
   }
 
   const arrayBuffer = await fileData.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  const base64 = btoa(binary);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
@@ -228,7 +242,14 @@ async function extractImageOCR(supabase: any, refFile: any): Promise<string> {
   if (downloadError) throw new Error(`Failed to download image: ${downloadError.message}`);
 
   const arrayBuffer = await fileData.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  const base64 = btoa(binary);
 
   // Determine MIME type
   const ext = refFile.file_name?.split('.').pop()?.toLowerCase();
@@ -279,7 +300,14 @@ async function transcribeAudioVideo(supabase: any, refFile: any): Promise<string
   if (downloadError) throw new Error(`Failed to download audio/video: ${downloadError.message}`);
 
   const arrayBuffer = await fileData.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  const base64 = btoa(binary);
 
   // Determine MIME type
   const ext = refFile.file_name?.split('.').pop()?.toLowerCase();
