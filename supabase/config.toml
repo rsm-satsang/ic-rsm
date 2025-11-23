@@ -2,3 +2,27 @@ project_id = "omdqidanirajnlnhurwy"
 
 [functions.gemini-ai]
 verify_jwt = true
+
+[functions.intake-upload]
+verify_jwt = true
+
+[functions.intake-add-youtube]
+verify_jwt = true
+
+[functions.intake-add-url]
+verify_jwt = true
+
+[functions.intake-queue-extraction]
+verify_jwt = true
+
+[functions.intake-job-status]
+verify_jwt = true
+
+[functions.intake-worker-callback]
+verify_jwt = false
+
+[functions.intake-generate-versions]
+verify_jwt = true
+
+[functions.intake-process-job]
+verify_jwt = false
