@@ -140,7 +140,7 @@ async function extractPDF(supabase: any, refFile: any): Promise<string> {
 
   // Call Gemini Vision for OCR (send entire PDF)
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -173,7 +173,23 @@ Begin extraction now:`
   );
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  if (!response.ok || data.error) {
+    console.error('Gemini PDF extraction error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: data.error,
+    });
+    throw new Error(data.error?.message || `Gemini PDF extraction failed with HTTP ${response.status}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text || !text.trim()) {
+    console.error('Gemini PDF extraction returned empty content', data);
+    throw new Error('Gemini PDF extraction returned empty content');
+  }
+
   return text;
 }
 
@@ -204,7 +220,7 @@ async function extractDOCX(supabase: any, refFile: any): Promise<string> {
   const base64 = btoa(binary);
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -235,7 +251,24 @@ Begin extraction:`
   );
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  if (!response.ok || data.error) {
+    console.error('Gemini DOCX extraction error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: data.error,
+    });
+    throw new Error(data.error?.message || `Gemini DOCX extraction failed with HTTP ${response.status}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text || !text.trim()) {
+    console.error('Gemini DOCX extraction returned empty content', data);
+    throw new Error('Gemini DOCX extraction returned empty content');
+  }
+
+  return text;
 }
 
 async function extractTXT(supabase: any, refFile: any): Promise<string> {
@@ -281,7 +314,7 @@ async function extractImageOCR(supabase: any, refFile: any): Promise<string> {
   const mimeType = mimeTypes[ext || ''] || 'image/jpeg';
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -312,7 +345,24 @@ Begin OCR extraction:`
   );
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  if (!response.ok || data.error) {
+    console.error('Gemini image OCR error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: data.error,
+    });
+    throw new Error(data.error?.message || `Gemini image OCR failed with HTTP ${response.status}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text || !text.trim()) {
+    console.error('Gemini image OCR returned empty content', data);
+    throw new Error('Gemini image OCR returned empty content');
+  }
+
+  return text;
 }
 
 async function transcribeAudioVideo(supabase: any, refFile: any): Promise<string> {
@@ -348,7 +398,7 @@ async function transcribeAudioVideo(supabase: any, refFile: any): Promise<string
   const mimeType = audioMimeTypes[ext || ''] || 'audio/mpeg';
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -379,7 +429,24 @@ Begin transcription:`
   );
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  if (!response.ok || data.error) {
+    console.error('Gemini audio/video transcription error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: data.error,
+    });
+    throw new Error(data.error?.message || `Gemini audio/video transcription failed with HTTP ${response.status}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text || !text.trim()) {
+    console.error('Gemini audio/video transcription returned empty content', data);
+    throw new Error('Gemini audio/video transcription returned empty content');
+  }
+
+  return text;
 }
 
 async function transcribeYouTube(refFile: any): Promise<string> {
@@ -391,7 +458,7 @@ async function transcribeYouTube(refFile: any): Promise<string> {
 
   // Try to use Gemini with YouTube URL directly
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -408,8 +475,17 @@ async function transcribeYouTube(refFile: any): Promise<string> {
   );
 
   const data = await response.json();
-  
-  if (data.error || !data.candidates) {
+
+  if (!response.ok || data.error) {
+    console.error('Gemini YouTube transcription error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: data.error,
+    });
+    throw new Error(data.error?.message || 'YouTube video may be private or unavailable. Please upload the audio file directly.');
+  }
+
+  if (!data.candidates) {
     throw new Error('YouTube video may be private or unavailable. Please upload the audio file directly.');
   }
 
