@@ -12,10 +12,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Save, Settings, Trash2 } from "lucide-react";
 import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
-import AIToolsPanel from "@/components/workspace/AIToolsPanel";
+import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
 import InviteDialog from "@/components/workspace/InviteDialog";
-import { ReferenceSidebar } from "@/components/workspace/ReferenceSidebar";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -557,12 +556,12 @@ const Workspace = () => {
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Versions */}
-        <div className="w-64 flex-shrink-0 border-r bg-card overflow-y-auto">
+        <div className="w-56 lg:w-64 flex-shrink-0 border-r bg-card overflow-y-auto hidden md:flex">
           <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
         </div>
 
         {/* Center - Editor */}
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="flex-1 min-w-0 overflow-y-auto bg-background">
           <CollaborativeEditor
             projectId={project.id} 
             userId={user?.id || ""} 
@@ -573,18 +572,13 @@ const Workspace = () => {
           />
         </div>
 
-        {/* Right Sidebar - AI Tools */}
-        <div className="w-80 flex-shrink-0 border-l bg-card overflow-y-auto">
-          <AIToolsPanel
+        {/* Right Sidebar - AI Tools & References (Tabbed) */}
+        <div className="w-80 lg:w-96 flex-shrink-0 border-l bg-card overflow-hidden hidden lg:flex">
+          <WorkspaceSidebar 
             projectId={project.id}
             selectedText={selectedText}
             onInsertText={handleInsertText}
           />
-        </div>
-
-        {/* Far Right Sidebar - Reference Files */}
-        <div className="w-72 flex-shrink-0 border-l bg-card overflow-y-auto">
-          <ReferenceSidebar projectId={project.id} />
         </div>
       </div>
 
