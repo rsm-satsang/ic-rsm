@@ -370,8 +370,8 @@ Provide the complete translated and formatted newsletter.`;
   ];
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b">
+    <div className="h-full flex flex-col w-full">
+      <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">AI Tools</h3>

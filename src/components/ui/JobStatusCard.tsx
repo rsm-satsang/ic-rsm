@@ -77,9 +77,9 @@ export const JobStatusCard = ({ file, onDelete, onRetry, onViewExtracted }: JobS
   const hasExtractedText = file.extracted_text && file.extracted_text.length > 0;
 
   return (
-    <Card className="p-4">
+    <Card className="p-3 w-full">
       <div className="flex items-start gap-3">
-        <div className="text-muted-foreground mt-1">
+        <div className="text-muted-foreground mt-1 flex-shrink-0">
           {getFileIcon(file.file_type)}
         </div>
         
@@ -95,28 +95,30 @@ export const JobStatusCard = ({ file, onDelete, onRetry, onViewExtracted }: JobS
                 </p>
               )}
             </div>
-            {getStatusBadge(file.status)}
+            <div className="flex-shrink-0">
+              {getStatusBadge(file.status)}
+            </div>
           </div>
 
           {file.error_text && (
-            <p className="text-xs text-destructive mb-2 line-clamp-2">
+            <p className="text-xs text-destructive mb-2 line-clamp-2 break-words">
               {file.error_text}
             </p>
           )}
 
           {hasExtractedText && (
-            <p className="text-xs text-muted-foreground line-clamp-3 mb-2">
+            <p className="text-xs text-muted-foreground line-clamp-3 mb-2 break-words">
               {extractedPreview}...
             </p>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1">
             {file.status === "failed" && onRetry && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => onRetry(file.id)}
-                className="h-7 text-xs"
+                className="h-7 text-xs px-2"
               >
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Retry
@@ -128,7 +130,7 @@ export const JobStatusCard = ({ file, onDelete, onRetry, onViewExtracted }: JobS
                 size="sm"
                 variant="ghost"
                 onClick={() => onViewExtracted(file)}
-                className="h-7 text-xs"
+                className="h-7 text-xs px-2"
               >
                 <Eye className="h-3 w-3 mr-1" />
                 View
@@ -140,7 +142,7 @@ export const JobStatusCard = ({ file, onDelete, onRetry, onViewExtracted }: JobS
                 size="sm"
                 variant="ghost"
                 onClick={() => onDelete(file.id)}
-                className="h-7 text-xs text-destructive hover:text-destructive"
+                className="h-7 text-xs px-2 text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3 mr-1" />
                 Delete
