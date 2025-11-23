@@ -15,6 +15,7 @@ import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import AIToolsPanel from "@/components/workspace/AIToolsPanel";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import { ReferenceSidebar } from "@/components/workspace/ReferenceSidebar";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -579,6 +580,11 @@ const Workspace = () => {
             selectedText={selectedText}
             onInsertText={handleInsertText}
           />
+        </div>
+
+        {/* Far Right Sidebar - Reference Files */}
+        <div className="w-72 flex-shrink-0 border-l bg-card overflow-y-auto">
+          <ReferenceSidebar projectId={project.id} />
         </div>
       </div>
 

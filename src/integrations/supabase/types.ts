@@ -179,6 +179,70 @@ export type Database = {
           },
         ]
       }
+      extraction_jobs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          job_type: string | null
+          project_id: string | null
+          reference_file_id: string | null
+          requested_by: string | null
+          started_at: string | null
+          status: string | null
+          worker_response: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_type?: string | null
+          project_id?: string | null
+          reference_file_id?: string | null
+          requested_by?: string | null
+          started_at?: string | null
+          status?: string | null
+          worker_response?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          job_type?: string | null
+          project_id?: string | null
+          reference_file_id?: string | null
+          requested_by?: string | null
+          started_at?: string | null
+          status?: string | null
+          worker_response?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extraction_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_jobs_reference_file_id_fkey"
+            columns: ["reference_file_id"]
+            isOneToOne: false
+            referencedRelation: "reference_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_jobs_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           created_at: string
@@ -403,6 +467,72 @@ export type Database = {
           {
             foreignKeyName: "prompts_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reference_files: {
+        Row: {
+          created_at: string | null
+          error_text: string | null
+          extracted_chunks: Json | null
+          extracted_text: string | null
+          file_name: string | null
+          file_type: string | null
+          id: string
+          metadata: Json | null
+          project_id: string
+          size_bytes: number | null
+          status: string | null
+          storage_path: string | null
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_text?: string | null
+          extracted_chunks?: Json | null
+          extracted_text?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          size_bytes?: number | null
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_text?: string | null
+          extracted_chunks?: Json | null
+          extracted_text?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          size_bytes?: number | null
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
