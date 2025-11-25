@@ -211,6 +211,13 @@ const Workspace = () => {
       const editorElement = document.querySelector('.ProseMirror');
       const content = editorElement?.innerHTML || "";
 
+      // Get current version info
+      const { data: versionData } = await supabase
+        .from("versions")
+        .select("version_number, title")
+        .eq("id", currentVersionId)
+        .single();
+
       // Update current version
       const { error: versionError } = await supabase
         .from("versions")
@@ -218,6 +225,25 @@ const Workspace = () => {
         .eq("id", currentVersionId);
 
       if (versionError) throw versionError;
+
+      // Add timeline entry
+      const { data: userData } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "edited",
+        event_details: { 
+          action: "version_updated", 
+          version: versionData?.version_number,
+          versionName: versionData?.title 
+        },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
 
       toast.success("Version updated successfully!");
     } catch (error: any) {

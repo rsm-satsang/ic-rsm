@@ -31,6 +31,9 @@ export default function IntakePage() {
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
   const [llmInstructions, setLlmInstructions] = useState("");
+  const [vocabulary, setVocabulary] = useState("");
+  const [projectTitle, setProjectTitle] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const {
@@ -57,6 +60,13 @@ export default function IntakePage() {
 
       if (error) throw error;
       setProject(data);
+      setProjectTitle(data.title || "");
+      
+      // Load vocabulary from metadata if exists
+      const metadata = data.metadata as any;
+      if (metadata?.vocabulary) {
+        setVocabulary(Array.isArray(metadata.vocabulary) ? metadata.vocabulary.join("\n") : metadata.vocabulary);
+      }
     } catch (error: any) {
       console.error("Error loading project:", error);
       toast.error("Failed to load project");
@@ -100,6 +110,31 @@ export default function IntakePage() {
     }
   };
 
+  const handleSaveTitle = async () => {
+    if (!projectTitle.trim()) {
+      toast.error("Project title cannot be empty");
+      return;
+    }
+
+    setSavingTitle(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ title: projectTitle, updated_at: new Date().toISOString() })
+        .eq("id", projectId);
+
+      if (error) throw error;
+
+      toast.success("Project title saved!");
+      setProject({ ...project, title: projectTitle });
+    } catch (error: any) {
+      console.error("Title save failed:", error);
+      toast.error("Failed to save title");
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
   const handleGenerateVersions = async () => {
     if (totalJobs === 0) {
       toast.error("Please add at least one reference file");
@@ -115,10 +150,29 @@ export default function IntakePage() {
     try {
       const finalGoal = goal === "other" ? customGoal : goal;
       
+      // Parse vocabulary into array
+      const vocabArray = vocabulary
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      
+      // Update project metadata with intake_completed and vocabulary
+      const metadata = {
+        ...(project.metadata || {}),
+        intake_completed: true,
+        vocabulary: vocabArray,
+      };
+
+      await supabase
+        .from("projects")
+        .update({ metadata, updated_at: new Date().toISOString() })
+        .eq("id", projectId);
+      
       await intakeAPI.generateVersions({
         project_id: projectId!,
         goal: finalGoal,
         llm_chat: llmInstructions,
+        vocabulary: vocabArray,
       });
 
       toast.success("Versions generated successfully!");
@@ -172,8 +226,23 @@ export default function IntakePage() {
       <div className="container max-w-5xl py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">{project?.title}</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1 flex items-center gap-2">
+              <Input
+                value={projectTitle}
+                onChange={(e) => setProjectTitle(e.target.value)}
+                className="max-w-lg text-3xl font-bold border-none shadow-none focus-visible:ring-1 p-0 h-auto"
+                placeholder="Project title..."
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveTitle}
+                disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
+              >
+                {savingTitle ? "Saving..." : "Save"}
+              </Button>
+            </div>
             <Link to={`/workspace/${projectId}`}>
               <Button variant="ghost" size="sm">
                 Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
@@ -303,6 +372,23 @@ export default function IntakePage() {
                 className="mt-2"
               />
             )}
+          </div>
+
+          {/* Vocabulary */}
+          <div>
+            <Label htmlFor="vocabulary" className="text-base font-semibold mb-2 block">
+              Vocabulary / Terms to Enforce (Optional)
+            </Label>
+            <Textarea
+              id="vocabulary"
+              placeholder="Enter important terms, one per line. E.g.:&#10;AI → Artificial Intelligence&#10;ML → Machine Learning&#10;UX → User Experience"
+              value={vocabulary}
+              onChange={(e) => setVocabulary(e.target.value)}
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Add key terms you want the AI to use consistently in generated drafts
+            </p>
           </div>
 
           {/* LLM Instructions */}

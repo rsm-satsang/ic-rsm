@@ -39,6 +39,7 @@ interface Project {
   created_at: string;
   updated_at: string;
   owner_id: string;
+  metadata: any;
 }
 
 const Dashboard = () => {
@@ -333,8 +334,19 @@ const Dashboard = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
+                    <DropdownMenuItem onClick={() => {
+                      const metadata = project.metadata as any;
+                      const intakeCompleted = metadata?.intake_completed === true;
+                      if (intakeCompleted) {
+                        navigate(`/workspace/${project.id}`);
+                      } else {
+                        navigate(`/project/${project.id}/intake`);
+                      }
+                    }}>
                       Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
+                      Add References
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => setDeletingProject(project)}
@@ -346,7 +358,20 @@ const Dashboard = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div onClick={() => navigate(`/project/${project.id}/intake`)} className="cursor-pointer">
+              <div 
+                onClick={() => {
+                  // Check if intake is completed
+                  const metadata = project.metadata as any;
+                  const intakeCompleted = metadata?.intake_completed === true;
+                  
+                  if (intakeCompleted) {
+                    navigate(`/workspace/${project.id}`);
+                  } else {
+                    navigate(`/project/${project.id}/intake`);
+                  }
+                }} 
+                className="cursor-pointer"
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2 pr-8">
                     <Badge variant="secondary">{project.type}</Badge>

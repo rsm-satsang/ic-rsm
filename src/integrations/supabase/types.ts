@@ -809,6 +809,14 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { invitation_id: string }; Returns: undefined }
+      append_to_v1_version: {
+        Args: {
+          _new_content: string
+          _project_id: string
+          _source_name: string
+        }
+        Returns: string
+      }
       get_user_invitations: {
         Args: { user_id: string }
         Returns: {

@@ -30,7 +30,7 @@ serve(async (req) => {
       });
     }
 
-    const { project_id, goal, llm_chat, reference_file_ids } = await req.json();
+    const { project_id, goal, llm_chat, vocabulary, reference_file_ids } = await req.json();
 
     // Verify access
     const { data: hasAccess } = await supabase.rpc('has_project_access', {
@@ -67,14 +67,16 @@ serve(async (req) => {
       });
     }
 
-    // Aggregate extracted text for v1
+    // Aggregate extracted text for v1 with proper formatting
     const aggregatedText = referenceFiles
-      .map((file) => {
-        const header = `\n\n=== ${file.file_name} ===\n`;
+      .map((file, index) => {
+        const separator = index === 0 ? '' : '\n\n';
+        const header = `${separator}=== BEGIN SOURCE: ${file.file_name} ===\n\n`;
         const content = file.extracted_text || '';
-        return header + content;
+        const footer = `\n\n=== END SOURCE: ${file.file_name} ===`;
+        return header + content + footer;
       })
-      .join('\n');
+      .join('');
 
     // Get next version number
     const { data: versions } = await supabase
@@ -112,23 +114,38 @@ serve(async (req) => {
 
     const goalDesc = goalDescriptions[goal] || goal;
 
+    // Build vocabulary instructions
+    let vocabularyInstructions = '';
+    if (vocabulary && Array.isArray(vocabulary) && vocabulary.length > 0) {
+      vocabularyInstructions = `\n\nVOCABULARY TERMS TO ENFORCE:
+Follow these terminology preferences strictly:
+${vocabulary.map(term => `- ${term}`).join('\n')}
+Replace any alternative terms with these preferred terms throughout the content.\n`;
+    }
+
     const systemPrompt = `You are an expert content writer and editor. Your task is to transform the provided reference materials into ${goalDesc}.
 
-CRITICAL INSTRUCTIONS:
-1. READ AND USE ALL the reference text provided below - do not skip or summarize the source material
+CRITICAL OUTPUT FORMAT INSTRUCTIONS:
+1. Output ONLY clean, semantic HTML
+2. Use proper HTML tags: <h1> for title, <h2>/<h3> for headings, <p> for paragraphs, <strong> for bold
+3. NO MARKDOWN - Do not use *, #, or any markdown syntax
+4. NO code blocks - Do not wrap output in backticks
+5. NO commentary - Output only the HTML content, no explanations
+6. For Substack articles: Include title in <h1>, subtitle in <h2>, then article content in <p> tags
+
+CONTENT INSTRUCTIONS:
+1. READ AND USE ALL the reference text provided below
 2. Transform the raw extracted content into well-structured, polished ${goalDesc}
 3. Preserve all key information, facts, data, and insights from the references
-4. Organize the content logically with appropriate headings and structure
-5. Use ONLY information present in the references - do not add external information
-6. If references contain tables or structured data, present them clearly
-7. Maintain professional tone and clarity throughout
-
+4. Organize logically with appropriate semantic HTML structure
+5. Use ONLY information present in the references
+6. Maintain professional tone and clarity${vocabularyInstructions}
 ${llm_chat ? `\nADDITIONAL USER REQUIREMENTS:\n${llm_chat}\n` : ''}
 
-REFERENCE MATERIALS (USE ALL OF THIS CONTENT):
+REFERENCE MATERIALS:
 ${aggregatedText}
 
-Now, create ${goalDesc} using ALL the information provided above:`;
+Now, create ${goalDesc} as clean semantic HTML following the format instructions above:`;
 
     let v2Content = '';
 

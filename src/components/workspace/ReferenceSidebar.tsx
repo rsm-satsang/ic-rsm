@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { JobStatusCard } from "@/components/ui/JobStatusCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useExtractionJobs } from "@/hooks/useExtractionJobs";
 import { intakeAPI, ReferenceFile } from "@/lib/api/intake";
+import { ReferenceUploader } from "@/components/upload/ReferenceUploader";
 import { toast } from "sonner";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, ChevronDown } from "lucide-react";
 
 interface ReferenceSidebarProps {
   projectId: string;
@@ -14,6 +16,7 @@ interface ReferenceSidebarProps {
 
 export const ReferenceSidebar = ({ projectId }: ReferenceSidebarProps) => {
   const [viewingFile, setViewingFile] = useState<ReferenceFile | null>(null);
+  const [uploaderOpen, setUploaderOpen] = useState(false);
   const {
     referenceFiles,
     isLoading,
@@ -44,6 +47,9 @@ export const ReferenceSidebar = ({ projectId }: ReferenceSidebarProps) => {
         job_type: `${file.file_type}_parse`,
       });
       toast.success("Extraction requeued");
+      
+      // When extraction completes, augment v1 instead of redirecting
+      // The extraction job system will handle this automatically
       invalidateJobs();
     } catch (error: any) {
       console.error("Error retrying extraction:", error);
@@ -105,15 +111,25 @@ export const ReferenceSidebar = ({ projectId }: ReferenceSidebarProps) => {
         </ScrollArea>
 
         <div className="p-4 border-t flex-shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full"
-            onClick={() => window.location.href = `/project/${projectId}/intake`}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add More References
-          </Button>
+          <Collapsible open={uploaderOpen} onOpenChange={setUploaderOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add More References
+                <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${uploaderOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <ReferenceUploader 
+                projectId={projectId} 
+                onUploadComplete={invalidateJobs}
+              />
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </div>
 
