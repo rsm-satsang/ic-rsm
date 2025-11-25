@@ -54,6 +54,37 @@ serve(async (req) => {
           error_text: error_message,
         })
         .eq('id', job.reference_file_id);
+
+      // If extraction succeeded, check if we should augment v1
+      if (status === 'succeeded' && extracted_text) {
+        // Get the reference file to access project_id
+        const { data: refFile } = await supabase
+          .from('reference_files')
+          .select('project_id, file_name')
+          .eq('id', job.reference_file_id)
+          .single();
+
+        if (refFile) {
+          // Check if intake is completed for this project
+          const { data: project } = await supabase
+            .from('projects')
+            .select('metadata')
+            .eq('id', refFile.project_id)
+            .single();
+
+          const metadata = project?.metadata as any;
+          const intakeCompleted = metadata?.intake_completed === true;
+
+          // If intake is completed, augment v1 with new content
+          if (intakeCompleted) {
+            await supabase.rpc('append_to_v1_version', {
+              _project_id: refFile.project_id,
+              _new_content: extracted_text,
+              _source_name: refFile.file_name || 'Unknown Source',
+            });
+          }
+        }
+      }
     }
 
     return new Response(

@@ -89,9 +89,21 @@ export const intakeAPI = {
     project_id: string;
     goal: string;
     llm_chat: string;
+    vocabulary?: string[];
     reference_file_ids?: string[];
   }) {
     const { data, error } = await supabase.functions.invoke("intake-generate-versions", {
+      body: params,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async augmentV1WithNewReference(params: {
+    project_id: string;
+    reference_file_id: string;
+  }) {
+    const { data, error } = await supabase.functions.invoke("intake-augment-v1", {
       body: params,
     });
     if (error) throw error;

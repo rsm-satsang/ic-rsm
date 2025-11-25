@@ -17,17 +17,21 @@ const CollaboratorCount = ({ projectId, ownerId, userId }: CollaboratorCountProp
 
   const fetchCollaboratorCount = async () => {
     try {
-      // Count active collaborators (excluding auto-added admins)
-      const { data, error } = await supabase
+      // Count active collaborators
+      const { count, error } = await supabase
         .from("collaborators")
-        .select("id", { count: "exact" })
+        .select("*", { count: "exact", head: true })
         .eq("project_id", projectId);
 
-      if (error) throw error;
-
-      // Add 1 for the owner
-      const totalCount = (data?.length || 0) + 1;
-      setCount(totalCount);
+      if (error) {
+        console.error("Error fetching collaborator count:", error);
+        // Fallback: just show owner
+        setCount(1);
+      } else {
+        // Add 1 for the owner
+        const totalCount = (count || 0) + 1;
+        setCount(totalCount);
+      }
     } catch (error) {
       console.error("Error fetching collaborator count:", error);
       setCount(1); // Default to owner only
