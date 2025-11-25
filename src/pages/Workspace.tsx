@@ -145,7 +145,9 @@ const Workspace = () => {
 
   const handleVersionSelect = (versionId: string) => {
     console.log("Version selected:", versionId);
+    // When a version is selected from sidebar, reload it in the editor
     setSelectedVersionForView(versionId);
+    setCurrentVersionId(versionId);
   };
 
   useEffect(() => {
@@ -211,7 +213,7 @@ const Workspace = () => {
       const editorElement = document.querySelector('.ProseMirror');
       const content = editorElement?.innerHTML || "";
 
-      if (!content || content === "<p></p>") {
+      if (!content || content === "<p></p>" || content === "<p>Start writing your content here...</p>") {
         toast.error("No content to save");
         setSaving(false);
         return;
@@ -226,13 +228,13 @@ const Workspace = () => {
           .eq("project_id", project.id)
           .order("version_number", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
         if (latestVersion) {
           versionId = latestVersion.id;
           setCurrentVersionId(versionId);
         } else {
-          toast.error("No version found to save");
+          toast.error("No version found. Please create a version first by going to the intake page.");
           setSaving(false);
           return;
         }
@@ -272,7 +274,7 @@ const Workspace = () => {
         user_name: userData?.name || "Unknown User",
       });
 
-      toast.success("Version updated successfully!");
+      toast.success("Version saved successfully!");
     } catch (error: any) {
       console.error("Save failed:", error);
       toast.error(error?.message || "Failed to save version");

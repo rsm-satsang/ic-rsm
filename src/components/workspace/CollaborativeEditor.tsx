@@ -63,9 +63,11 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
     } else {
       loadLatestVersion();
     }
-  }, [projectId, selectedVersionId]);
+  }, [projectId, selectedVersionId, editor]);
 
   const loadLatestVersion = async () => {
+    if (!editor) return;
+    
     try {
       const { data, error } = await supabase
         .from("versions")
@@ -73,17 +75,18 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
         .eq("project_id", projectId)
         .order("version_number", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
 
-      if (data && editor) {
+      if (data) {
         setCurrentVersionId(data.id);
         if (onVersionChange) {
           onVersionChange(data.id);
         }
         editor.commands.setContent(data.content || "<p>Start writing your content here...</p>");
-      } else if (editor) {
+      } else {
+        // No versions exist yet
         setCurrentVersionId(null);
         if (onVersionChange) {
           onVersionChange(null);
@@ -98,6 +101,8 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
   };
 
   const loadSpecificVersion = async (versionId: string) => {
+    if (!editor) return;
+    
     try {
       setLoadingContent(true);
       const { data, error } = await supabase
@@ -108,7 +113,7 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
 
       if (error) throw error;
 
-      if (data && editor) {
+      if (data) {
         setCurrentVersionId(data.id);
         if (onVersionChange) {
           onVersionChange(data.id);
