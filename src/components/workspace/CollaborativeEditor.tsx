@@ -36,7 +36,7 @@ const CollaborativeEditor = ({ projectId, userId, onTextSelection, onEditorReady
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none min-h-[500px] max-w-full w-full p-8",
+          "prose prose-sm sm:prose lg:prose-lg xl:prose-xl prose-headings:font-bold prose-h1:text-4xl prose-h1:mb-4 prose-h2:text-3xl prose-h2:mb-3 prose-h3:text-2xl prose-h3:mb-2 prose-strong:font-bold prose-strong:text-foreground focus:outline-none min-h-[500px] max-w-full w-full p-8 dark:prose-invert",
       },
     },
     onUpdate: ({ editor }) => {
