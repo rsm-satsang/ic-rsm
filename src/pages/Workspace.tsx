@@ -200,8 +200,8 @@ const Workspace = () => {
   };
 
   const handleSaveCurrentVersion = async () => {
-    if (!project || !user || !currentVersionId) {
-      toast.error("No active version to save");
+    if (!project || !user) {
+      toast.error("Project or user not loaded");
       return;
     }
 
@@ -211,18 +211,45 @@ const Workspace = () => {
       const editorElement = document.querySelector('.ProseMirror');
       const content = editorElement?.innerHTML || "";
 
+      if (!content || content === "<p></p>") {
+        toast.error("No content to save");
+        setSaving(false);
+        return;
+      }
+
+      // If no current version ID, find the latest version
+      let versionId = currentVersionId;
+      if (!versionId) {
+        const { data: latestVersion } = await supabase
+          .from("versions")
+          .select("id")
+          .eq("project_id", project.id)
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (latestVersion) {
+          versionId = latestVersion.id;
+          setCurrentVersionId(versionId);
+        } else {
+          toast.error("No version found to save");
+          setSaving(false);
+          return;
+        }
+      }
+
       // Get current version info
       const { data: versionData } = await supabase
         .from("versions")
         .select("version_number, title")
-        .eq("id", currentVersionId)
+        .eq("id", versionId)
         .single();
 
       // Update current version
       const { error: versionError } = await supabase
         .from("versions")
         .update({ content: content })
-        .eq("id", currentVersionId);
+        .eq("id", versionId);
 
       if (versionError) throw versionError;
 
@@ -563,7 +590,7 @@ const Workspace = () => {
 
               <Button 
                 onClick={handleSaveCurrentVersion} 
-                disabled={saving || !currentVersionId}
+                disabled={saving}
                 variant="outline"
               >
                 <Save className="mr-2 h-4 w-4" />

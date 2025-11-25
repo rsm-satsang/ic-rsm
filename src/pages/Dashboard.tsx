@@ -334,10 +334,15 @@ const Dashboard = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
-                      const metadata = project.metadata as any;
-                      const intakeCompleted = metadata?.intake_completed === true;
-                      if (intakeCompleted) {
+                    <DropdownMenuItem onClick={async () => {
+                      // Check if project has any references
+                      const { data: references } = await supabase
+                        .from("reference_files")
+                        .select("id")
+                        .eq("project_id", project.id)
+                        .limit(1);
+                      
+                      if (references && references.length > 0) {
                         navigate(`/workspace/${project.id}`);
                       } else {
                         navigate(`/project/${project.id}/intake`);
@@ -359,12 +364,15 @@ const Dashboard = () => {
                 </DropdownMenu>
               </div>
               <div 
-                onClick={() => {
-                  // Check if intake is completed
-                  const metadata = project.metadata as any;
-                  const intakeCompleted = metadata?.intake_completed === true;
+                onClick={async () => {
+                  // Check if project has any references
+                  const { data: references } = await supabase
+                    .from("reference_files")
+                    .select("id")
+                    .eq("project_id", project.id)
+                    .limit(1);
                   
-                  if (intakeCompleted) {
+                  if (references && references.length > 0) {
                     navigate(`/workspace/${project.id}`);
                   } else {
                     navigate(`/project/${project.id}/intake`);
