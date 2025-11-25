@@ -631,7 +631,6 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
-          gemini_api_key: string | null
           id: string
           name: string
           preferences: Json | null
@@ -642,7 +641,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email: string
-          gemini_api_key?: string | null
           id: string
           name: string
           preferences?: Json | null
@@ -653,7 +651,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
-          gemini_api_key?: string | null
           id?: string
           name?: string
           preferences?: Json | null

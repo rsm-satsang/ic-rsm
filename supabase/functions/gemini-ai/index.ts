@@ -30,20 +30,15 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    // Get user's Gemini API key
-    const { data: userData, error: keyError } = await supabase
-      .from('users')
-      .select('gemini_api_key')
-      .eq('id', user.id)
-      .single();
-
-    if (keyError || !userData?.gemini_api_key) {
+    // Get organization-wide Gemini API key from secrets
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
       return new Response(
         JSON.stringify({ 
-          error: 'Gemini API key not configured. Please add it in Settings.' 
+          error: 'Gemini API key not configured. Please contact your administrator.' 
         }),
         { 
-          status: 400, 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -59,7 +54,7 @@ serve(async (req) => {
 
     // Call Gemini API - using gemini-2.5-flash (latest stable model)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userData.gemini_api_key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {
