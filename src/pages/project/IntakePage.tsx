@@ -19,7 +19,8 @@ import {
   Youtube, 
   Link as LinkIcon,
   Sparkles,
-  X
+  FileText,
+  Trash2
 } from "lucide-react";
 
 export default function IntakePage() {
@@ -415,29 +416,6 @@ export default function IntakePage() {
             <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
               Add
             </Button>
-            
-            {rawTextReferences.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <Label className="text-sm font-medium">Added References:</Label>
-                {rawTextReferences.map((ref) => (
-                  <Card key={ref.id} className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{ref.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{ref.text}</p>
-                      </div>
-                      <Button
-                        onClick={() => handleDeleteRawText(ref.id)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
           </div>
 
           <Separator />
@@ -513,10 +491,11 @@ export default function IntakePage() {
           <Separator />
 
           {/* Reference Files Status */}
-          {referenceFiles.length > 0 && (
+          {(referenceFiles.length > 0 || rawTextReferences.length > 0) && (
             <div>
               <h2 className="text-lg font-semibold mb-3">Reference Files</h2>
               <div className="space-y-3">
+                {/* Uploaded Files */}
                 {referenceFiles.map((file) => (
                   <div key={file.id}>
                     <JobStatusCard
@@ -530,6 +509,56 @@ export default function IntakePage() {
                         value={referenceNotes[file.id] || ""}
                         onChange={(e) =>
                           setReferenceNotes({ ...referenceNotes, [file.id]: e.target.value })
+                        }
+                        rows={2}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Raw Text References */}
+                {rawTextReferences.map((ref) => (
+                  <div key={ref.id}>
+                    <Card className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="text-muted-foreground mt-1 flex-shrink-0">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-medium truncate">
+                                {ref.title}
+                              </h4>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground line-clamp-3 mb-2 break-words">
+                            {ref.text.slice(0, 150)}...
+                          </p>
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteRawText(ref.id)}
+                              className="h-7 text-xs px-2 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    <div className="mt-2 pl-11">
+                      <Textarea
+                        placeholder="Add notes about this reference (what it contains, which parts matter, why it's included...)"
+                        value={referenceNotes[ref.id] || ""}
+                        onChange={(e) =>
+                          setReferenceNotes({ ...referenceNotes, [ref.id]: e.target.value })
                         }
                         rows={2}
                         className="text-sm"
