@@ -375,8 +375,14 @@ Ramashram Satsang Mathura`,
       });
 
       if (response.error) throw response.error;
+
+      if (response.data?.error) {
+        console.error("Gemini AI blocked or failed:", response.data);
+        toast.error(response.data.error);
+        return;
+      }
       
-      setGeneratedDraft(response.data.text || "");
+      setGeneratedDraft(response.data?.text || "");
       setDraftGenerated(true);
       toast.success("Draft generated successfully!");
     } catch (error: any) {

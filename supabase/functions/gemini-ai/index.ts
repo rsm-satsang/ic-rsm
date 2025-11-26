@@ -101,9 +101,27 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Gemini API response received:', JSON.stringify(data));
 
-    // Check if response has candidates
+    // Check if response has candidates or handle safety blocks
     if (!data.candidates || data.candidates.length === 0) {
       console.error('No candidates in Gemini response:', JSON.stringify(data));
+
+      // If Gemini blocked the content, return a graceful error instead of throwing
+      const blockReason = data.promptFeedback?.blockReason;
+      if (blockReason) {
+        console.error('Gemini blocked the request with reason:', blockReason);
+        return new Response(
+          JSON.stringify({
+            error: `Gemini blocked this request (${blockReason}). Please adjust the content and try again.`,
+            success: false,
+            blockReason,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
       throw new Error('Gemini API returned no content. This may be due to safety filters or an invalid API key.');
     }
 
