@@ -42,6 +42,10 @@ export default function IntakePage() {
   const [showExtractedDraft, setShowExtractedDraft] = useState(false);
   const [extractedDraft, setExtractedDraft] = useState("");
   const [referenceNotes, setReferenceNotes] = useState<Record<string, string>>({});
+  const [generatedDraft, setGeneratedDraft] = useState("");
+  const [draftGenerated, setDraftGenerated] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const {
     referenceFiles,
@@ -210,8 +214,11 @@ export default function IntakePage() {
   };
 
   const handleGenerateVersions = async () => {
-    // Save to project metadata and navigate to draft generation page
+    setGenerating(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const finalGoal = goal === "other" ? customGoal : goal;
       
       // Parse vocabulary into array
@@ -246,11 +253,70 @@ export default function IntakePage() {
         .update({ metadata, updated_at: new Date().toISOString() })
         .eq("id", projectId);
 
-      // Navigate to draft generation page
-      navigate(`/project/${projectId}/generate-draft`);
+      // Generate draft using AI
+      const promptToUse = customInstructions.trim() 
+        ? `${customInstructions}\n\n${extractedDraft}`
+        : extractedDraft;
+
+      const response = await supabase.functions.invoke("gemini-ai", {
+        body: {
+          action: "generate_draft",
+          prompt: promptToUse,
+        },
+      });
+
+      if (response.error) throw response.error;
+      
+      setGeneratedDraft(response.data.text || "");
+      setDraftGenerated(true);
+      toast.success("Draft generated successfully!");
     } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast.error("Failed to save draft");
+      console.error("Error generating draft:", error);
+      toast.error("Failed to generate draft");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSaveVersion = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      // Get the next version number
+      const { data: existingVersions } = await supabase
+        .from("versions")
+        .select("version_number")
+        .eq("project_id", projectId)
+        .order("version_number", { ascending: false })
+        .limit(1);
+
+      const nextVersionNumber = existingVersions && existingVersions.length > 0
+        ? existingVersions[0].version_number + 1
+        : 1;
+
+      // Create new version
+      const { error } = await supabase
+        .from("versions")
+        .insert({
+          project_id: projectId,
+          content: generatedDraft,
+          version_number: nextVersionNumber,
+          created_by: user.id,
+          title: `Draft v${nextVersionNumber}`,
+          description: "Generated from reference intake",
+        });
+
+      if (error) throw error;
+
+      toast.success("Draft saved as version!");
+      navigate(`/workspace/${projectId}`);
+    } catch (error: any) {
+      console.error("Error saving version:", error);
+      toast.error("Failed to save version");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -638,6 +704,73 @@ export default function IntakePage() {
                   size="lg"
                 >
                   Hide Draft
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Generated Draft Section */}
+          {draftGenerated && (
+            <div className="mt-8 pt-6 border-t">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold">Generated Draft</h2>
+                <div className="flex items-center gap-2 text-green-600">
+                  <Sparkles className="h-5 w-5" />
+                  <span className="text-sm font-medium">Draft Generated</span>
+                </div>
+              </div>
+              <Textarea
+                value={generatedDraft}
+                onChange={(e) => setGeneratedDraft(e.target.value)}
+                rows={25}
+                className="font-mono text-sm mb-4"
+              />
+              
+              {/* Custom Instructions for Regeneration */}
+              <div className="mb-4">
+                <Label htmlFor="customInstructions" className="text-sm font-medium mb-2 block">
+                  Custom Instructions (Optional - for regeneration)
+                </Label>
+                <Textarea
+                  id="customInstructions"
+                  placeholder="Add any specific instructions for regenerating the draft..."
+                  value={customInstructions}
+                  onChange={(e) => setCustomInstructions(e.target.value)}
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleSaveVersion}
+                  disabled={saving}
+                  size="lg"
+                  className="flex-1"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save & Go to Workspace"
+                  )}
+                </Button>
+                <Button
+                  onClick={handleGenerateVersions}
+                  variant="outline"
+                  size="lg"
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Regenerating...
+                    </>
+                  ) : (
+                    "Regenerate"
+                  )}
                 </Button>
               </div>
             </div>
