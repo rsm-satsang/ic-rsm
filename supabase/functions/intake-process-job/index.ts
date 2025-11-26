@@ -450,46 +450,89 @@ Begin transcription:`
 }
 
 async function transcribeYouTube(refFile: any): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error('Gemini API key not configured');
-  }
-
   const youtubeUrl = refFile.metadata?.youtube_url || refFile.storage_path;
+  
+  console.log('Fetching YouTube transcript for:', youtubeUrl);
 
-  // Try to use Gemini with YouTube URL directly
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              text: `Transcribe the speech from this YouTube video: ${youtubeUrl}. Return only the transcription without additional commentary.`
-            }
-          ]
-        }]
-      }),
+  // Extract video ID from URL
+  const videoIdMatch = youtubeUrl.match(/(?:v=|\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+  if (!videoIdMatch) {
+    throw new Error('Invalid YouTube URL format');
+  }
+  const videoId = videoIdMatch[1];
+
+  try {
+    // Fetch transcript using YouTube's timedtext API
+    // First, try to get available caption tracks
+    const playerResponse = await fetch(
+      `https://www.youtube.com/watch?v=${videoId}`
+    );
+    
+    if (!playerResponse.ok) {
+      throw new Error('Failed to access YouTube video. Video may be private or unavailable.');
     }
-  );
 
-  const data = await response.json();
+    const playerHtml = await playerResponse.text();
+    
+    // Extract caption tracks from player response
+    const captionTracksMatch = playerHtml.match(/"captionTracks":\s*(\[.*?\])/);
+    
+    if (!captionTracksMatch) {
+      throw new Error('No captions/subtitles available for this video. Please use a video with captions enabled.');
+    }
 
-  if (!response.ok || data.error) {
-    console.error('Gemini YouTube transcription error:', {
-      status: response.status,
-      statusText: response.statusText,
-      error: data.error,
-    });
-    throw new Error(data.error?.message || 'YouTube video may be private or unavailable. Please upload the audio file directly.');
+    const captionTracks = JSON.parse(captionTracksMatch[1]);
+    
+    if (captionTracks.length === 0) {
+      throw new Error('No captions/subtitles available for this video.');
+    }
+
+    // Prefer English captions, or use the first available
+    let captionUrl = captionTracks.find((track: any) => 
+      track.languageCode === 'en' || track.languageCode === 'en-US'
+    )?.baseUrl || captionTracks[0]?.baseUrl;
+
+    if (!captionUrl) {
+      throw new Error('Could not find caption URL');
+    }
+
+    // Fetch the transcript
+    const transcriptResponse = await fetch(captionUrl);
+    if (!transcriptResponse.ok) {
+      throw new Error('Failed to fetch transcript from YouTube');
+    }
+
+    const transcriptXml = await transcriptResponse.text();
+    
+    // Parse XML and extract text
+    const textMatches = transcriptXml.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
+    const transcriptParts = [];
+    
+    for (const match of textMatches) {
+      let text = match[1];
+      // Decode HTML entities
+      text = text.replace(/&amp;/g, '&')
+                 .replace(/&lt;/g, '<')
+                 .replace(/&gt;/g, '>')
+                 .replace(/&quot;/g, '"')
+                 .replace(/&#39;/g, "'")
+                 .replace(/&nbsp;/g, ' ');
+      transcriptParts.push(text);
+    }
+
+    if (transcriptParts.length === 0) {
+      throw new Error('No text found in transcript');
+    }
+
+    const fullTranscript = transcriptParts.join(' ');
+    console.log(`Successfully extracted YouTube transcript: ${fullTranscript.length} characters`);
+    
+    return fullTranscript;
+
+  } catch (error: any) {
+    console.error('YouTube transcript extraction error:', error);
+    throw new Error(`Failed to extract YouTube transcript: ${error.message}`);
   }
-
-  if (!data.candidates) {
-    throw new Error('YouTube video may be private or unavailable. Please upload the audio file directly.');
-  }
-
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 async function extractURL(refFile: any): Promise<string> {
