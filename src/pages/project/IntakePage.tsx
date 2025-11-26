@@ -191,6 +191,9 @@ export default function IntakePage() {
       // Add raw text references
       rawTextReferences.forEach((ref) => {
         consolidatedText += `\n\n=== BEGIN SOURCE: ${ref.title} ===\n`;
+        if (referenceNotes[ref.id]) {
+          consolidatedText += `[User Context: ${referenceNotes[ref.id]}]\n\n`;
+        }
         consolidatedText += ref.text;
         consolidatedText += `\n=== END SOURCE: ${ref.title} ===`;
       });
