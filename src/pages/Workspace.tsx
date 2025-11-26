@@ -513,10 +513,21 @@ const Workspace = () => {
   };
 
   const handlePublishToSubstack = async () => {
-    if (!project || !user) return;
+    if (!project || !user) {
+      toast.error("Please log in to publish");
+      return;
+    }
 
     setPublishing(true);
     try {
+      // Verify user session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        toast.error("Authentication required. Please log in again.");
+        setPublishing(false);
+        return;
+      }
+
       // Get editor content
       const editorElement = document.querySelector('.ProseMirror');
       const content = editorElement?.innerHTML || "";
@@ -539,7 +550,7 @@ const Workspace = () => {
 
       if (error) {
         console.error("Substack publish error:", error);
-        throw error;
+        throw new Error(error.message || "Failed to call publish function");
       }
 
       if (data?.error) {
@@ -578,10 +589,21 @@ const Workspace = () => {
   };
 
   const handlePublishToWordPress = async () => {
-    if (!project || !user) return;
+    if (!project || !user) {
+      toast.error("Please log in to publish");
+      return;
+    }
 
     setPublishing(true);
     try {
+      // Verify user session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        toast.error("Authentication required. Please log in again.");
+        setPublishing(false);
+        return;
+      }
+
       // Get editor content
       const editorElement = document.querySelector('.ProseMirror');
       const content = editorElement?.innerHTML || "";
@@ -604,7 +626,7 @@ const Workspace = () => {
 
       if (error) {
         console.error("WordPress publish error:", error);
-        throw error;
+        throw new Error(error.message || "Failed to call publish function");
       }
 
       if (data?.error) {
