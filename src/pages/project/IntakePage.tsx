@@ -28,7 +28,9 @@ export default function IntakePage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeContext, setYoutubeContext] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
+  const [externalUrlContext, setExternalUrlContext] = useState("");
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
   const [llmInstructions, setLlmInstructions] = useState("");
@@ -85,12 +87,22 @@ export default function IntakePage() {
     if (!youtubeUrl.trim()) return;
 
     try {
-      await intakeAPI.addYouTubeLink({
+      const result = await intakeAPI.addYouTubeLink({
         project_id: projectId!,
         youtube_url: youtubeUrl,
       });
+      
+      // If context provided, update the reference file with user notes
+      if (youtubeContext.trim() && result?.reference_file_id) {
+        await supabase
+          .from("reference_files")
+          .update({ user_notes: youtubeContext })
+          .eq("id", result.reference_file_id);
+      }
+      
       toast.success("YouTube link added, extraction queued");
       setYoutubeUrl("");
+      setYoutubeContext("");
       invalidateJobs();
     } catch (error: any) {
       console.error("Error adding YouTube link:", error);
@@ -102,12 +114,22 @@ export default function IntakePage() {
     if (!externalUrl.trim()) return;
 
     try {
-      await intakeAPI.addExternalURL({
+      const result = await intakeAPI.addExternalURL({
         project_id: projectId!,
         url: externalUrl,
       });
+      
+      // If context provided, update the reference file with user notes
+      if (externalUrlContext.trim() && result?.reference_file_id) {
+        await supabase
+          .from("reference_files")
+          .update({ user_notes: externalUrlContext })
+          .eq("id", result.reference_file_id);
+      }
+      
       toast.success("URL added, extraction queued");
       setExternalUrl("");
+      setExternalUrlContext("");
       invalidateJobs();
     } catch (error: any) {
       console.error("Error adding URL:", error);
@@ -368,6 +390,13 @@ export default function IntakePage() {
                 Add
               </Button>
             </div>
+            <Textarea
+              placeholder="Add context about this video (what it contains, key points, why you're including it...)"
+              value={youtubeContext}
+              onChange={(e) => setYoutubeContext(e.target.value)}
+              rows={2}
+              className="text-sm"
+            />
           </div>
 
           {/* External URL */}
@@ -385,6 +414,13 @@ export default function IntakePage() {
                 Add
               </Button>
             </div>
+            <Textarea
+              placeholder="Add context about this article (main topics, relevant sections, why it matters...)"
+              value={externalUrlContext}
+              onChange={(e) => setExternalUrlContext(e.target.value)}
+              rows={2}
+              className="text-sm"
+            />
           </div>
 
           {/* Raw Text References */}
