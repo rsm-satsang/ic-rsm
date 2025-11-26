@@ -349,10 +349,24 @@ Sanjiv Kumar`,
 
       await supabase.from("projects").update({ metadata, updated_at: new Date().toISOString() }).eq("id", projectId);
 
-      // Generate draft using AI
-      const promptToUse = customInstructions.trim() ? `${customInstructions}\n\n${extractedDraft}` : extractedDraft;
+      // Rebuild the prompt with CURRENT goal instructions (not the old ones baked into extractedDraft)
+      const currentGoalInstructions = getGoalInstructions(goal, customGoal);
+      
+      // Extract just the reference text from extractedDraft (remove old instructions)
+      let referenceTextOnly = extractedDraft;
+      const referenceMarker = "--- REFERENCE TEXT BELOW ---";
+      if (extractedDraft.includes(referenceMarker)) {
+        referenceTextOnly = extractedDraft.split(referenceMarker)[1] || extractedDraft;
+      }
+      
+      // Build fresh prompt with current goal instructions
+      let freshPrompt = currentGoalInstructions + "\n\n--- REFERENCE TEXT BELOW ---\n" + referenceTextOnly;
+      
+      // Add custom instructions if provided
+      const promptToUse = customInstructions.trim() ? `${customInstructions}\n\n${freshPrompt}` : freshPrompt;
 
       console.log("=== FULL PROMPT BEING SENT TO GEMINI ===");
+      console.log("Selected Goal:", goal);
       console.log("Prompt length:", promptToUse.length, "characters");
       console.log("First 500 chars:", promptToUse.substring(0, 500));
       console.log("=========================================");
