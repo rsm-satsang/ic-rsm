@@ -60,8 +60,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Publishing to WordPress:", { title, status, site: WORDPRESS_SITE_URL });
 
+    // Normalize site URL to ensure it has a scheme
+    let siteUrl = WORDPRESS_SITE_URL.trim();
+    if (!/^https?:\/\//i.test(siteUrl)) {
+      siteUrl = `https://${siteUrl}`;
+    }
+
     // Create WordPress REST API URL
-    const wpApiUrl = `${WORDPRESS_SITE_URL.replace(/\/$/, '')}/wp-json/wp/v2/posts`;
+    const wpApiUrl = `${siteUrl.replace(/\/$/, '')}/wp-json/wp/v2/posts`;
 
     // Create Basic Auth header for WordPress
     const wpAuthHeader = `Basic ${btoa(`${WORDPRESS_USERNAME}:${WORDPRESS_APP_PASSWORD}`)}`;
