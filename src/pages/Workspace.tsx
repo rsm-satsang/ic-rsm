@@ -521,22 +521,59 @@ const Workspace = () => {
     try {
       // Get editor content
       const editorElement = document.querySelector('.ProseMirror');
-      const content = editorElement?.innerHTML || "";
+      const htmlContent = editorElement?.innerHTML || "";
 
-      if (!content || content === "<p></p>") {
+      if (!htmlContent || htmlContent === "<p></p>") {
         toast.error("No content to export");
         return;
       }
 
-      // Create formatted text for Substack (HTML format)
-      const substackContent = `${projectTitle}\n\n${content}`;
+      // Create a temporary div to parse HTML and extract text
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+
+      // Convert HTML to plain text with proper formatting
+      let plainText = '';
+      
+      // Process each element
+      const elements = tempDiv.querySelectorAll('*');
+      elements.forEach((element) => {
+        const tagName = element.tagName.toLowerCase();
+        const text = element.textContent?.trim() || '';
+        
+        if (!text) return;
+        
+        // Add appropriate spacing based on element type
+        if (tagName === 'h1') {
+          plainText += `\n\n# ${text}\n\n`;
+        } else if (tagName === 'h2') {
+          plainText += `\n\n## ${text}\n\n`;
+        } else if (tagName === 'h3') {
+          plainText += `\n\n### ${text}\n\n`;
+        } else if (tagName === 'p') {
+          plainText += `${text}\n\n`;
+        } else if (tagName === 'li') {
+          plainText += `• ${text}\n`;
+        } else if (tagName === 'blockquote') {
+          plainText += `\n> ${text}\n\n`;
+        } else if (!element.querySelector('*')) {
+          // Only add text if element has no children (leaf node)
+          plainText += `${text} `;
+        }
+      });
+
+      // Clean up extra whitespace
+      plainText = plainText.replace(/\n{3,}/g, '\n\n').trim();
+      
+      // Add title at the top
+      const substackContent = `${projectTitle}\n\n${plainText}`;
       
       // Copy to clipboard
       await navigator.clipboard.writeText(substackContent);
       
-      toast.success("Content copied to clipboard!", {
-        description: "Paste it into Substack's editor. Note: Substack doesn't have a public API for direct publishing.",
-        duration: 6000,
+      toast.success("Clean text copied to clipboard!", {
+        description: "Ready to paste into Substack without HTML tags",
+        duration: 5000,
       });
 
       // Log to timeline
