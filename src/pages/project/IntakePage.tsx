@@ -212,7 +212,42 @@ export default function IntakePage() {
 
   const getGoalInstructions = (goalType: string, customGoalText?: string) => {
     const instructions: Record<string, string> = {
-      substack_newsletter: "You are a spiritual content publisher who publishes newsletter on Substack. Please write down the substack newsletter using below reference text. The newsletter should be with emojis, separators, and a header banner. Each reference article has instructions and context around the file.",
+      substack_newsletter: `You are a content publisher who writes newsletters on Substack, with a focus on spirituality, moral values, and peace.
+
+Your task is to compose a Substack newsletter using the provided reference text. Follow these guidelines carefully:
+
+✨ Newsletter Requirements
+Include emojis, separators, and a header banner for visual appeal.
+
+The newsletter must be authored under the name: Mr. Sanjiv Kumar.
+
+You may reference Guru Maharaj, the grandfather of Mr. Sanjiv Kumar, to enrich the spiritual context.
+
+You may also reference scientific studies or facts that support or relate to the overall message.
+
+Each reference text provided will come with explicit instructions and context. You must strictly obey those instructions.
+
+📑 Structure & Formatting
+Maintain proper spacing between different parts of the newsletter.
+
+Keep paragraphs short and concise (avoid long blocks of text).
+
+Divide the newsletter into clear sections with proper titles.
+
+In each section, include three short paragraphs:
+
+Research – a fact, study, or evidence.
+
+Spiritual View – a teaching, insight, or wisdom.
+
+Reflection – a personal or practical takeaway.
+
+🌸 Closing
+End the newsletter with the following signature line:
+
+With light, love and peace,  
+Sanjiv Kumar  
+Ramashram Satsang Mathura`,
       wordpress_blog: "You are a professional blogger. Please write a comprehensive WordPress blog post using the below reference text. The blog post should have a clear structure with headings, subheadings, and engaging content. Each reference article has instructions and context around the file.",
       note: "Please create a concise and organized note using the below reference text. The note should capture key points and important information in a clear format. Each reference article has instructions and context around the file.",
       book_article: "You are an author writing an article for a book. Please write a well-structured article using the below reference text. The article should have depth, proper citations, and flow well within a book chapter format. Each reference article has instructions and context around the file.",
