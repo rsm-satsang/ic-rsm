@@ -278,6 +278,29 @@ export default function IntakePage() {
     }
   };
 
+  // Convert plain text to HTML with proper formatting
+  const convertTextToHTML = (text: string): string => {
+    if (!text) return "<p></p>";
+    
+    // Split by double line breaks for paragraphs
+    const paragraphs = text.split(/\n\n+/);
+    
+    return paragraphs
+      .map(para => {
+        // Replace single line breaks with <br> tags within paragraphs
+        const formattedPara = para
+          .trim()
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .join('<br>');
+        
+        return formattedPara ? `<p>${formattedPara}</p>` : '';
+      })
+      .filter(p => p.length > 0)
+      .join('');
+  };
+
   const handleSaveVersion = async () => {
     setSaving(true);
     try {
@@ -296,21 +319,49 @@ export default function IntakePage() {
         ? existingVersions[0].version_number + 1
         : 1;
 
-      // Create new version
-      const { error } = await supabase
-        .from("versions")
-        .insert({
+      // Convert both drafts to HTML
+      const rawTextHTML = convertTextToHTML(extractedDraft);
+      const generatedDraftHTML = convertTextToHTML(generatedDraft);
+
+      // Create two versions: raw consolidated text and generated draft
+      const versionsToInsert = [];
+
+      // Version 1: Consolidated raw extracted text
+      if (extractedDraft && extractedDraft.trim()) {
+        versionsToInsert.push({
           project_id: projectId,
-          content: generatedDraft,
+          content: rawTextHTML,
           version_number: nextVersionNumber,
           created_by: user.id,
-          title: `Draft v${nextVersionNumber}`,
-          description: "Generated from reference intake",
+          title: `Consolidated Raw Text v${nextVersionNumber}`,
+          description: "Extracted and consolidated text from all reference files",
         });
+      }
+
+      // Version 2: Generated draft
+      if (generatedDraft && generatedDraft.trim()) {
+        versionsToInsert.push({
+          project_id: projectId,
+          content: generatedDraftHTML,
+          version_number: nextVersionNumber + 1,
+          created_by: user.id,
+          title: `Generated Draft v${nextVersionNumber + 1}`,
+          description: "AI-generated draft from reference intake",
+        });
+      }
+
+      if (versionsToInsert.length === 0) {
+        toast.error("No content to save");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("versions")
+        .insert(versionsToInsert);
 
       if (error) throw error;
 
-      toast.success("Draft saved as version!");
+      toast.success(`${versionsToInsert.length} version(s) saved successfully!`);
       navigate(`/workspace/${projectId}`);
     } catch (error: any) {
       console.error("Error saving version:", error);
