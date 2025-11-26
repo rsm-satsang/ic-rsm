@@ -13,15 +13,7 @@ import { useExtractionJobs } from "@/hooks/useExtractionJobs";
 import { intakeAPI } from "@/lib/api/intake";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  ArrowRight, 
-  Loader2, 
-  Youtube, 
-  Link as LinkIcon,
-  Sparkles,
-  FileText,
-  Trash2
-} from "lucide-react";
+import { ArrowRight, Loader2, Youtube, Link as LinkIcon, Sparkles, FileText, Trash2 } from "lucide-react";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -35,7 +27,7 @@ export default function IntakePage() {
   const [llmInstructions, setLlmInstructions] = useState("");
   const [vocabulary, setVocabulary] = useState("");
   const [projectTitle, setProjectTitle] = useState(() => {
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
     return `New Project - ${today}`;
   });
   const [savingTitle, setSavingTitle] = useState(false);
@@ -68,29 +60,25 @@ export default function IntakePage() {
   useEffect(() => {
     if (referenceFiles && referenceFiles.length > 0) {
       const notes: Record<string, string> = {};
-      referenceFiles.forEach(file => {
+      referenceFiles.forEach((file) => {
         if (file.user_notes) {
           notes[file.id] = file.user_notes;
         }
       });
       if (Object.keys(notes).length > 0) {
-        setReferenceNotes(prev => ({ ...prev, ...notes }));
+        setReferenceNotes((prev) => ({ ...prev, ...notes }));
       }
     }
   }, [referenceFiles]);
 
   const loadProject = async () => {
     try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", projectId)
-        .single();
+      const { data, error } = await supabase.from("projects").select("*").eq("id", projectId).single();
 
       if (error) throw error;
       setProject(data);
       setProjectTitle(data.title || "");
-      
+
       // Load vocabulary from metadata if exists
       const metadata = data.metadata as any;
       if (metadata?.vocabulary) {
@@ -104,7 +92,7 @@ export default function IntakePage() {
 
       // Load reference notes for raw text references from metadata
       if (metadata?.reference_notes) {
-        setReferenceNotes(prev => ({ ...prev, ...metadata.reference_notes }));
+        setReferenceNotes((prev) => ({ ...prev, ...metadata.reference_notes }));
       }
 
       // Load extracted draft from metadata if it exists
@@ -136,7 +124,7 @@ export default function IntakePage() {
         const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
         const plainText = tempDiv.textContent || tempDiv.innerText || "";
-        
+
         setGeneratedDraft(plainText);
         setDraftGenerated(true);
       }
@@ -157,7 +145,7 @@ export default function IntakePage() {
         project_id: projectId!,
         youtube_url: youtubeUrl,
       });
-      
+
       toast.success("YouTube link added, extraction queued");
       setYoutubeUrl("");
       invalidateJobs();
@@ -175,7 +163,7 @@ export default function IntakePage() {
         project_id: projectId!,
         url: externalUrl,
       });
-      
+
       toast.success("URL added, extraction queued");
       setExternalUrl("");
       invalidateJobs();
@@ -212,7 +200,7 @@ export default function IntakePage() {
 
   const getGoalInstructions = (goalType: string, customGoalText?: string) => {
     const instructions: Record<string, string> = {
-      substack_newsletter: `You are a content publisher who writes newsletters on Substack, with a focus on spirituality, moral values, and peace.
+      substack_newsletter: `You are a content publisher who writes newsletters on Substack, with a focus on moral values, and peace.
 
 Your task is to compose a Substack newsletter using the provided reference text. Follow these guidelines carefully:
 
@@ -221,7 +209,7 @@ Include emojis, separators, and a header banner for visual appeal.
 
 The newsletter must be authored under the name: Mr. Sanjiv Kumar.
 
-You may reference Guru Maharaj, the grandfather of Mr. Sanjiv Kumar, to enrich the spiritual context.
+You may reference the grandfather of Mr. Sanjiv Kumar, to enrich the context.
 
 You may also reference scientific studies or facts that support or relate to the overall message.
 
@@ -238,24 +226,27 @@ In each section, include three short paragraphs:
 
 Research – a fact, study, or evidence.
 
-Spiritual View – a teaching, insight, or wisdom.
-
 Reflection – a personal or practical takeaway.
 
 🌸 Closing
 End the newsletter with the following signature line:
 
 With light, love and peace,  
-Sanjiv Kumar  
-Ramashram Satsang Mathura`,
-      wordpress_blog: "You are a professional blogger. Please write a comprehensive WordPress blog post using the below reference text. The blog post should have a clear structure with headings, subheadings, and engaging content. Each reference article has instructions and context around the file.",
+Sanjiv Kumar`,
+      wordpress_blog:
+        "You are a professional blogger. Please write a comprehensive WordPress blog post using the below reference text. The blog post should have a clear structure with headings, subheadings, and engaging content. Each reference article has instructions and context around the file.",
       note: "Please create a concise and organized note using the below reference text. The note should capture key points and important information in a clear format. Each reference article has instructions and context around the file.",
-      book_article: "You are an author writing an article for a book. Please write a well-structured article using the below reference text. The article should have depth, proper citations, and flow well within a book chapter format. Each reference article has instructions and context around the file.",
-      story_children: "You are a children's book author. Please write an engaging story for small children using the below reference text. The story should be simple, fun, educational, and age-appropriate with clear language and vivid imagery. Each reference article has instructions and context around the file.",
-      story_adults: "You are a fiction author. Please write an engaging story for adults using the below reference text. The story should have compelling characters, plot development, and sophisticated narrative techniques. Each reference article has instructions and context around the file.",
-      other: customGoalText ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.` : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
+      book_article:
+        "You are an author writing an article for a book. Please write a well-structured article using the below reference text. The article should have depth, proper citations, and flow well within a book chapter format. Each reference article has instructions and context around the file.",
+      story_children:
+        "You are a children's book author. Please write an engaging story for small children using the below reference text. The story should be simple, fun, educational, and age-appropriate with clear language and vivid imagery. Each reference article has instructions and context around the file.",
+      story_adults:
+        "You are a fiction author. Please write an engaging story for adults using the below reference text. The story should have compelling characters, plot development, and sophisticated narrative techniques. Each reference article has instructions and context around the file.",
+      other: customGoalText
+        ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.`
+        : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
     };
-    
+
     return instructions[goalType] || instructions.other;
   };
 
@@ -274,7 +265,7 @@ Ramashram Satsang Mathura`,
     try {
       // Get LLM instructions based on goal
       const llmInstruction = getGoalInstructions(goal, customGoal);
-      
+
       // Start with LLM instructions
       let consolidatedText = llmInstruction + "\n\n--- REFERENCE TEXT BELOW ---\n";
 
@@ -314,37 +305,36 @@ Ramashram Satsang Mathura`,
   const handleGenerateVersions = async () => {
     setGenerating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const finalGoal = goal === "other" ? customGoal : goal;
-      
+
       // Parse vocabulary into array
       const vocabArray = vocabulary
         .split("\n")
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-      
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
       // Save reference notes for files to the database
       for (const [fileId, notes] of Object.entries(referenceNotes)) {
         // Only update if it's an actual file (exists in referenceFiles)
-        const isFile = referenceFiles.some(f => f.id === fileId);
+        const isFile = referenceFiles.some((f) => f.id === fileId);
         if (isFile && notes.trim()) {
-          await supabase
-            .from("reference_files")
-            .update({ user_notes: notes })
-            .eq("id", fileId);
+          await supabase.from("reference_files").update({ user_notes: notes }).eq("id", fileId);
         }
       }
-      
+
       // Save reference notes for raw text references to metadata
       const rawTextNotes: Record<string, string> = {};
-      rawTextReferences.forEach(ref => {
+      rawTextReferences.forEach((ref) => {
         if (referenceNotes[ref.id]) {
           rawTextNotes[ref.id] = referenceNotes[ref.id];
         }
       });
-      
+
       // Update project metadata
       const metadata = {
         ...(project.metadata || {}),
@@ -357,15 +347,10 @@ Ramashram Satsang Mathura`,
         llm_instructions: llmInstructions,
       };
 
-      await supabase
-        .from("projects")
-        .update({ metadata, updated_at: new Date().toISOString() })
-        .eq("id", projectId);
+      await supabase.from("projects").update({ metadata, updated_at: new Date().toISOString() }).eq("id", projectId);
 
       // Generate draft using AI
-      const promptToUse = customInstructions.trim() 
-        ? `${customInstructions}\n\n${extractedDraft}`
-        : extractedDraft;
+      const promptToUse = customInstructions.trim() ? `${customInstructions}\n\n${extractedDraft}` : extractedDraft;
 
       console.log("=== FULL PROMPT BEING SENT TO GEMINI ===");
       console.log("Prompt length:", promptToUse.length, "characters");
@@ -384,17 +369,17 @@ Ramashram Satsang Mathura`,
       if (response.data?.error) {
         console.error("Gemini AI blocked or failed:", response.data);
         const blockReason = response.data.blockReason;
-        
+
         // Provide detailed error message
         let errorMsg = response.data.error;
         if (blockReason === "PROHIBITED_CONTENT") {
           errorMsg = `Gemini blocked this content. Your selected goal ("${goal}") adds instructions about spiritual topics that trigger Gemini's filters. Try: (1) Select a different goal like "Note" or "Other", (2) Edit the Raw Extracted Draft to remove goal instructions, or (3) Contact support to use OpenAI instead.`;
         }
-        
+
         toast.error(errorMsg, { duration: 8000 });
         return;
       }
-      
+
       setGeneratedDraft(response.data?.text || "");
       setDraftGenerated(true);
       toast.success("Draft generated successfully!");
@@ -409,30 +394,32 @@ Ramashram Satsang Mathura`,
   // Convert plain text to HTML with proper formatting
   const convertTextToHTML = (text: string): string => {
     if (!text) return "<p></p>";
-    
+
     // Split by double line breaks for paragraphs
     const paragraphs = text.split(/\n\n+/);
-    
+
     return paragraphs
-      .map(para => {
+      .map((para) => {
         // Replace single line breaks with <br> tags within paragraphs
         const formattedPara = para
           .trim()
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0)
-          .join('<br>');
-        
-        return formattedPara ? `<p>${formattedPara}</p>` : '';
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+          .join("<br>");
+
+        return formattedPara ? `<p>${formattedPara}</p>` : "";
       })
-      .filter(p => p.length > 0)
-      .join('');
+      .filter((p) => p.length > 0)
+      .join("");
   };
 
   const handleSaveVersion = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       // Get the next version number
@@ -443,9 +430,8 @@ Ramashram Satsang Mathura`,
         .order("version_number", { ascending: false })
         .limit(1);
 
-      const nextVersionNumber = existingVersions && existingVersions.length > 0
-        ? existingVersions[0].version_number + 1
-        : 1;
+      const nextVersionNumber =
+        existingVersions && existingVersions.length > 0 ? existingVersions[0].version_number + 1 : 1;
 
       // Convert both drafts to HTML
       const rawTextHTML = convertTextToHTML(extractedDraft);
@@ -483,9 +469,7 @@ Ramashram Satsang Mathura`,
         return;
       }
 
-      const { error } = await supabase
-        .from("versions")
-        .insert(versionsToInsert);
+      const { error } = await supabase.from("versions").insert(versionsToInsert);
 
       if (error) throw error;
 
@@ -510,7 +494,7 @@ Ramashram Satsang Mathura`,
       text: currentRawText,
       title: `Raw Text ${rawTextReferences.length + 1}`,
     };
-    
+
     setRawTextReferences([...rawTextReferences, newRef]);
     setCurrentRawText("");
     toast.success("Raw text reference added");
@@ -583,7 +567,7 @@ Ramashram Satsang Mathura`,
               </Button>
             </Link>
           </div>
-          
+
           {/* Raw Text References */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-3">Add Reference Text</h2>
@@ -599,9 +583,7 @@ Ramashram Satsang Mathura`,
             </Button>
           </div>
 
-          <p className="text-muted-foreground">
-            Add reference files or links to generate your first draft
-          </p>
+          <p className="text-muted-foreground">Add reference files or links to generate your first draft</p>
         </div>
 
         {/* Progress Summary */}
@@ -612,11 +594,7 @@ Ramashram Satsang Mathura`,
                 <p className="text-sm font-medium">
                   {completedJobs} of {totalJobs} extractions complete
                 </p>
-                {activeJobs > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {activeJobs} in progress...
-                  </p>
-                )}
+                {activeJobs > 0 && <p className="text-xs text-muted-foreground">{activeJobs} in progress...</p>}
               </div>
             </div>
           </Card>
@@ -626,10 +604,7 @@ Ramashram Satsang Mathura`,
           {/* File Uploader */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Upload Reference Files</h2>
-            <ReferenceUploader
-              projectId={projectId!}
-              onUploadComplete={invalidateJobs}
-            />
+            <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
           </div>
 
           {/* YouTube Link */}
@@ -670,9 +645,7 @@ Ramashram Satsang Mathura`,
 
           {/* Output Goal */}
           <div>
-            <Label className="text-base font-semibold mb-3 block">
-              What do you want to generate?
-            </Label>
+            <Label className="text-base font-semibold mb-3 block">What do you want to generate?</Label>
             <RadioGroup value={goal} onValueChange={setGoal}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="substack_newsletter" id="substack" />
@@ -754,25 +727,19 @@ Ramashram Satsang Mathura`,
                 {/* Uploaded Files */}
                 {referenceFiles.map((file) => (
                   <div key={file.id}>
-                    <JobStatusCard
-                      file={file}
-                      onDelete={handleDeleteFile}
-                      onRetry={handleRetry}
-                    />
+                    <JobStatusCard file={file} onDelete={handleDeleteFile} onRetry={handleRetry} />
                     <div className="mt-2 pl-11">
                       <Textarea
                         placeholder="Add instructions on how to use this reference"
                         value={referenceNotes[file.id] || ""}
-                        onChange={(e) =>
-                          setReferenceNotes({ ...referenceNotes, [file.id]: e.target.value })
-                        }
+                        onChange={(e) => setReferenceNotes({ ...referenceNotes, [file.id]: e.target.value })}
                         rows={2}
                         className="text-sm"
                       />
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Raw Text References */}
                 {rawTextReferences.map((ref) => (
                   <div key={ref.id}>
@@ -781,16 +748,14 @@ Ramashram Satsang Mathura`,
                         <div className="text-muted-foreground mt-1 flex-shrink-0">
                           <FileText className="h-5 w-5" />
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-medium truncate">
-                                {ref.title}
-                              </h4>
+                              <h4 className="text-sm font-medium truncate">{ref.title}</h4>
                             </div>
                           </div>
-                          
+
                           <p className="text-xs text-muted-foreground line-clamp-3 mb-2 break-words">
                             {ref.text.slice(0, 150)}...
                           </p>
@@ -813,9 +778,7 @@ Ramashram Satsang Mathura`,
                       <Textarea
                         placeholder="Add instructions on how to use this reference"
                         value={referenceNotes[ref.id] || ""}
-                        onChange={(e) =>
-                          setReferenceNotes({ ...referenceNotes, [ref.id]: e.target.value })
-                        }
+                        onChange={(e) => setReferenceNotes({ ...referenceNotes, [ref.id]: e.target.value })}
                         rows={2}
                         className="text-sm"
                       />
@@ -859,8 +822,10 @@ Ramashram Satsang Mathura`,
               <h2 className="text-xl font-semibold mb-3">Raw Extracted Draft (Editable)</h2>
               <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
                 <p className="text-sm text-muted-foreground">
-                  <strong>Note:</strong> This draft includes goal-based instructions at the top (based on your selected goal: <strong>{goal === "other" ? customGoal : goal.replace(/_/g, " ")}</strong>). 
-                  You can edit or remove these instructions if they cause AI generation issues. Your edits will be used when you click "Generate Versions".
+                  <strong>Note:</strong> This draft includes goal-based instructions at the top (based on your selected
+                  goal: <strong>{goal === "other" ? customGoal : goal.replace(/_/g, " ")}</strong>). You can edit or
+                  remove these instructions if they cause AI generation issues. Your edits will be used when you click
+                  "Generate Versions".
                 </p>
               </div>
               <Textarea
@@ -870,12 +835,7 @@ Ramashram Satsang Mathura`,
                 className="font-mono text-sm"
               />
               <div className="mt-4 flex gap-3">
-                <Button
-                  onClick={handleGenerateVersions}
-                  disabled={generating}
-                  size="lg"
-                  className="flex-1"
-                >
+                <Button onClick={handleGenerateVersions} disabled={generating} size="lg" className="flex-1">
                   {generating ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -888,11 +848,7 @@ Ramashram Satsang Mathura`,
                     </>
                   )}
                 </Button>
-                <Button
-                  onClick={() => setShowExtractedDraft(false)}
-                  variant="outline"
-                  size="lg"
-                >
+                <Button onClick={() => setShowExtractedDraft(false)} variant="outline" size="lg">
                   Hide Draft
                 </Button>
               </div>
@@ -915,7 +871,7 @@ Ramashram Satsang Mathura`,
                 rows={25}
                 className="font-mono text-sm mb-4"
               />
-              
+
               {/* Custom Instructions for Regeneration */}
               <div className="mb-4">
                 <Label htmlFor="customInstructions" className="text-sm font-medium mb-2 block">
@@ -932,12 +888,7 @@ Ramashram Satsang Mathura`,
               </div>
 
               <div className="flex gap-3">
-                <Button
-                  onClick={handleSaveVersion}
-                  disabled={saving}
-                  size="lg"
-                  className="flex-1"
-                >
+                <Button onClick={handleSaveVersion} disabled={saving} size="lg" className="flex-1">
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -947,12 +898,7 @@ Ramashram Satsang Mathura`,
                     "Save & Go to Workspace"
                   )}
                 </Button>
-                <Button
-                  onClick={handleGenerateVersions}
-                  variant="outline"
-                  size="lg"
-                  disabled={generating}
-                >
+                <Button onClick={handleGenerateVersions} variant="outline" size="lg" disabled={generating}>
                   {generating ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
