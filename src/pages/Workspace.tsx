@@ -556,12 +556,12 @@ const Workspace = () => {
 
             <div className="flex items-center gap-3">
               <Button 
-                variant="outline" 
-                size="icon"
+                variant="outline"
                 onClick={() => navigate(`/project/${projectId}/intake`)}
-                title="Back to Reference Intake"
+                className="gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
+                Back to Reference Intake
               </Button>
 
               <Select value={currentStatus} onValueChange={handleStatusChange}>
