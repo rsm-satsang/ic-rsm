@@ -601,54 +601,28 @@ const Workspace = () => {
 
   const handlePublishToWordPress = async () => {
     if (!project || !user) {
-      toast.error("Please log in to publish");
+      toast.error("Please log in to export");
       return;
     }
 
-    setPublishing(true);
     try {
-      // Verify user session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        toast.error("Authentication required. Please log in again.");
-        setPublishing(false);
-        return;
-      }
-
       // Get editor content
       const editorElement = document.querySelector('.ProseMirror');
-      const content = editorElement?.innerHTML || "";
+      const htmlContent = editorElement?.innerHTML || "";
 
-      if (!content || content === "<p></p>") {
-        toast.error("No content to publish");
-        setPublishing(false);
+      if (!htmlContent || htmlContent === "<p></p>") {
+        toast.error("No content to export");
         return;
       }
 
-      console.log("Publishing to WordPress...", { hasSession: !!session, hasToken: !!session.access_token });
+      // WordPress supports HTML, so we can copy the HTML content directly
+      const wordPressContent = `${projectTitle}\n\n${htmlContent}`;
       
-      const { data, error } = await supabase.functions.invoke("publish-to-wordpress", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: {
-          title: projectTitle,
-          content: content,
-          status: "draft",
-        },
-      });
-
-      if (error) {
-        console.error("WordPress publish error:", error);
-        throw new Error(error.message || "Failed to call publish function");
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      toast.success(data.message || "Published to WordPress successfully!", {
-        description: data.editUrl ? `Edit at: ${data.editUrl}` : undefined,
+      // Copy to clipboard
+      await navigator.clipboard.writeText(wordPressContent);
+      
+      toast.success("HTML content copied to clipboard!", {
+        description: "Paste it into WordPress editor. Note: WordPress.com requires OAuth, not supported for direct publishing.",
         duration: 6000,
       });
 
@@ -663,18 +637,15 @@ const Workspace = () => {
         project_id: project.id,
         event_type: "edited",
         event_details: { 
-          action: "published_to_wordpress",
-          url: data.postUrl 
+          action: "exported_for_wordpress"
         },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
       });
 
     } catch (error: any) {
-      console.error("WordPress publish failed:", error);
-      toast.error(error?.message || "Failed to publish to WordPress");
-    } finally {
-      setPublishing(false);
+      console.error("Export failed:", error);
+      toast.error(error?.message || "Failed to copy content");
     }
   };
 
@@ -813,7 +784,7 @@ const Workspace = () => {
                   className="gap-2"
                 >
                   <Send className="h-4 w-4" />
-                  {publishing ? "Publishing..." : "Publish to WordPress"}
+                  Copy for WordPress
                 </Button>
               )}
             </div>
