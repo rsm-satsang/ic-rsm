@@ -163,6 +163,19 @@ export default function IntakePage() {
     }
   };
 
+  const getGoalInstructions = (goalType: string, customGoalText?: string) => {
+    const instructions: Record<string, string> = {
+      substack_article: "You are a spiritual content publisher who publishes newsletter on Substack. Please write down the substack article using below reference text. The substack article should be with emojis, separators, and a header banner. Each reference article has instructions and context around the file.",
+      linkedin_post: "You are a professional content creator. Please write a LinkedIn post using the below reference text. The post should be engaging, professional, and optimized for LinkedIn's algorithm with relevant hashtags and line breaks for readability. Each reference article has instructions and context around the file.",
+      twitter_thread: "You are a social media content creator. Please write a Twitter thread using the below reference text. The thread should be engaging, concise, and formatted with proper numbering and emojis. Each tweet should be under 280 characters. Each reference article has instructions and context around the file.",
+      blog_post: "You are a professional blogger. Please write a comprehensive blog post using the below reference text. The blog post should have a clear structure with headings, subheadings, and engaging content. Each reference article has instructions and context around the file.",
+      email_newsletter: "You are an email marketing specialist. Please write an email newsletter using the below reference text. The email should have an attention-grabbing subject line, engaging content, and clear call-to-action. Each reference article has instructions and context around the file.",
+      custom: customGoalText ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.` : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
+    };
+    
+    return instructions[goalType] || instructions.custom;
+  };
+
   const handleExtractAndShowDraft = async () => {
     if (totalJobs === 0 && rawTextReferences.length === 0) {
       toast.error("Please add at least one reference");
@@ -176,8 +189,11 @@ export default function IntakePage() {
 
     setGenerating(true);
     try {
-      // Consolidate all extracted text
-      let consolidatedText = "";
+      // Get LLM instructions based on goal
+      const llmInstruction = getGoalInstructions(goal, customGoal);
+      
+      // Start with LLM instructions
+      let consolidatedText = llmInstruction + "\n\n--- REFERENCE TEXT BELOW ---\n";
 
       // Add extracted text from files
       referenceFiles.forEach((file) => {
