@@ -27,8 +27,5 @@ verify_jwt = true
 [functions.intake-process-job]
 verify_jwt = false
 
-[functions.publish-to-substack]
-verify_jwt = true
-
 [functions.publish-to-wordpress]
 verify_jwt = true

@@ -514,54 +514,28 @@ const Workspace = () => {
 
   const handlePublishToSubstack = async () => {
     if (!project || !user) {
-      toast.error("Please log in to publish");
+      toast.error("Please log in to export");
       return;
     }
 
-    setPublishing(true);
     try {
-      // Verify user session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        toast.error("Authentication required. Please log in again.");
-        setPublishing(false);
-        return;
-      }
-
       // Get editor content
       const editorElement = document.querySelector('.ProseMirror');
       const content = editorElement?.innerHTML || "";
 
       if (!content || content === "<p></p>") {
-        toast.error("No content to publish");
-        setPublishing(false);
+        toast.error("No content to export");
         return;
       }
 
-      console.log("Publishing to Substack...", { hasSession: !!session, hasToken: !!session.access_token });
+      // Create formatted text for Substack (HTML format)
+      const substackContent = `${projectTitle}\n\n${content}`;
       
-      const { data, error } = await supabase.functions.invoke("publish-to-substack", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: {
-          title: projectTitle,
-          content: content,
-          isDraft: true,
-        },
-      });
-
-      if (error) {
-        console.error("Substack publish error:", error);
-        throw new Error(error.message || "Failed to call publish function");
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      toast.success(data.message || "Published to Substack successfully!", {
-        description: data.postUrl ? `View at: ${data.postUrl}` : undefined,
+      // Copy to clipboard
+      await navigator.clipboard.writeText(substackContent);
+      
+      toast.success("Content copied to clipboard!", {
+        description: "Paste it into Substack's editor. Note: Substack doesn't have a public API for direct publishing.",
         duration: 6000,
       });
 
@@ -576,18 +550,15 @@ const Workspace = () => {
         project_id: project.id,
         event_type: "edited",
         event_details: { 
-          action: "published_to_substack",
-          url: data.postUrl 
+          action: "exported_for_substack"
         },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
       });
 
     } catch (error: any) {
-      console.error("Substack publish failed:", error);
-      toast.error(error?.message || "Failed to publish to Substack");
-    } finally {
-      setPublishing(false);
+      console.error("Export failed:", error);
+      toast.error(error?.message || "Failed to copy content");
     }
   };
 
@@ -793,7 +764,7 @@ const Workspace = () => {
                   className="gap-2"
                 >
                   <Send className="h-4 w-4" />
-                  {publishing ? "Publishing..." : "Publish to Substack"}
+                  Copy for Substack
                 </Button>
               )}
 
