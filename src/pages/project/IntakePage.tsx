@@ -102,6 +102,11 @@ export default function IntakePage() {
         setRawTextReferences(metadata.raw_text_references);
       }
 
+      // Load reference notes for raw text references from metadata
+      if (metadata?.reference_notes) {
+        setReferenceNotes(prev => ({ ...prev, ...metadata.reference_notes }));
+      }
+
       // Load extracted draft from metadata if it exists
       if (metadata?.extracted_draft) {
         setExtractedDraft(metadata.extracted_draft);
@@ -207,15 +212,16 @@ export default function IntakePage() {
 
   const getGoalInstructions = (goalType: string, customGoalText?: string) => {
     const instructions: Record<string, string> = {
-      substack_article: "You are a spiritual content publisher who publishes newsletter on Substack. Please write down the substack article using below reference text. The substack article should be with emojis, separators, and a header banner. Each reference article has instructions and context around the file.",
-      linkedin_post: "You are a professional content creator. Please write a LinkedIn post using the below reference text. The post should be engaging, professional, and optimized for LinkedIn's algorithm with relevant hashtags and line breaks for readability. Each reference article has instructions and context around the file.",
-      twitter_thread: "You are a social media content creator. Please write a Twitter thread using the below reference text. The thread should be engaging, concise, and formatted with proper numbering and emojis. Each tweet should be under 280 characters. Each reference article has instructions and context around the file.",
-      blog_post: "You are a professional blogger. Please write a comprehensive blog post using the below reference text. The blog post should have a clear structure with headings, subheadings, and engaging content. Each reference article has instructions and context around the file.",
-      email_newsletter: "You are an email marketing specialist. Please write an email newsletter using the below reference text. The email should have an attention-grabbing subject line, engaging content, and clear call-to-action. Each reference article has instructions and context around the file.",
-      custom: customGoalText ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.` : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
+      substack_newsletter: "You are a spiritual content publisher who publishes newsletter on Substack. Please write down the substack newsletter using below reference text. The newsletter should be with emojis, separators, and a header banner. Each reference article has instructions and context around the file.",
+      wordpress_blog: "You are a professional blogger. Please write a comprehensive WordPress blog post using the below reference text. The blog post should have a clear structure with headings, subheadings, and engaging content. Each reference article has instructions and context around the file.",
+      note: "Please create a concise and organized note using the below reference text. The note should capture key points and important information in a clear format. Each reference article has instructions and context around the file.",
+      book_article: "You are an author writing an article for a book. Please write a well-structured article using the below reference text. The article should have depth, proper citations, and flow well within a book chapter format. Each reference article has instructions and context around the file.",
+      story_children: "You are a children's book author. Please write an engaging story for small children using the below reference text. The story should be simple, fun, educational, and age-appropriate with clear language and vivid imagery. Each reference article has instructions and context around the file.",
+      story_adults: "You are a fiction author. Please write an engaging story for adults using the below reference text. The story should have compelling characters, plot development, and sophisticated narrative techniques. Each reference article has instructions and context around the file.",
+      other: customGoalText ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.` : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
     };
     
-    return instructions[goalType] || instructions.custom;
+    return instructions[goalType] || instructions.other;
   };
 
   const handleExtractAndShowDraft = async () => {
@@ -284,9 +290,11 @@ export default function IntakePage() {
         .map(line => line.trim())
         .filter(line => line.length > 0);
       
-      // Save reference notes
+      // Save reference notes for files to the database
       for (const [fileId, notes] of Object.entries(referenceNotes)) {
-        if (notes.trim()) {
+        // Only update if it's an actual file (exists in referenceFiles)
+        const isFile = referenceFiles.some(f => f.id === fileId);
+        if (isFile && notes.trim()) {
           await supabase
             .from("reference_files")
             .update({ user_notes: notes })
@@ -294,12 +302,21 @@ export default function IntakePage() {
         }
       }
       
+      // Save reference notes for raw text references to metadata
+      const rawTextNotes: Record<string, string> = {};
+      rawTextReferences.forEach(ref => {
+        if (referenceNotes[ref.id]) {
+          rawTextNotes[ref.id] = referenceNotes[ref.id];
+        }
+      });
+      
       // Update project metadata
       const metadata = {
         ...(project.metadata || {}),
         intake_completed: true,
         vocabulary: vocabArray,
         raw_text_references: rawTextReferences,
+        reference_notes: rawTextNotes,
         extracted_draft: extractedDraft,
         goal: finalGoal,
         llm_instructions: llmInstructions,
@@ -515,7 +532,7 @@ export default function IntakePage() {
           
           {/* Raw Text References */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">Add Raw Text Reference</h2>
+            <h2 className="text-lg font-semibold mb-3">Add Reference Text</h2>
             <Textarea
               placeholder="Paste or type your reference text here..."
               value={currentRawText}
@@ -529,7 +546,7 @@ export default function IntakePage() {
           </div>
 
           <p className="text-muted-foreground">
-            Add reference materials to generate your first draft
+            Add reference files or links to generate your first draft
           </p>
         </div>
 
@@ -604,20 +621,28 @@ export default function IntakePage() {
             </Label>
             <RadioGroup value={goal} onValueChange={setGoal}>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="substack_article" id="substack" />
-                <Label htmlFor="substack">Substack Article</Label>
+                <RadioGroupItem value="substack_newsletter" id="substack" />
+                <Label htmlFor="substack">Substack newsletter</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="email" id="email" />
-                <Label htmlFor="email">Email</Label>
+                <RadioGroupItem value="wordpress_blog" id="wordpress" />
+                <Label htmlFor="wordpress">Wordpress Blog</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="report" id="report" />
-                <Label htmlFor="report">Report</Label>
+                <RadioGroupItem value="note" id="note" />
+                <Label htmlFor="note">Note</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="research_summary" id="research" />
-                <Label htmlFor="research">Research Summary</Label>
+                <RadioGroupItem value="book_article" id="book" />
+                <Label htmlFor="book">Article for a book</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="story_children" id="children" />
+                <Label htmlFor="children">Story for small children</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="story_adults" id="adults" />
+                <Label htmlFor="adults">Story for adults</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="other" id="other" />
