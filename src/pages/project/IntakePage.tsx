@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ReferenceUploader } from "@/components/upload/ReferenceUploader";
 import { JobStatusCard } from "@/components/ui/JobStatusCard";
@@ -24,6 +25,7 @@ export default function IntakePage() {
   const [externalUrl, setExternalUrl] = useState("");
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
+  const [language, setLanguage] = useState("english");
   const [llmInstructions, setLlmInstructions] = useState("");
   const [vocabulary, setVocabulary] = useState("");
   const [projectTitle, setProjectTitle] = useState(() => {
@@ -101,9 +103,12 @@ export default function IntakePage() {
         setShowExtractedDraft(true);
       }
 
-      // Load saved goal and instructions
+      // Load saved goal, language, and instructions
       if (metadata?.goal) {
         setGoal(metadata.goal);
+      }
+      if (metadata?.language) {
+        setLanguage(metadata.language);
       }
       if (metadata?.llm_instructions) {
         setLlmInstructions(metadata.llm_instructions);
@@ -198,7 +203,7 @@ export default function IntakePage() {
     }
   };
 
-  const getGoalInstructions = (goalType: string, customGoalText?: string) => {
+  const getGoalInstructions = (goalType: string, customGoalText?: string, targetLanguage?: string) => {
     const instructions: Record<string, string> = {
       substack_newsletter: `You are a content publisher who writes newsletters on Substack, with a focus on moral values, and peace.
 
@@ -247,7 +252,20 @@ Sanjiv Kumar`,
         : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
     };
 
-    return instructions[goalType] || instructions.other;
+    let instruction = instructions[goalType] || instructions.other;
+    
+    // Add language instruction if not English
+    if (targetLanguage && targetLanguage !== "english") {
+      const languageNames: Record<string, string> = {
+        hindi: "Hindi",
+        tamil: "Tamil",
+        german: "German"
+      };
+      const languageName = languageNames[targetLanguage] || targetLanguage;
+      instruction += `\n\n**CRITICAL REQUIREMENT**: The entire content MUST be written in ${languageName}. Generate the complete output in ${languageName} language.`;
+    }
+
+    return instruction;
   };
 
   const handleExtractAndShowDraft = async () => {
@@ -263,8 +281,8 @@ Sanjiv Kumar`,
 
     setGenerating(true);
     try {
-      // Get LLM instructions based on goal
-      const llmInstruction = getGoalInstructions(goal, customGoal);
+      // Get LLM instructions based on goal and language
+      const llmInstruction = getGoalInstructions(goal, customGoal, language);
 
       // Start with LLM instructions
       let consolidatedText = llmInstruction + "\n\n--- REFERENCE TEXT BELOW ---\n";
@@ -344,13 +362,14 @@ Sanjiv Kumar`,
         reference_notes: rawTextNotes,
         extracted_draft: extractedDraft,
         goal: finalGoal,
+        language: language,
         llm_instructions: llmInstructions,
       };
 
       await supabase.from("projects").update({ metadata, updated_at: new Date().toISOString() }).eq("id", projectId);
 
-      // Rebuild the prompt with CURRENT goal instructions (not the old ones baked into extractedDraft)
-      const currentGoalInstructions = getGoalInstructions(goal, customGoal);
+      // Rebuild the prompt with CURRENT goal instructions and language (not the old ones baked into extractedDraft)
+      const currentGoalInstructions = getGoalInstructions(goal, customGoal, language);
       
       // Extract just the reference text from extractedDraft (remove old instructions)
       let referenceTextOnly = extractedDraft;
@@ -709,6 +728,27 @@ Sanjiv Kumar`,
                 className="mt-2"
               />
             )}
+          </div>
+
+          {/* Language Selection */}
+          <div>
+            <Label className="text-base font-semibold mb-2 block">
+              Output Language
+            </Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="english">English</SelectItem>
+                <SelectItem value="hindi">Hindi</SelectItem>
+                <SelectItem value="tamil">Tamil</SelectItem>
+                <SelectItem value="german">German</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              The generated version will be in the selected language
+            </p>
           </div>
 
           {/* Vocabulary */}

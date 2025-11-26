@@ -512,7 +512,7 @@ const Workspace = () => {
     }
   };
 
-  const handlePublishToSubstack = async () => {
+  const handleCopyToPublish = async () => {
     if (!project || !user) {
       toast.error("Please log in to export");
       return;
@@ -566,63 +566,13 @@ const Workspace = () => {
       plainText = plainText.replace(/\n{3,}/g, '\n\n').trim();
       
       // Add title at the top
-      const substackContent = `${projectTitle}\n\n${plainText}`;
+      const contentToPublish = `${projectTitle}\n\n${plainText}`;
       
       // Copy to clipboard
-      await navigator.clipboard.writeText(substackContent);
+      await navigator.clipboard.writeText(contentToPublish);
       
-      toast.success("Clean text copied to clipboard!", {
-        description: "Ready to paste into Substack without HTML tags",
-        duration: 5000,
-      });
-
-      // Log to timeline
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
-
-      await supabase.from("timeline").insert({
-        project_id: project.id,
-        event_type: "edited",
-        event_details: { 
-          action: "exported_for_substack"
-        },
-        user_id: user.id,
-        user_name: userData?.name || "Unknown User",
-      });
-
-    } catch (error: any) {
-      console.error("Export failed:", error);
-      toast.error(error?.message || "Failed to copy content");
-    }
-  };
-
-  const handlePublishToWordPress = async () => {
-    if (!project || !user) {
-      toast.error("Please log in to export");
-      return;
-    }
-
-    try {
-      // Get editor content
-      const editorElement = document.querySelector('.ProseMirror');
-      const htmlContent = editorElement?.innerHTML || "";
-
-      if (!htmlContent || htmlContent === "<p></p>") {
-        toast.error("No content to export");
-        return;
-      }
-
-      // WordPress supports HTML, so we can copy the HTML content directly
-      const wordPressContent = `${projectTitle}\n\n${htmlContent}`;
-      
-      // Copy to clipboard
-      await navigator.clipboard.writeText(wordPressContent);
-      
-      toast.success("HTML content copied to clipboard!", {
-        description: "Paste it into WordPress editor. Note: WordPress.com requires OAuth, not supported for direct publishing.",
+      toast.success("Content copied to clipboard!", {
+        description: "Plain text format ready to paste into Substack or WordPress.",
         duration: 6000,
       });
 
@@ -637,7 +587,7 @@ const Workspace = () => {
         project_id: project.id,
         event_type: "edited",
         event_details: { 
-          action: "exported_for_wordpress"
+          action: "exported_to_publish"
         },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
@@ -649,13 +599,11 @@ const Workspace = () => {
     }
   };
 
-  // Determine which publishing buttons to show based on project type/goal
-  const showSubstackButton = project?.type === "article" || 
-    (project?.metadata as any)?.goal === "substack_newsletter" ||
-    (project?.metadata as any)?.goal === "substack_article";
-  
-  const showWordPressButton = project?.type === "article" || 
+  // Determine if publish button should be shown
+  const showPublishButton = project?.type === "article" || 
     project?.type === "document" ||
+    (project?.metadata as any)?.goal === "substack_newsletter" ||
+    (project?.metadata as any)?.goal === "substack_article" ||
     (project?.metadata as any)?.goal === "wordpress_blog" ||
     (project?.metadata as any)?.goal === "wordpress_post" ||
     (project?.metadata as any)?.goal === "book_article" ||
@@ -764,27 +712,14 @@ const Workspace = () => {
                 {saving ? "Saving..." : "Save As"}
               </Button>
 
-              {showSubstackButton && (
+              {showPublishButton && (
                 <Button 
-                  onClick={handlePublishToSubstack} 
-                  disabled={publishing}
+                  onClick={handleCopyToPublish} 
                   variant="default"
                   className="gap-2"
                 >
                   <Send className="h-4 w-4" />
-                  Copy for Substack
-                </Button>
-              )}
-
-              {showWordPressButton && (
-                <Button 
-                  onClick={handlePublishToWordPress} 
-                  disabled={publishing}
-                  variant="default"
-                  className="gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  Copy for WordPress
+                  Copy to Publish
                 </Button>
               )}
             </div>
