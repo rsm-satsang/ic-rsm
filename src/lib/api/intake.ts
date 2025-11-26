@@ -13,6 +13,7 @@ export interface ReferenceFile {
   extracted_text: string | null;
   extracted_chunks: any;
   metadata: any;
+  user_notes: string | null;
   created_at: string;
   updated_at: string;
 }

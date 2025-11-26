@@ -61,6 +61,21 @@ export default function IntakePage() {
     loadProject();
   }, [projectId]);
 
+  // Load reference notes from reference files
+  useEffect(() => {
+    if (referenceFiles && referenceFiles.length > 0) {
+      const notes: Record<string, string> = {};
+      referenceFiles.forEach(file => {
+        if (file.user_notes) {
+          notes[file.id] = file.user_notes;
+        }
+      });
+      if (Object.keys(notes).length > 0) {
+        setReferenceNotes(prev => ({ ...prev, ...notes }));
+      }
+    }
+  }, [referenceFiles]);
+
   const loadProject = async () => {
     try {
       const { data, error } = await supabase
@@ -77,6 +92,45 @@ export default function IntakePage() {
       const metadata = data.metadata as any;
       if (metadata?.vocabulary) {
         setVocabulary(Array.isArray(metadata.vocabulary) ? metadata.vocabulary.join("\n") : metadata.vocabulary);
+      }
+
+      // Load raw text references if they exist
+      if (metadata?.raw_text_references) {
+        setRawTextReferences(metadata.raw_text_references);
+      }
+
+      // Load extracted draft from metadata if it exists
+      if (metadata?.extracted_draft) {
+        setExtractedDraft(metadata.extracted_draft);
+        setShowExtractedDraft(true);
+      }
+
+      // Load saved goal and instructions
+      if (metadata?.goal) {
+        setGoal(metadata.goal);
+      }
+      if (metadata?.llm_instructions) {
+        setLlmInstructions(metadata.llm_instructions);
+      }
+
+      // Load the latest generated draft from versions
+      const { data: versions } = await supabase
+        .from("versions")
+        .select("*")
+        .eq("project_id", projectId)
+        .ilike("title", "%Generated Draft%")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (versions && versions.length > 0) {
+        // Convert HTML back to plain text for editing
+        const htmlContent = versions[0].content;
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = htmlContent;
+        const plainText = tempDiv.textContent || tempDiv.innerText || "";
+        
+        setGeneratedDraft(plainText);
+        setDraftGenerated(true);
       }
     } catch (error: any) {
       console.error("Error loading project:", error);
