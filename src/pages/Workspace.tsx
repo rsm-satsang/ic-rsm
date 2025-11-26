@@ -538,9 +538,12 @@ const Workspace = () => {
         return;
       }
 
-      console.log("Publishing to Substack...");
+      console.log("Publishing to Substack...", { hasSession: !!session, hasToken: !!session.access_token });
       
       const { data, error } = await supabase.functions.invoke("publish-to-substack", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: {
           title: projectTitle,
           content: content,
@@ -614,9 +617,12 @@ const Workspace = () => {
         return;
       }
 
-      console.log("Publishing to WordPress...");
+      console.log("Publishing to WordPress...", { hasSession: !!session, hasToken: !!session.access_token });
       
       const { data, error } = await supabase.functions.invoke("publish-to-wordpress", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: {
           title: projectTitle,
           content: content,
