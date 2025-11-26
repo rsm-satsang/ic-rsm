@@ -382,15 +382,26 @@ Sanjiv Kumar`,
 
       if (response.data?.error) {
         console.error("Gemini AI blocked or failed:", response.data);
-        const blockReason = response.data.blockReason;
+        const blockReason = (response.data as any).blockReason as string | undefined;
+        const promptPreview = (response.data as any).promptPreview as string | undefined;
+        const geminiDetails = (response.data as any).gemini as any | undefined;
 
-        // Provide detailed error message
-        let errorMsg = response.data.error;
-        if (blockReason === "PROHIBITED_CONTENT") {
-          errorMsg = `Gemini blocked this content. Your selected goal ("${goal}") adds instructions about spiritual topics that trigger Gemini's filters. Try: (1) Select a different goal like "Note" or "Other", (2) Edit the Raw Extracted Draft to remove goal instructions, or (3) Contact support to use OpenAI instead.`;
+        let errorMsg = response.data.error as string;
+        if (blockReason) {
+          errorMsg = `Gemini blocked this request (${blockReason}). This message comes directly from Gemini's safety system, not from your app.`;
         }
 
-        toast.error(errorMsg, { duration: 8000 });
+        const debugParts: string[] = [];
+        if (blockReason) debugParts.push(`Block reason: ${blockReason}`);
+        if (promptPreview) debugParts.push(`Prompt preview (first part sent to Gemini):\n${promptPreview}`);
+        if (geminiDetails?.promptFeedback) {
+          debugParts.push(`Prompt feedback from Gemini:\n${JSON.stringify(geminiDetails.promptFeedback, null, 2)}`);
+        }
+
+        const fullMessage = debugParts.length > 0 ? `${errorMsg}\n\n${debugParts.join("\n\n")}` : errorMsg;
+
+        toast.error(fullMessage, { duration: 12000 });
+        console.log("Gemini debug payload (for developer inspection):", response.data);
         return;
       }
 

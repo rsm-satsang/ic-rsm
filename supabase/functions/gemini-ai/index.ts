@@ -105,15 +105,27 @@ serve(async (req) => {
     if (!data.candidates || data.candidates.length === 0) {
       console.error('No candidates in Gemini response:', JSON.stringify(data));
 
-      // If Gemini blocked the content, return a graceful error instead of throwing
+      // If Gemini blocked the content, return a detailed but safe error payload
       const blockReason = data.promptFeedback?.blockReason;
       if (blockReason) {
         console.error('Gemini blocked the request with reason:', blockReason);
+
+        const promptPreview =
+          typeof prompt === 'string'
+            ? prompt.slice(0, 2000)
+            : '';
+
         return new Response(
           JSON.stringify({
-            error: `Gemini blocked this request (${blockReason}). Please adjust the content and try again.`,
+            error: `Gemini blocked this request (${blockReason}). This came directly from the model's safety system.`,
             success: false,
             blockReason,
+            gemini: {
+              promptFeedback: data.promptFeedback ?? null,
+              usageMetadata: data.usageMetadata ?? null,
+              modelVersion: data.modelVersion ?? null,
+            },
+            promptPreview,
           }),
           {
             status: 200,
