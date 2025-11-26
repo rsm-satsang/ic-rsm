@@ -34,7 +34,10 @@ export default function IntakePage() {
   const [customGoal, setCustomGoal] = useState("");
   const [llmInstructions, setLlmInstructions] = useState("");
   const [vocabulary, setVocabulary] = useState("");
-  const [projectTitle, setProjectTitle] = useState("");
+  const [projectTitle, setProjectTitle] = useState(() => {
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return `New Project - ${today}`;
+  });
   const [savingTitle, setSavingTitle] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [rawTextReferences, setRawTextReferences] = useState<Array<{ id: string; text: string; title: string }>>([]);
@@ -487,29 +490,44 @@ export default function IntakePage() {
       <div className="container max-w-5xl py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex-1 flex items-center gap-2">
-              <Input
-                value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
-                className="max-w-lg text-3xl font-bold border-none shadow-none focus-visible:ring-1 p-0 h-auto"
-                placeholder="Project title..."
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSaveTitle}
-                disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
-              >
-                {savingTitle ? "Saving..." : "Save"}
-              </Button>
-            </div>
+          <h2 className="text-lg font-semibold mb-3">Name Your Project</h2>
+          <div className="flex items-center gap-2 mb-6">
+            <Input
+              value={projectTitle}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              className="flex-1 text-lg font-medium"
+              placeholder="Project title..."
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveTitle}
+              disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
+            >
+              {savingTitle ? "Saving..." : "Save"}
+            </Button>
             <Link to={`/workspace/${projectId}`}>
               <Button variant="ghost" size="sm">
                 Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
+          
+          {/* Raw Text References */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-3">Add Raw Text Reference</h2>
+            <Textarea
+              placeholder="Paste or type your reference text here..."
+              value={currentRawText}
+              onChange={(e) => setCurrentRawText(e.target.value)}
+              rows={4}
+              className="mb-2"
+            />
+            <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
+              Add
+            </Button>
+          </div>
+
           <p className="text-muted-foreground">
             Add reference materials to generate your first draft
           </p>
@@ -575,21 +593,6 @@ export default function IntakePage() {
                 Add
               </Button>
             </div>
-          </div>
-
-          {/* Raw Text References */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3">Add Raw Text Reference</h2>
-            <Textarea
-              placeholder="Paste or type your reference text here..."
-              value={currentRawText}
-              onChange={(e) => setCurrentRawText(e.target.value)}
-              rows={6}
-              className="mb-2"
-            />
-            <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
-              Add
-            </Button>
           </div>
 
           <Separator />
