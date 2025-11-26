@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, Send } from "lucide-react";
 import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
@@ -24,6 +24,7 @@ interface Project {
   type: string;
   status: "draft" | "in_progress" | "review" | "approved" | "published";
   owner_id: string;
+  metadata?: any;
 }
 
 const Workspace = () => {
@@ -43,6 +44,7 @@ const Workspace = () => {
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [savingTitle, setSavingTitle] = useState(false);
   const [selectedVersionForView, setSelectedVersionForView] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
@@ -510,6 +512,148 @@ const Workspace = () => {
     }
   };
 
+  const handlePublishToSubstack = async () => {
+    if (!project || !user) return;
+
+    setPublishing(true);
+    try {
+      // Get editor content
+      const editorElement = document.querySelector('.ProseMirror');
+      const content = editorElement?.innerHTML || "";
+
+      if (!content || content === "<p></p>") {
+        toast.error("No content to publish");
+        setPublishing(false);
+        return;
+      }
+
+      console.log("Publishing to Substack...");
+      
+      const { data, error } = await supabase.functions.invoke("publish-to-substack", {
+        body: {
+          title: projectTitle,
+          content: content,
+          isDraft: true,
+        },
+      });
+
+      if (error) {
+        console.error("Substack publish error:", error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast.success(data.message || "Published to Substack successfully!", {
+        description: data.postUrl ? `View at: ${data.postUrl}` : undefined,
+        duration: 6000,
+      });
+
+      // Log to timeline
+      const { data: userData } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "edited",
+        event_details: { 
+          action: "published_to_substack",
+          url: data.postUrl 
+        },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
+
+    } catch (error: any) {
+      console.error("Substack publish failed:", error);
+      toast.error(error?.message || "Failed to publish to Substack");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handlePublishToWordPress = async () => {
+    if (!project || !user) return;
+
+    setPublishing(true);
+    try {
+      // Get editor content
+      const editorElement = document.querySelector('.ProseMirror');
+      const content = editorElement?.innerHTML || "";
+
+      if (!content || content === "<p></p>") {
+        toast.error("No content to publish");
+        setPublishing(false);
+        return;
+      }
+
+      console.log("Publishing to WordPress...");
+      
+      const { data, error } = await supabase.functions.invoke("publish-to-wordpress", {
+        body: {
+          title: projectTitle,
+          content: content,
+          status: "draft",
+        },
+      });
+
+      if (error) {
+        console.error("WordPress publish error:", error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast.success(data.message || "Published to WordPress successfully!", {
+        description: data.editUrl ? `Edit at: ${data.editUrl}` : undefined,
+        duration: 6000,
+      });
+
+      // Log to timeline
+      const { data: userData } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "edited",
+        event_details: { 
+          action: "published_to_wordpress",
+          url: data.postUrl 
+        },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
+
+    } catch (error: any) {
+      console.error("WordPress publish failed:", error);
+      toast.error(error?.message || "Failed to publish to WordPress");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  // Determine which publishing buttons to show based on project type/goal
+  const showSubstackButton = project?.type === "article" || 
+    (project?.metadata as any)?.goal === "substack_newsletter" ||
+    (project?.metadata as any)?.goal === "substack_article";
+  
+  const showWordPressButton = project?.type === "article" || 
+    project?.type === "document" ||
+    (project?.metadata as any)?.goal === "wordpress_blog" ||
+    (project?.metadata as any)?.goal === "wordpress_post" ||
+    (project?.metadata as any)?.goal === "book_article" ||
+    (project?.metadata as any)?.goal === "other";
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
@@ -612,6 +756,30 @@ const Workspace = () => {
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? "Saving..." : "Save As"}
               </Button>
+
+              {showSubstackButton && (
+                <Button 
+                  onClick={handlePublishToSubstack} 
+                  disabled={publishing}
+                  variant="default"
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {publishing ? "Publishing..." : "Publish to Substack"}
+                </Button>
+              )}
+
+              {showWordPressButton && (
+                <Button 
+                  onClick={handlePublishToWordPress} 
+                  disabled={publishing}
+                  variant="default"
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {publishing ? "Publishing..." : "Publish to WordPress"}
+                </Button>
+              )}
             </div>
           </div>
         </div>
