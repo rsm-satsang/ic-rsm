@@ -489,6 +489,7 @@ export type Database = {
           storage_path: string | null
           updated_at: string | null
           uploaded_by: string | null
+          user_notes: string | null
         }
         Insert: {
           created_at?: string | null
@@ -505,6 +506,7 @@ export type Database = {
           storage_path?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
+          user_notes?: string | null
         }
         Update: {
           created_at?: string | null
@@ -521,6 +523,7 @@ export type Database = {
           storage_path?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
+          user_notes?: string | null
         }
         Relationships: [
           {
