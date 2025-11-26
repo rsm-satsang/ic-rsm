@@ -367,6 +367,11 @@ Ramashram Satsang Mathura`,
         ? `${customInstructions}\n\n${extractedDraft}`
         : extractedDraft;
 
+      console.log("=== FULL PROMPT BEING SENT TO GEMINI ===");
+      console.log("Prompt length:", promptToUse.length, "characters");
+      console.log("First 500 chars:", promptToUse.substring(0, 500));
+      console.log("=========================================");
+
       const response = await supabase.functions.invoke("gemini-ai", {
         body: {
           action: "generate_draft",
@@ -378,7 +383,15 @@ Ramashram Satsang Mathura`,
 
       if (response.data?.error) {
         console.error("Gemini AI blocked or failed:", response.data);
-        toast.error(response.data.error);
+        const blockReason = response.data.blockReason;
+        
+        // Provide detailed error message
+        let errorMsg = response.data.error;
+        if (blockReason === "PROHIBITED_CONTENT") {
+          errorMsg = `Gemini blocked this content. Your selected goal ("${goal}") adds instructions about spiritual topics that trigger Gemini's filters. Try: (1) Select a different goal like "Note" or "Other", (2) Edit the Raw Extracted Draft to remove goal instructions, or (3) Contact support to use OpenAI instead.`;
+        }
+        
+        toast.error(errorMsg, { duration: 8000 });
         return;
       }
       
@@ -844,9 +857,12 @@ Ramashram Satsang Mathura`,
           {showExtractedDraft && (
             <div className="mt-8 pt-6 border-t">
               <h2 className="text-xl font-semibold mb-3">Raw Extracted Draft (Editable)</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Review and edit the extracted content before generating versions.
-              </p>
+              <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note:</strong> This draft includes goal-based instructions at the top (based on your selected goal: <strong>{goal === "other" ? customGoal : goal.replace(/_/g, " ")}</strong>). 
+                  You can edit or remove these instructions if they cause AI generation issues. Your edits will be used when you click "Generate Versions".
+                </p>
+              </div>
               <Textarea
                 value={extractedDraft}
                 onChange={(e) => setExtractedDraft(e.target.value)}
