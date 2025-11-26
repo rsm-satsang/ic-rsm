@@ -66,8 +66,19 @@ const handler = async (req: Request): Promise<Response> => {
       siteUrl = `https://${siteUrl}`;
     }
 
-    // Create WordPress REST API URL
-    const wpApiUrl = `${siteUrl.replace(/\/$/, '')}/wp-json/wp/v2/posts`;
+    // Determine correct REST API URL based on site type
+    const siteHost = new URL(siteUrl).host;
+    let wpApiUrl: string;
+
+    if (siteHost.endsWith(".wordpress.com")) {
+      // WordPress.com sites use the public API
+      wpApiUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteHost}/posts`;
+    } else {
+      // Self-hosted WordPress sites use the local REST API
+      wpApiUrl = `${siteUrl.replace(/\/$/, '')}/wp-json/wp/v2/posts`;
+    }
+
+    console.log("Resolved WordPress API URL:", wpApiUrl);
 
     // Create Basic Auth header for WordPress
     const wpAuthHeader = `Basic ${btoa(`${WORDPRESS_USERNAME}:${WORDPRESS_APP_PASSWORD}`)}`;
