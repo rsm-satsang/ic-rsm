@@ -28,10 +28,7 @@ export default function IntakePage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [youtubeContext, setYoutubeContext] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
-  const [externalUrlContext, setExternalUrlContext] = useState("");
-  const [uploadGeneralContext, setUploadGeneralContext] = useState("");
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
   const [llmInstructions, setLlmInstructions] = useState("");
@@ -40,6 +37,7 @@ export default function IntakePage() {
   const [savingTitle, setSavingTitle] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [rawTextReferences, setRawTextReferences] = useState<Array<{ id: string; text: string; title: string }>>([]);
+  const [currentRawText, setCurrentRawText] = useState("");
   const [showExtractedDraft, setShowExtractedDraft] = useState(false);
   const [extractedDraft, setExtractedDraft] = useState("");
   const [referenceNotes, setReferenceNotes] = useState<Record<string, string>>({});
@@ -88,22 +86,13 @@ export default function IntakePage() {
     if (!youtubeUrl.trim()) return;
 
     try {
-      const result = await intakeAPI.addYouTubeLink({
+      await intakeAPI.addYouTubeLink({
         project_id: projectId!,
         youtube_url: youtubeUrl,
       });
       
-      // If context provided, update the reference file with user notes
-      if (youtubeContext.trim() && result?.reference_file_id) {
-        await supabase
-          .from("reference_files")
-          .update({ user_notes: youtubeContext })
-          .eq("id", result.reference_file_id);
-      }
-      
       toast.success("YouTube link added, extraction queued");
       setYoutubeUrl("");
-      setYoutubeContext("");
       invalidateJobs();
     } catch (error: any) {
       console.error("Error adding YouTube link:", error);
@@ -115,22 +104,13 @@ export default function IntakePage() {
     if (!externalUrl.trim()) return;
 
     try {
-      const result = await intakeAPI.addExternalURL({
+      await intakeAPI.addExternalURL({
         project_id: projectId!,
         url: externalUrl,
       });
       
-      // If context provided, update the reference file with user notes
-      if (externalUrlContext.trim() && result?.reference_file_id) {
-        await supabase
-          .from("reference_files")
-          .update({ user_notes: externalUrlContext })
-          .eq("id", result.reference_file_id);
-      }
-      
       toast.success("URL added, extraction queued");
       setExternalUrl("");
-      setExternalUrlContext("");
       invalidateJobs();
     } catch (error: any) {
       console.error("Error adding URL:", error);
@@ -226,7 +206,7 @@ export default function IntakePage() {
   };
 
   const handleGenerateVersions = async () => {
-    setGenerating(true);
+    // Save to project metadata and navigate to draft generation page
     try {
       const finalGoal = goal === "other" ? customGoal : goal;
       
@@ -246,49 +226,45 @@ export default function IntakePage() {
         }
       }
       
-      // Update project metadata with intake_completed and vocabulary
+      // Update project metadata
       const metadata = {
         ...(project.metadata || {}),
         intake_completed: true,
         vocabulary: vocabArray,
         raw_text_references: rawTextReferences,
+        extracted_draft: extractedDraft,
+        goal: finalGoal,
+        llm_instructions: llmInstructions,
       };
 
       await supabase
         .from("projects")
         .update({ metadata, updated_at: new Date().toISOString() })
         .eq("id", projectId);
-      
-      await intakeAPI.generateVersions({
-        project_id: projectId!,
-        goal: finalGoal,
-        llm_chat: llmInstructions,
-        vocabulary: vocabArray,
-      });
 
-      toast.success("Versions generated successfully!");
-      navigate(`/workspace/${projectId}`);
+      // Navigate to draft generation page
+      navigate(`/project/${projectId}/generate-draft`);
     } catch (error: any) {
-      console.error("Error generating versions:", error);
-      toast.error("Failed to generate versions");
-    } finally {
-      setGenerating(false);
+      console.error("Error saving draft:", error);
+      toast.error("Failed to save draft");
     }
   };
 
   const handleAddRawText = () => {
-    setRawTextReferences([
-      ...rawTextReferences,
-      { id: crypto.randomUUID(), text: "", title: `Raw Text ${rawTextReferences.length + 1}` },
-    ]);
-  };
+    if (!currentRawText.trim()) {
+      toast.error("Please enter some text first");
+      return;
+    }
 
-  const handleUpdateRawText = (id: string, field: "text" | "title", value: string) => {
-    setRawTextReferences(
-      rawTextReferences.map((ref) =>
-        ref.id === id ? { ...ref, [field]: value } : ref
-      )
-    );
+    const newRef = {
+      id: crypto.randomUUID(),
+      text: currentRawText,
+      title: `Raw Text ${rawTextReferences.length + 1}`,
+    };
+    
+    setRawTextReferences([...rawTextReferences, newRef]);
+    setCurrentRawText("");
+    toast.success("Raw text reference added");
   };
 
   const handleDeleteRawText = (id: string) => {
@@ -390,19 +366,12 @@ export default function IntakePage() {
               projectId={projectId!}
               onUploadComplete={invalidateJobs}
             />
-            <Textarea
-              placeholder="Add general notes about the files you're uploading (you can also add specific context for each file after upload)..."
-              value={uploadGeneralContext}
-              onChange={(e) => setUploadGeneralContext(e.target.value)}
-              rows={2}
-              className="text-sm mt-3"
-            />
           </div>
 
           {/* YouTube Link */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Add YouTube Video</h2>
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2">
               <Input
                 placeholder="Paste YouTube URL..."
                 value={youtubeUrl}
@@ -414,19 +383,12 @@ export default function IntakePage() {
                 Add
               </Button>
             </div>
-            <Textarea
-              placeholder="Add context about this video (what it contains, key points, why you're including it...)"
-              value={youtubeContext}
-              onChange={(e) => setYoutubeContext(e.target.value)}
-              rows={2}
-              className="text-sm"
-            />
           </div>
 
           {/* External URL */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Add External Article</h2>
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2">
               <Input
                 placeholder="Paste article URL..."
                 value={externalUrl}
@@ -438,48 +400,44 @@ export default function IntakePage() {
                 Add
               </Button>
             </div>
-            <Textarea
-              placeholder="Add context about this article (main topics, relevant sections, why it matters...)"
-              value={externalUrlContext}
-              onChange={(e) => setExternalUrlContext(e.target.value)}
-              rows={2}
-              className="text-sm"
-            />
           </div>
 
           {/* Raw Text References */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">Add Raw Text Reference</h2>
-              <Button onClick={handleAddRawText} size="sm" variant="outline">
-                + Add Text
-              </Button>
-            </div>
-            {rawTextReferences.map((ref) => (
-              <Card key={ref.id} className="p-4 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <Input
-                    value={ref.title}
-                    onChange={(e) => handleUpdateRawText(ref.id, "title", e.target.value)}
-                    className="font-medium max-w-md"
-                    placeholder="Reference title..."
-                  />
-                  <Button
-                    onClick={() => handleDeleteRawText(ref.id)}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Textarea
-                  value={ref.text}
-                  onChange={(e) => handleUpdateRawText(ref.id, "text", e.target.value)}
-                  placeholder="Paste or type your reference text here..."
-                  rows={6}
-                />
-              </Card>
-            ))}
+            <h2 className="text-lg font-semibold mb-3">Add Raw Text Reference</h2>
+            <Textarea
+              placeholder="Paste or type your reference text here..."
+              value={currentRawText}
+              onChange={(e) => setCurrentRawText(e.target.value)}
+              rows={6}
+              className="mb-2"
+            />
+            <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
+              Add
+            </Button>
+            
+            {rawTextReferences.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <Label className="text-sm font-medium">Added References:</Label>
+                {rawTextReferences.map((ref) => (
+                  <Card key={ref.id} className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{ref.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{ref.text}</p>
+                      </div>
+                      <Button
+                        onClick={() => handleDeleteRawText(ref.id)}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
 
           <Separator />
