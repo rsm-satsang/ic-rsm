@@ -18,7 +18,8 @@ import {
   Loader2, 
   Youtube, 
   Link as LinkIcon,
-  Sparkles
+  Sparkles,
+  X
 } from "lucide-react";
 
 export default function IntakePage() {
@@ -35,6 +36,10 @@ export default function IntakePage() {
   const [projectTitle, setProjectTitle] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [rawTextReferences, setRawTextReferences] = useState<Array<{ id: string; text: string; title: string }>>([]);
+  const [showExtractedDraft, setShowExtractedDraft] = useState(false);
+  const [extractedDraft, setExtractedDraft] = useState("");
+  const [referenceNotes, setReferenceNotes] = useState<Record<string, string>>({});
 
   const {
     referenceFiles,
@@ -135,17 +140,53 @@ export default function IntakePage() {
     }
   };
 
-  const handleGenerateVersions = async () => {
-    if (totalJobs === 0) {
-      toast.error("Please add at least one reference file");
+  const handleExtractAndShowDraft = async () => {
+    if (totalJobs === 0 && rawTextReferences.length === 0) {
+      toast.error("Please add at least one reference");
       return;
     }
 
-    if (!allJobsComplete) {
+    if (!allJobsComplete && totalJobs > 0) {
       toast.error("Please wait for all extractions to complete");
       return;
     }
 
+    setGenerating(true);
+    try {
+      // Consolidate all extracted text
+      let consolidatedText = "";
+
+      // Add extracted text from files
+      referenceFiles.forEach((file) => {
+        if (file.extracted_text) {
+          consolidatedText += `\n\n=== BEGIN SOURCE: ${file.file_name || "Unnamed"} ===\n`;
+          if (referenceNotes[file.id]) {
+            consolidatedText += `[User Context: ${referenceNotes[file.id]}]\n\n`;
+          }
+          consolidatedText += file.extracted_text;
+          consolidatedText += `\n=== END SOURCE: ${file.file_name || "Unnamed"} ===`;
+        }
+      });
+
+      // Add raw text references
+      rawTextReferences.forEach((ref) => {
+        consolidatedText += `\n\n=== BEGIN SOURCE: ${ref.title} ===\n`;
+        consolidatedText += ref.text;
+        consolidatedText += `\n=== END SOURCE: ${ref.title} ===`;
+      });
+
+      setExtractedDraft(consolidatedText.trim());
+      setShowExtractedDraft(true);
+      toast.success("Draft extracted! Review and edit below.");
+    } catch (error: any) {
+      console.error("Error extracting draft:", error);
+      toast.error("Failed to extract draft");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGenerateVersions = async () => {
     setGenerating(true);
     try {
       const finalGoal = goal === "other" ? customGoal : goal;
@@ -156,11 +197,22 @@ export default function IntakePage() {
         .map(line => line.trim())
         .filter(line => line.length > 0);
       
+      // Save reference notes
+      for (const [fileId, notes] of Object.entries(referenceNotes)) {
+        if (notes.trim()) {
+          await supabase
+            .from("reference_files")
+            .update({ user_notes: notes })
+            .eq("id", fileId);
+        }
+      }
+      
       // Update project metadata with intake_completed and vocabulary
       const metadata = {
         ...(project.metadata || {}),
         intake_completed: true,
         vocabulary: vocabArray,
+        raw_text_references: rawTextReferences,
       };
 
       await supabase
@@ -183,6 +235,25 @@ export default function IntakePage() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleAddRawText = () => {
+    setRawTextReferences([
+      ...rawTextReferences,
+      { id: crypto.randomUUID(), text: "", title: `Raw Text ${rawTextReferences.length + 1}` },
+    ]);
+  };
+
+  const handleUpdateRawText = (id: string, field: "text" | "title", value: string) => {
+    setRawTextReferences(
+      rawTextReferences.map((ref) =>
+        ref.id === id ? { ...ref, [field]: value } : ref
+      )
+    );
+  };
+
+  const handleDeleteRawText = (id: string) => {
+    setRawTextReferences(rawTextReferences.filter((ref) => ref.id !== id));
   };
 
   const handleDeleteFile = async (fileId: string) => {
@@ -268,25 +339,6 @@ export default function IntakePage() {
                   </p>
                 )}
               </div>
-              {allJobsComplete && (
-                <Button
-                  onClick={handleGenerateVersions}
-                  disabled={generating}
-                  size="sm"
-                >
-                  {generating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Generate Drafts
-                    </>
-                  )}
-                </Button>
-              )}
             </div>
           </Card>
         )}
@@ -304,7 +356,7 @@ export default function IntakePage() {
           {/* YouTube Link */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Add YouTube Video</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-2">
               <Input
                 placeholder="Paste YouTube URL..."
                 value={youtubeUrl}
@@ -321,7 +373,7 @@ export default function IntakePage() {
           {/* External URL */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Add External Article</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-2">
               <Input
                 placeholder="Paste article URL..."
                 value={externalUrl}
@@ -333,6 +385,41 @@ export default function IntakePage() {
                 Add
               </Button>
             </div>
+          </div>
+
+          {/* Raw Text References */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Add Raw Text Reference</h2>
+              <Button onClick={handleAddRawText} size="sm" variant="outline">
+                + Add Text
+              </Button>
+            </div>
+            {rawTextReferences.map((ref) => (
+              <Card key={ref.id} className="p-4 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Input
+                    value={ref.title}
+                    onChange={(e) => handleUpdateRawText(ref.id, "title", e.target.value)}
+                    className="font-medium max-w-md"
+                    placeholder="Reference title..."
+                  />
+                  <Button
+                    onClick={() => handleDeleteRawText(ref.id)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Textarea
+                  value={ref.text}
+                  onChange={(e) => handleUpdateRawText(ref.id, "text", e.target.value)}
+                  placeholder="Paste or type your reference text here..."
+                  rows={6}
+                />
+              </Card>
+            ))}
           </div>
 
           <Separator />
@@ -413,13 +500,95 @@ export default function IntakePage() {
               <h2 className="text-lg font-semibold mb-3">Reference Files</h2>
               <div className="space-y-3">
                 {referenceFiles.map((file) => (
-                  <JobStatusCard
-                    key={file.id}
-                    file={file}
-                    onDelete={handleDeleteFile}
-                    onRetry={handleRetry}
-                  />
+                  <div key={file.id}>
+                    <JobStatusCard
+                      file={file}
+                      onDelete={handleDeleteFile}
+                      onRetry={handleRetry}
+                    />
+                    <div className="mt-2 pl-11">
+                      <Textarea
+                        placeholder="Add notes about this reference (what it contains, which parts matter, why it's included...)"
+                        value={referenceNotes[file.id] || ""}
+                        onChange={(e) =>
+                          setReferenceNotes({ ...referenceNotes, [file.id]: e.target.value })
+                        }
+                        rows={2}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Generate Drafts Button at Bottom */}
+          {(totalJobs > 0 || rawTextReferences.length > 0) && (
+            <div className="mt-8 pt-6 border-t">
+              <Button
+                onClick={handleExtractAndShowDraft}
+                disabled={generating || (!allJobsComplete && totalJobs > 0)}
+                size="lg"
+                className="w-full"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Extracting Draft...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Extract & Show Draft
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                This will combine all references into an editable draft
+              </p>
+            </div>
+          )}
+
+          {/* Extracted Draft View */}
+          {showExtractedDraft && (
+            <div className="mt-8 pt-6 border-t">
+              <h2 className="text-xl font-semibold mb-3">Raw Extracted Draft (Editable)</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Review and edit the extracted content before generating versions.
+              </p>
+              <Textarea
+                value={extractedDraft}
+                onChange={(e) => setExtractedDraft(e.target.value)}
+                rows={20}
+                className="font-mono text-sm"
+              />
+              <div className="mt-4 flex gap-3">
+                <Button
+                  onClick={handleGenerateVersions}
+                  disabled={generating}
+                  size="lg"
+                  className="flex-1"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Generating Versions...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Generate Versions
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setShowExtractedDraft(false)}
+                  variant="outline"
+                  size="lg"
+                >
+                  Hide Draft
+                </Button>
               </div>
             </div>
           )}
