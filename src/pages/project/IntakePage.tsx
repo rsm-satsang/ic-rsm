@@ -283,7 +283,7 @@ Ramashram Satsang Mathura`,
         if (file.extracted_text) {
           consolidatedText += `\n\n=== BEGIN SOURCE: ${file.file_name || "Unnamed"} ===\n`;
           if (referenceNotes[file.id]) {
-            consolidatedText += `[User Context: ${referenceNotes[file.id]}]\n\n`;
+            consolidatedText += `[Instructions on how to use this text: ${referenceNotes[file.id]}]\n\n`;
           }
           consolidatedText += file.extracted_text;
           consolidatedText += `\n=== END SOURCE: ${file.file_name || "Unnamed"} ===`;
@@ -294,7 +294,7 @@ Ramashram Satsang Mathura`,
       rawTextReferences.forEach((ref) => {
         consolidatedText += `\n\n=== BEGIN SOURCE: ${ref.title} ===\n`;
         if (referenceNotes[ref.id]) {
-          consolidatedText += `[User Context: ${referenceNotes[ref.id]}]\n\n`;
+          consolidatedText += `[Instructions on how to use this text: ${referenceNotes[ref.id]}]\n\n`;
         }
         consolidatedText += ref.text;
         consolidatedText += `\n=== END SOURCE: ${ref.title} ===`;
@@ -742,7 +742,7 @@ Ramashram Satsang Mathura`,
                     />
                     <div className="mt-2 pl-11">
                       <Textarea
-                        placeholder="Add notes about this reference (what it contains, which parts matter, why it's included...)"
+                        placeholder="Add instructions on how to use this reference"
                         value={referenceNotes[file.id] || ""}
                         onChange={(e) =>
                           setReferenceNotes({ ...referenceNotes, [file.id]: e.target.value })
@@ -792,7 +792,7 @@ Ramashram Satsang Mathura`,
                     </Card>
                     <div className="mt-2 pl-11">
                       <Textarea
-                        placeholder="Add notes about this reference (what it contains, which parts matter, why it's included...)"
+                        placeholder="Add instructions on how to use this reference"
                         value={referenceNotes[ref.id] || ""}
                         onChange={(e) =>
                           setReferenceNotes({ ...referenceNotes, [ref.id]: e.target.value })
