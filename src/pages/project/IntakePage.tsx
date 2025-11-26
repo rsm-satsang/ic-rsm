@@ -31,6 +31,7 @@ export default function IntakePage() {
   const [youtubeContext, setYoutubeContext] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [externalUrlContext, setExternalUrlContext] = useState("");
+  const [uploadGeneralContext, setUploadGeneralContext] = useState("");
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
   const [llmInstructions, setLlmInstructions] = useState("");
@@ -372,6 +373,13 @@ export default function IntakePage() {
             <ReferenceUploader
               projectId={projectId!}
               onUploadComplete={invalidateJobs}
+            />
+            <Textarea
+              placeholder="Add general notes about the files you're uploading (you can also add specific context for each file after upload)..."
+              value={uploadGeneralContext}
+              onChange={(e) => setUploadGeneralContext(e.target.value)}
+              rows={2}
+              className="text-sm mt-3"
             />
           </div>
 
