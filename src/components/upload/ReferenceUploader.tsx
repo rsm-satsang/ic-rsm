@@ -103,7 +103,7 @@ export const ReferenceUploader = ({ projectId, onUploadComplete }: ReferenceUplo
 
   return (
     <Card
-      className={`p-8 border-2 border-dashed transition-colors ${
+      className={`p-4 border-2 border-dashed transition-colors ${
         dragActive ? "border-primary bg-primary/5" : "border-border"
       }`}
       onDragEnter={handleDrag}
@@ -111,15 +111,17 @@ export const ReferenceUploader = ({ projectId, onUploadComplete }: ReferenceUplo
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <div className="flex flex-col items-center justify-center gap-4">
-        <Upload className="h-12 w-12 text-muted-foreground" />
-        <div className="text-center">
-          <p className="text-sm font-medium mb-1">
-            Drag and drop files here, or click to browse
-          </p>
-          <p className="text-xs text-muted-foreground">
-            PDF, DOCX, TXT, Images, Audio, Video (max 400MB)
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <Upload className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">
+              Drag and drop files here, or click to browse
+            </p>
+            <p className="text-xs text-muted-foreground">
+              PDF, DOCX, TXT, Images, Audio, Video (max 400MB)
+            </p>
+          </div>
         </div>
         <input
           ref={fileInputRef}
@@ -133,6 +135,7 @@ export const ReferenceUploader = ({ projectId, onUploadComplete }: ReferenceUplo
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           variant="outline"
+          className="flex-shrink-0"
         >
           {uploading ? "Uploading..." : "Select Files"}
         </Button>
