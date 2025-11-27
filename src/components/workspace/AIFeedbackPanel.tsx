@@ -210,6 +210,13 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
 **TARGET LANGUAGE:**
 ${language}
 
+**FORMATTING REQUIREMENTS (CRITICAL):**
+1. Add ONE blank line between each paragraph (use double line breaks)
+2. Add ONE blank line after each section heading
+3. Keep paragraphs concise - maximum 4-5 sentences per paragraph
+4. Break long paragraphs into shorter, digestible chunks
+5. Ensure proper line spacing throughout for readability
+
 **CURRENT DRAFT:**
 ${currentContent}
 
