@@ -30,118 +30,173 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    // Get organization-wide Gemini API key from secrets
+    // Get organization-wide API keys from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Gemini API key not configured. Please contact your administrator.' 
-        }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
-    const { prompt, action, projectId } = await req.json();
+    const { prompt, action, projectId, model = 'gemini' } = await req.json();
 
     if (!prompt) {
       throw new Error('Prompt is required');
     }
 
-    console.log('Calling Gemini API with action:', action);
+    console.log('Calling AI with action:', action, 'model:', model);
 
-    // Call Gemini API - using gemini-2.5-flash (latest stable model)
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_NONE"
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_NONE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_NONE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_NONE"
-            }
-          ]
-        }),
-      }
-    );
+    let generatedText = '';
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Gemini API error:', errorData);
-      throw new Error(`Gemini API error: ${response.status} ${errorData}`);
-    }
-
-    const data = await response.json();
-    console.log('Gemini API response received:', JSON.stringify(data));
-
-    // Check if response has candidates or handle safety blocks
-    if (!data.candidates || data.candidates.length === 0) {
-      console.error('No candidates in Gemini response:', JSON.stringify(data));
-
-      // If Gemini blocked the content, return a detailed but safe error payload
-      const blockReason = data.promptFeedback?.blockReason;
-      if (blockReason) {
-        console.error('Gemini blocked the request with reason:', blockReason);
-
-        const promptPreview =
-          typeof prompt === 'string'
-            ? prompt.slice(0, 2000)
-            : '';
-
+    // Route to appropriate model
+    if (model === 'gpt-5-mini' || model === 'gpt-5-nano') {
+      // Use OpenAI
+      if (!openaiApiKey) {
         return new Response(
-          JSON.stringify({
-            error: `Gemini blocked this request (${blockReason}). This came directly from the model's safety system.`,
-            success: false,
-            blockReason,
-            gemini: {
-              promptFeedback: data.promptFeedback ?? null,
-              usageMetadata: data.usageMetadata ?? null,
-              modelVersion: data.modelVersion ?? null,
-            },
-            promptPreview,
+          JSON.stringify({ 
+            error: 'OpenAI API key not configured. Please contact your administrator.' 
           }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          },
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         );
       }
 
-      throw new Error('Gemini API returned no content. This may be due to safety filters or an invalid API key.');
-    }
+      const modelName = model === 'gpt-5-mini' ? 'gpt-5-mini-2025-08-07' : 'gpt-5-nano-2025-08-07';
 
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    if (!generatedText) {
-      console.error('Empty text in Gemini response:', JSON.stringify(data));
-      throw new Error('Gemini API returned empty content.');
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: 8192,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('OpenAI API error:', errorData);
+        throw new Error(`OpenAI API error: ${response.status} ${errorData}`);
+      }
+
+      const data = await response.json();
+      console.log('OpenAI API response received');
+
+      generatedText = data.choices?.[0]?.message?.content || '';
+      
+      if (!generatedText) {
+        console.error('Empty text in OpenAI response:', JSON.stringify(data));
+        throw new Error('OpenAI API returned empty content.');
+      }
+
+    } else {
+      // Use Gemini (default)
+      if (!geminiApiKey) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Gemini API key not configured. Please contact your administrator.' 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Call Gemini API - using gemini-2.5-flash (latest stable model)
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+            },
+            safetySettings: [
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_NONE"
+              },
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_NONE"
+              },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_NONE"
+              },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_NONE"
+              }
+            ]
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Gemini API error:', errorData);
+        throw new Error(`Gemini API error: ${response.status} ${errorData}`);
+      }
+
+      const data = await response.json();
+      console.log('Gemini API response received:', JSON.stringify(data));
+
+      // Check if response has candidates or handle safety blocks
+      if (!data.candidates || data.candidates.length === 0) {
+        console.error('No candidates in Gemini response:', JSON.stringify(data));
+
+        // If Gemini blocked the content, return a detailed but safe error payload
+        const blockReason = data.promptFeedback?.blockReason;
+        if (blockReason) {
+          console.error('Gemini blocked the request with reason:', blockReason);
+
+          const promptPreview =
+            typeof prompt === 'string'
+              ? prompt.slice(0, 2000)
+              : '';
+
+          return new Response(
+            JSON.stringify({
+              error: `Gemini blocked this request (${blockReason}). This came directly from the model's safety system.`,
+              success: false,
+              blockReason,
+              gemini: {
+                promptFeedback: data.promptFeedback ?? null,
+                usageMetadata: data.usageMetadata ?? null,
+                modelVersion: data.modelVersion ?? null,
+              },
+              promptPreview,
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            },
+          );
+        }
+
+        throw new Error('Gemini API returned no content. This may be due to safety filters or an invalid API key.');
+      }
+
+      generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      if (!generatedText) {
+        console.error('Empty text in Gemini response:', JSON.stringify(data));
+        throw new Error('Gemini API returned empty content.');
+      }
     }
 
     // Log AI usage

@@ -70,6 +70,7 @@ const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata, previewContent
       // Get goal from project metadata
       const goal = projectMetadata?.goal || "Not specified";
       const language = projectMetadata?.language || "english";
+      const selectedModel = projectMetadata?.selectedModel || "gemini";
 
       // Construct feedback prompt - ONLY NEGATIVES
       const feedbackPrompt = `You are an expert editor and content reviewer. Please provide ONLY CRITICAL FEEDBACK identifying issues, problems, and areas for improvement in the following draft text. DO NOT mention positive aspects or what is done well.
@@ -109,7 +110,8 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
         body: { 
           prompt: feedbackPrompt,
           action: 'feedback',
-          projectId: projectId
+          projectId: projectId,
+          model: selectedModel
         }
       });
 
@@ -219,6 +221,7 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
         .join('\n');
 
       const language = projectMetadata?.language || "english";
+      const selectedModel = projectMetadata?.selectedModel || "gemini";
 
       // Construct regeneration prompt - only feedback, no goal/instructions
       const regeneratePrompt = `You are an expert content editor. Please regenerate the following draft text by addressing ONLY the specific feedback points provided below.
@@ -253,7 +256,8 @@ Return ONLY the improved draft text. Do not include explanations, notes, or any 
         body: { 
           prompt: regeneratePrompt,
           action: 'regenerate_with_feedback',
-          projectId: projectId
+          projectId: projectId,
+          model: selectedModel
         }
       });
 
