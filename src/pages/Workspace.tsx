@@ -752,6 +752,8 @@ const Workspace = () => {
             projectId={project.id}
             selectedText={selectedText}
             onInsertText={handleInsertText}
+            editorRef={editorRef}
+            projectMetadata={project.metadata}
           />
         </div>
       </div>
