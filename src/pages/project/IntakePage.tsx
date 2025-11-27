@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { useExtractionJobs } from "@/hooks/useExtractionJobs";
 import { intakeAPI } from "@/lib/api/intake";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, Youtube, Link as LinkIcon, Sparkles, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Youtube, Link as LinkIcon, Sparkles, FileText, Trash2 } from "lucide-react";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -589,6 +589,17 @@ Sanjiv Kumar`,
       <div className="container max-w-5xl py-8">
         {/* Header */}
         <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </div>
+          
           <h2 className="text-lg font-semibold mb-3">Name Your Project</h2>
           <div className="flex items-center gap-2 mb-6">
             <Input
@@ -605,12 +616,80 @@ Sanjiv Kumar`,
             >
               {savingTitle ? "Saving..." : "Save"}
             </Button>
-            <Link to={`/workspace/${projectId}`}>
-              <Button variant="ghost" size="sm">
-                Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate(`/workspace/${projectId}`)}
+            >
+              Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
+
+          {/* Output Goal */}
+          <div className="mb-6">
+            <Label className="text-base font-semibold mb-3 block">What do you want to generate?</Label>
+            <RadioGroup value={goal} onValueChange={setGoal}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="substack_newsletter" id="substack" />
+                <Label htmlFor="substack">Substack newsletter</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="wordpress_blog" id="wordpress" />
+                <Label htmlFor="wordpress">Wordpress Blog</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="note" id="note" />
+                <Label htmlFor="note">Note</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="book_article" id="book" />
+                <Label htmlFor="book">Article for a book</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="story_children" id="children" />
+                <Label htmlFor="children">Story for small children</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="story_adults" id="adults" />
+                <Label htmlFor="adults">Story for adults</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="other" id="other" />
+                <Label htmlFor="other">Other</Label>
+              </div>
+            </RadioGroup>
+            {goal === "other" && (
+              <Input
+                placeholder="Describe what you want to generate..."
+                value={customGoal}
+                onChange={(e) => setCustomGoal(e.target.value)}
+                className="mt-2"
+              />
+            )}
+          </div>
+
+          {/* Language Selection */}
+          <div className="mb-6">
+            <Label className="text-base font-semibold mb-2 block">
+              Output Language
+            </Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="english">English</SelectItem>
+                <SelectItem value="hindi">Hindi</SelectItem>
+                <SelectItem value="tamil">Tamil</SelectItem>
+                <SelectItem value="german">German</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              The generated version will be in the selected language
+            </p>
+          </div>
+
+          <Separator className="my-6" />
 
           {/* Raw Text References */}
           <div className="mb-6">
@@ -626,8 +705,6 @@ Sanjiv Kumar`,
               Add
             </Button>
           </div>
-
-          <p className="text-muted-foreground">Add reference files or links to generate your first draft</p>
         </div>
 
         {/* Progress Summary */}
@@ -686,70 +763,6 @@ Sanjiv Kumar`,
           </div>
 
           <Separator />
-
-          {/* Output Goal */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">What do you want to generate?</Label>
-            <RadioGroup value={goal} onValueChange={setGoal}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="substack_newsletter" id="substack" />
-                <Label htmlFor="substack">Substack newsletter</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="wordpress_blog" id="wordpress" />
-                <Label htmlFor="wordpress">Wordpress Blog</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="note" id="note" />
-                <Label htmlFor="note">Note</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="book_article" id="book" />
-                <Label htmlFor="book">Article for a book</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="story_children" id="children" />
-                <Label htmlFor="children">Story for small children</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="story_adults" id="adults" />
-                <Label htmlFor="adults">Story for adults</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="other" id="other" />
-                <Label htmlFor="other">Other</Label>
-              </div>
-            </RadioGroup>
-            {goal === "other" && (
-              <Input
-                placeholder="Describe what you want to generate..."
-                value={customGoal}
-                onChange={(e) => setCustomGoal(e.target.value)}
-                className="mt-2"
-              />
-            )}
-          </div>
-
-          {/* Language Selection */}
-          <div>
-            <Label className="text-base font-semibold mb-2 block">
-              Output Language
-            </Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="english">English</SelectItem>
-                <SelectItem value="hindi">Hindi</SelectItem>
-                <SelectItem value="tamil">Tamil</SelectItem>
-                <SelectItem value="german">German</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              The generated version will be in the selected language
-            </p>
-          </div>
 
           {/* Vocabulary */}
           <div>
