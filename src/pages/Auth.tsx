@@ -165,9 +165,9 @@ const Auth = () => {
               <FileText className="h-8 w-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">RSM InnerContent</CardTitle>
+          <CardTitle className="text-2xl text-center">Srijan</CardTitle>
           <CardDescription className="text-center">
-            AI-powered content collaboration platform
+            Content Creation for RSM
           </CardDescription>
         </CardHeader>
         <CardContent>
