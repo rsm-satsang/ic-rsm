@@ -247,6 +247,10 @@ Sanjiv Kumar`,
         "You are a children's book author. Please write an engaging story for small children using the below reference text. The story should be simple, fun, educational, and age-appropriate with clear language and vivid imagery. Each reference article has instructions and context around the file.",
       story_adults:
         "You are a fiction author. Please write an engaging story for adults using the below reference text. The story should have compelling characters, plot development, and sophisticated narrative techniques. Each reference article has instructions and context around the file.",
+      proofreading:
+        "You are a professional proofreader and editor. Please carefully review the below reference text and correct any spelling errors, grammatical mistakes, punctuation issues, and formatting inconsistencies. Maintain the original meaning and tone while improving clarity and readability. Each reference article has instructions and context around the file.",
+      translation:
+        "You are a professional translator. Please translate the below reference text accurately while preserving the original meaning, tone, and style. Ensure cultural appropriateness and natural phrasing in the target language. Each reference article has instructions and context around the file.",
       other: customGoalText
         ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.`
         : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
@@ -632,49 +636,53 @@ Sanjiv Kumar`,
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Define Outcome</h2>
             
-            {/* Output Goal */}
-            <div className="mb-4">
-              <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
-              <Select value={goal} onValueChange={setGoal}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select content type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
-                  <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
-                  <SelectItem value="note">Note</SelectItem>
-                  <SelectItem value="book_article">Article for a book</SelectItem>
-                  <SelectItem value="story_children">Story for small children</SelectItem>
-                  <SelectItem value="story_adults">Story for adults</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              {goal === "other" && (
-                <Input
-                  placeholder="Describe what you want to generate..."
-                  value={customGoal}
-                  onChange={(e) => setCustomGoal(e.target.value)}
-                  className="mt-2"
-                />
-              )}
-            </div>
+            <div className="pl-4 space-y-4">
+              {/* Output Goal */}
+              <div>
+                <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
+                <Select value={goal} onValueChange={setGoal}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select content type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
+                    <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
+                    <SelectItem value="note">Note</SelectItem>
+                    <SelectItem value="book_article">Article for a book</SelectItem>
+                    <SelectItem value="story_children">Story for small children</SelectItem>
+                    <SelectItem value="story_adults">Story for adults</SelectItem>
+                    <SelectItem value="proofreading">Proofreading</SelectItem>
+                    <SelectItem value="translation">Translation</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                {goal === "other" && (
+                  <Input
+                    placeholder="Describe what you want to generate..."
+                    value={customGoal}
+                    onChange={(e) => setCustomGoal(e.target.value)}
+                    className="mt-2"
+                  />
+                )}
+              </div>
 
-            {/* Language Selection */}
-            <div>
-              <Label className="text-base font-semibold mb-2 block">
-                What language you want your final content to be in
-              </Label>
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="english">English</SelectItem>
-                  <SelectItem value="hindi">Hindi</SelectItem>
-                  <SelectItem value="tamil">Tamil</SelectItem>
-                  <SelectItem value="german">German</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Language Selection */}
+              <div>
+                <Label className="text-base font-semibold mb-2 block">
+                  What language you want your final content to be in
+                </Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="english">English</SelectItem>
+                    <SelectItem value="hindi">Hindi</SelectItem>
+                    <SelectItem value="tamil">Tamil</SelectItem>
+                    <SelectItem value="german">German</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -687,7 +695,7 @@ Sanjiv Kumar`,
               Upload documents, paste text, or add links to articles and videos that will serve as source material for generating your content.
             </p>
 
-            <div className="space-y-6">
+            <div className="pl-4 space-y-6">
               {/* Raw Text References */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Add Reference Text</h3>
@@ -698,9 +706,11 @@ Sanjiv Kumar`,
                   rows={4}
                   className="mb-2"
                 />
-                <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
-                  Add
-                </Button>
+                <div className="flex justify-end">
+                  <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
+                    Add
+                  </Button>
+                </div>
               </div>
 
               {/* File Uploader */}
@@ -774,7 +784,7 @@ Sanjiv Kumar`,
               placeholder="Enter important terms, one per line. E.g.:&#10;AI → Artificial Intelligence&#10;ML → Machine Learning&#10;UX → User Experience"
               value={vocabulary}
               onChange={(e) => setVocabulary(e.target.value)}
-              rows={4}
+              rows={3}
             />
           </div>
 
@@ -788,7 +798,7 @@ Sanjiv Kumar`,
               placeholder="E.g., Use a casual tone, prioritize statistics from source 2, include image 1 as an intro quote..."
               value={llmInstructions}
               onChange={(e) => setLlmInstructions(e.target.value)}
-              rows={4}
+              rows={3}
             />
           </div>
 

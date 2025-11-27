@@ -241,8 +241,8 @@ const Dashboard = () => {
                 <FileText className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">RSM InnerContent</h1>
-                <p className="text-sm text-muted-foreground">Content Collaboration</p>
+                <h1 className="text-2xl font-bold">Srijan</h1>
+                <p className="text-sm text-muted-foreground">Content Creation for RSM</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -274,20 +274,6 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all cursor-pointer shadow-glow" onClick={createQuickNote}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-primary rounded-xl">
-                  <StickyNote className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <CardTitle>New Quick Notepad</CardTitle>
-                  <CardDescription>Start writing immediately</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
           <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewProject}>
             <CardHeader>
               <div className="flex items-center gap-3">
