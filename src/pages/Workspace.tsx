@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, Send, CheckCircle } from "lucide-react";
 import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
@@ -714,12 +714,12 @@ const Workspace = () => {
 
               {showPublishButton && (
                 <Button 
-                  onClick={handleCopyToPublish} 
+                  onClick={() => navigate(`/publish/${projectId}`)}
                   variant="default"
                   className="gap-2"
                 >
-                  <Send className="h-4 w-4" />
-                  Copy to Publish
+                  <CheckCircle className="h-4 w-4" />
+                  Ready to Publish
                 </Button>
               )}
             </div>
