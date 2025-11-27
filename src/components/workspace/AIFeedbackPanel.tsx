@@ -90,7 +90,7 @@ Example format:
   {"category": "Goal Alignment", "issue": "Missing key point about X mentioned in the goal"}
 ]
 
-Return ONLY the JSON array. Do not include any other text, explanations, or markdown formatting.`;
+CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks. Do NOT add any explanatory text before or after the JSON. Just the pure JSON array starting with [ and ending with ].`;
 
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
         body: { 
@@ -112,9 +112,23 @@ Return ONLY the JSON array. Do not include any other text, explanations, or mark
 
       if (data?.text) {
         try {
-          // Try to parse as JSON
-          const parsedFeedback = JSON.parse(data.text);
-          if (Array.isArray(parsedFeedback)) {
+          let textToParse = data.text.trim();
+          
+          // Remove markdown code blocks if present
+          const codeBlockMatch = textToParse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (codeBlockMatch) {
+            textToParse = codeBlockMatch[1].trim();
+          }
+          
+          // Try to find JSON array in the response
+          const jsonMatch = textToParse.match(/\[\s*{[\s\S]*}\s*\]/);
+          if (jsonMatch) {
+            textToParse = jsonMatch[0];
+          }
+          
+          const parsedFeedback = JSON.parse(textToParse);
+          
+          if (Array.isArray(parsedFeedback) && parsedFeedback.length > 0) {
             const items = parsedFeedback.map((item: any, index: number) => ({
               id: `feedback-${index}`,
               category: item.category || "General",
@@ -123,17 +137,13 @@ Return ONLY the JSON array. Do not include any other text, explanations, or mark
             setFeedbackItems(items);
             toast.success(`Found ${items.length} issue(s) to review`);
           } else {
-            throw new Error("Response is not an array");
+            throw new Error("Response is not a valid array");
           }
         } catch (parseError) {
           console.error("Failed to parse feedback as JSON:", parseError);
-          // Fallback: treat as single item
-          setFeedbackItems([{
-            id: 'feedback-0',
-            category: 'General',
-            issue: data.text
-          }]);
-          toast.success("Feedback generated!");
+          console.error("Raw response:", data.text);
+          toast.error("Failed to parse feedback. Please try again.");
+          setFeedbackItems([]);
         }
       } else {
         toast.error("No feedback received");
