@@ -133,6 +133,13 @@ CRITICAL OUTPUT FORMAT INSTRUCTIONS:
 5. NO commentary - Output only the HTML content, no explanations
 6. For Substack articles: Include title in <h1>, subtitle in <h2>, then article content in <p> tags
 
+FORMATTING REQUIREMENTS (CRITICAL):
+1. Add ONE blank line between each paragraph (use double line breaks)
+2. Add ONE blank line after each section heading
+3. Keep paragraphs concise - maximum 4-5 sentences per paragraph
+4. Break long paragraphs into shorter, digestible chunks
+5. Ensure proper line spacing throughout for readability
+
 CONTENT INSTRUCTIONS:
 1. READ AND USE ALL the reference text provided below
 2. Transform the raw extracted content into well-structured, polished ${goalDesc}
