@@ -628,73 +628,121 @@ Sanjiv Kumar`,
           </div>
           </div>
 
-          {/* Output Goal */}
-          <div className="mb-6">
-            <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
-            <Select value={goal} onValueChange={setGoal}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select content type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
-                <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
-                <SelectItem value="note">Note</SelectItem>
-                <SelectItem value="book_article">Article for a book</SelectItem>
-                <SelectItem value="story_children">Story for small children</SelectItem>
-                <SelectItem value="story_adults">Story for adults</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Choose the type of content you want to generate from your references
-            </p>
-            {goal === "other" && (
-              <Input
-                placeholder="Describe what you want to generate..."
-                value={customGoal}
-                onChange={(e) => setCustomGoal(e.target.value)}
-                className="mt-2"
-              />
-            )}
+          {/* Define Outcome Section */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Define Outcome</h2>
+            
+            {/* Output Goal */}
+            <div className="mb-4">
+              <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
+              <Select value={goal} onValueChange={setGoal}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select content type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
+                  <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
+                  <SelectItem value="note">Note</SelectItem>
+                  <SelectItem value="book_article">Article for a book</SelectItem>
+                  <SelectItem value="story_children">Story for small children</SelectItem>
+                  <SelectItem value="story_adults">Story for adults</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {goal === "other" && (
+                <Input
+                  placeholder="Describe what you want to generate..."
+                  value={customGoal}
+                  onChange={(e) => setCustomGoal(e.target.value)}
+                  className="mt-2"
+                />
+              )}
+            </div>
+
+            {/* Language Selection */}
+            <div>
+              <Label className="text-base font-semibold mb-2 block">
+                What language you want your final content to be in
+              </Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="english">English</SelectItem>
+                  <SelectItem value="hindi">Hindi</SelectItem>
+                  <SelectItem value="tamil">Tamil</SelectItem>
+                  <SelectItem value="german">German</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Language Selection */}
-          <div className="mb-6">
-            <Label className="text-base font-semibold mb-2 block">
-              Output Language
-            </Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="english">English</SelectItem>
-                <SelectItem value="hindi">Hindi</SelectItem>
-                <SelectItem value="tamil">Tamil</SelectItem>
-                <SelectItem value="german">German</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              The generated version will be in the selected language
+          <Separator className="my-8" />
+
+          {/* Add References Section */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-2">Add References</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Upload documents, paste text, or add links to articles and videos that will serve as source material for generating your content.
             </p>
-          </div>
 
-          <Separator className="my-6" />
+            <div className="space-y-6">
+              {/* Raw Text References */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Add Reference Text</h3>
+                <Textarea
+                  placeholder="Paste or type your reference text here..."
+                  value={currentRawText}
+                  onChange={(e) => setCurrentRawText(e.target.value)}
+                  rows={4}
+                  className="mb-2"
+                />
+                <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
+                  Add
+                </Button>
+              </div>
 
-          {/* Raw Text References */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-1">Add Reference Text</h2>
-            <p className="text-xs text-muted-foreground mb-3">Paste or type any text content you want to use as reference material</p>
-            <Textarea
-              placeholder="Paste or type your reference text here..."
-              value={currentRawText}
-              onChange={(e) => setCurrentRawText(e.target.value)}
-              rows={4}
-              className="mb-2"
-            />
-            <Button onClick={handleAddRawText} disabled={!currentRawText.trim()}>
-              Add
-            </Button>
+              {/* File Uploader */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Upload Reference Files</h3>
+                <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
+              </div>
+
+              {/* YouTube Link */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Add YouTube Video</h3>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Paste YouTube URL..."
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddYouTube()}
+                  />
+                  <Button onClick={handleAddYouTube} disabled={!youtubeUrl.trim()}>
+                    <Youtube className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              {/* External URL */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Add External Article</h3>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Paste article URL..."
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddURL()}
+                  />
+                  <Button onClick={handleAddURL} disabled={!externalUrl.trim()}>
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -713,57 +761,14 @@ Sanjiv Kumar`,
         )}
 
         <div className="grid gap-6">
-          {/* File Uploader */}
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Upload Reference Files</h2>
-            <p className="text-xs text-muted-foreground mb-3">Upload documents (PDF, Word, etc.) to extract content for your project</p>
-            <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
-          </div>
-
-          {/* YouTube Link */}
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Add YouTube Video</h2>
-            <p className="text-xs text-muted-foreground mb-3">Extract transcripts from YouTube videos to use as reference material</p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Paste YouTube URL..."
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddYouTube()}
-              />
-              <Button onClick={handleAddYouTube} disabled={!youtubeUrl.trim()}>
-                <Youtube className="mr-2 h-4 w-4" />
-                Add
-              </Button>
-            </div>
-          </div>
-
-          {/* External URL */}
-          <div>
-            <h2 className="text-lg font-semibold mb-1">Add External Article</h2>
-            <p className="text-xs text-muted-foreground mb-3">Extract content from any web article or blog post by providing its URL</p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Paste article URL..."
-                value={externalUrl}
-                onChange={(e) => setExternalUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddURL()}
-              />
-              <Button onClick={handleAddURL} disabled={!externalUrl.trim()}>
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Add
-              </Button>
-            </div>
-          </div>
 
           <Separator />
 
           {/* Vocabulary */}
           <div>
-            <Label htmlFor="vocabulary" className="text-base font-semibold mb-1 block">
+            <Label htmlFor="vocabulary" className="text-base font-semibold mb-2 block">
               Vocabulary / Terms to Enforce (Optional)
             </Label>
-            <p className="text-xs text-muted-foreground mb-2">Define key terms or abbreviations to ensure consistent usage in your generated content</p>
             <Textarea
               id="vocabulary"
               placeholder="Enter important terms, one per line. E.g.:&#10;AI → Artificial Intelligence&#10;ML → Machine Learning&#10;UX → User Experience"
@@ -771,17 +776,13 @@ Sanjiv Kumar`,
               onChange={(e) => setVocabulary(e.target.value)}
               rows={4}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Add key terms you want the AI to use consistently in generated drafts
-            </p>
           </div>
 
           {/* LLM Instructions */}
           <div>
-            <Label htmlFor="instructions" className="text-base font-semibold mb-1 block">
+            <Label htmlFor="instructions" className="text-base font-semibold mb-2 block">
               Additional Instructions (Optional)
             </Label>
-            <p className="text-xs text-muted-foreground mb-2">Provide specific guidance for the AI on tone, style, or how to use the references</p>
             <Textarea
               id="instructions"
               placeholder="E.g., Use a casual tone, prioritize statistics from source 2, include image 1 as an intro quote..."
@@ -796,8 +797,7 @@ Sanjiv Kumar`,
           {/* Reference Files Status */}
           {(referenceFiles.length > 0 || rawTextReferences.length > 0) && (
             <div>
-              <h2 className="text-lg font-semibold mb-1">Reference Files</h2>
-              <p className="text-xs text-muted-foreground mb-3">Review your uploaded references and add specific instructions for how each should be used</p>
+              <h2 className="text-lg font-semibold mb-3">Reference Files</h2>
               <div className="space-y-3">
                 {/* Uploaded Files */}
                 {referenceFiles.map((file) => (
