@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { MessageSquare, Loader2, Sparkles, Plus } from "lucide-react";
 
 interface FeedbackItem {
   id: string;
@@ -24,6 +26,7 @@ const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata }: AIFeedbackPa
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [customFeedback, setCustomFeedback] = useState("");
 
   const getFeedback = async () => {
     if (!editorRef?.getHTML) {
@@ -199,14 +202,10 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
         .map(item => `- [${item.category}] ${item.issue}`)
         .join('\n');
 
-      const goal = projectMetadata?.goal || "Not specified";
       const language = projectMetadata?.language || "english";
 
-      // Construct regeneration prompt
-      const regeneratePrompt = `You are an expert content editor. Please regenerate the following draft text by addressing the specific feedback points provided.
-
-**ORIGINAL GOAL/INSTRUCTIONS:**
-${goal}
+      // Construct regeneration prompt - only feedback, no goal/instructions
+      const regeneratePrompt = `You are an expert content editor. Please regenerate the following draft text by addressing ONLY the specific feedback points provided below.
 
 **TARGET LANGUAGE:**
 ${language}
@@ -217,12 +216,13 @@ ${currentContent}
 **FEEDBACK TO ADDRESS:**
 ${feedbackText}
 
-**INSTRUCTIONS:**
-1. Take the current draft and improve it by addressing ALL the feedback points listed above
-2. Maintain the overall structure and intent of the original draft
-3. Ensure the content is in ${language}
-4. Fix all issues mentioned in the feedback
-5. Keep the same tone and style as the original
+**CRITICAL INSTRUCTIONS:**
+1. Make ONLY minimal changes needed to address the feedback points listed above
+2. Do NOT rewrite or restructure the entire draft
+3. Focus ONLY on fixing the specific issues mentioned in the feedback
+4. Maintain the overall structure, intent, and tone of the original draft
+5. Ensure the content remains in ${language}
+6. Do NOT add new content or sections that were not requested in the feedback
 
 Return ONLY the improved draft text. Do not include explanations, notes, or any other commentary.`;
 
@@ -299,6 +299,23 @@ Return ONLY the improved draft text. Do not include explanations, notes, or any 
     }
   };
 
+  const handleAddCustomFeedback = () => {
+    if (!customFeedback.trim()) {
+      toast.error("Please enter your feedback");
+      return;
+    }
+
+    const newItem: FeedbackItem = {
+      id: `custom-${Date.now()}`,
+      category: "Custom",
+      issue: customFeedback
+    };
+
+    setFeedbackItems([...feedbackItems, newItem]);
+    setCustomFeedback("");
+    toast.success("Custom feedback added");
+  };
+
   return (
     <div className="h-full flex flex-col w-full">
       <div className="p-4 border-b flex-shrink-0">
@@ -333,6 +350,27 @@ Return ONLY the improved draft text. Do not include explanations, notes, or any 
 
           {feedbackItems.length > 0 && (
             <>
+              <div className="mb-4">
+                <Label className="text-sm font-medium mb-2 block">Add Your Own Feedback</Label>
+                <Textarea
+                  placeholder="Enter your own feedback point..."
+                  value={customFeedback}
+                  onChange={(e) => setCustomFeedback(e.target.value)}
+                  rows={3}
+                  className="mb-2"
+                />
+                <Button 
+                  onClick={handleAddCustomFeedback}
+                  disabled={!customFeedback.trim()}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Custom Feedback
+                </Button>
+              </div>
+
               <div className="space-y-3">
                 {feedbackItems.map((item) => (
                   <Card 
