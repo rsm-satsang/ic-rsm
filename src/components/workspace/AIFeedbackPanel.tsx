@@ -19,9 +19,10 @@ interface AIFeedbackPanelProps {
   projectId: string;
   editorRef: any;
   projectMetadata?: any;
+  previewContent?: string; // For preview mode without editor
 }
 
-const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata }: AIFeedbackPanelProps) => {
+const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata, previewContent }: AIFeedbackPanelProps) => {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -29,11 +30,6 @@ const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata }: AIFeedbackPa
   const [customFeedback, setCustomFeedback] = useState("");
 
   const getFeedback = async () => {
-    if (!editorRef?.getHTML) {
-      toast.error("Editor not ready. Please try again.");
-      return;
-    }
-
     setLoading(true);
     setFeedbackItems([]);
     setSelectedItems([]);
@@ -47,9 +43,23 @@ const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata }: AIFeedbackPa
         return;
       }
 
-      // Get current content from editor
-      const editorElement = document.querySelector('.ProseMirror');
-      const currentContent = editorElement?.textContent || "";
+      // Get current content from editor or preview
+      let currentContent = "";
+      
+      if (previewContent) {
+        // For preview mode, extract text from HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = previewContent;
+        currentContent = tempDiv.textContent || tempDiv.innerText || "";
+      } else if (editorRef?.getHTML) {
+        // For editor mode
+        const editorElement = document.querySelector('.ProseMirror');
+        currentContent = editorElement?.textContent || "";
+      } else {
+        toast.error("No content available to review.");
+        setLoading(false);
+        return;
+      }
 
       if (!currentContent.trim()) {
         toast.error("No content to review. Please add some text first.");
@@ -170,6 +180,12 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
   const handleRegenerateWithFeedback = async () => {
     if (selectedItems.length === 0) {
       toast.error("Please select at least one feedback item to address");
+      return;
+    }
+
+    // Check if we're in preview mode (no editor)
+    if (previewContent) {
+      toast.error("Regeneration is not available in preview mode. Please go to the workspace editor to make changes.");
       return;
     }
 

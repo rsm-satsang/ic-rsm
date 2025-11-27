@@ -27,7 +27,6 @@ const PublishPreview = () => {
   const [loading, setLoading] = useState(true);
   const [reviewedFeedback, setReviewedFeedback] = useState(false);
   const [readyToPublish, setReadyToPublish] = useState(false);
-  const [editorRef] = useState<any>(null);
 
   useEffect(() => {
     checkUserAndLoadProject();
@@ -316,8 +315,9 @@ const PublishPreview = () => {
             <h2 className="text-lg font-semibold mb-4">AI Feedback</h2>
             <AIFeedbackPanel
               projectId={project.id}
-              editorRef={editorRef}
+              editorRef={null}
               projectMetadata={project.metadata}
+              previewContent={finalContent}
             />
           </div>
         </div>

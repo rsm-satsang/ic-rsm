@@ -26,6 +26,7 @@ export default function IntakePage() {
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
   const [language, setLanguage] = useState("english");
+  const [selectedModel, setSelectedModel] = useState("gemini");
   const [llmInstructions, setLlmInstructions] = useState("");
   const [vocabulary, setVocabulary] = useState("");
   const [projectTitle, setProjectTitle] = useState(() => {
@@ -109,6 +110,9 @@ export default function IntakePage() {
       }
       if (metadata?.language) {
         setLanguage(metadata.language);
+      }
+      if (metadata?.selectedModel) {
+        setSelectedModel(metadata.selectedModel);
       }
       if (metadata?.llm_instructions) {
         setLlmInstructions(metadata.llm_instructions);
@@ -367,6 +371,7 @@ Sanjiv Kumar`,
         extracted_draft: extractedDraft,
         goal: finalGoal,
         language: language,
+        selectedModel: selectedModel,
         llm_instructions: llmInstructions,
       };
 
@@ -388,8 +393,9 @@ Sanjiv Kumar`,
       // Add custom instructions if provided
       const promptToUse = customInstructions.trim() ? `${customInstructions}\n\n${freshPrompt}` : freshPrompt;
 
-      console.log("=== FULL PROMPT BEING SENT TO GEMINI ===");
+      console.log("=== FULL PROMPT BEING SENT TO AI ===");
       console.log("Selected Goal:", goal);
+      console.log("Selected Model:", selectedModel);
       console.log("Prompt length:", promptToUse.length, "characters");
       console.log("First 500 chars:", promptToUse.substring(0, 500));
       console.log("=========================================");
@@ -398,6 +404,7 @@ Sanjiv Kumar`,
         body: {
           action: "generate_draft",
           prompt: promptToUse,
+          model: selectedModel,
         },
       });
 
@@ -680,6 +687,21 @@ Sanjiv Kumar`,
                     <SelectItem value="hindi">Hindi</SelectItem>
                     <SelectItem value="tamil">Tamil</SelectItem>
                     <SelectItem value="german">German</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Model Selection */}
+              <div>
+                <Label className="text-base font-semibold mb-2 block">Which AI model to use</Label>
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select AI model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini">Gemini 2.0 Flash (Default - Fast & Balanced)</SelectItem>
+                    <SelectItem value="gpt-5-mini">GPT-5 Mini (Fast & Cost-Efficient)</SelectItem>
+                    <SelectItem value="gpt-5-nano">GPT-5 Nano (Fastest & Most Economical)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
