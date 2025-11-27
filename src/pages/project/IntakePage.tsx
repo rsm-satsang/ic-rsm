@@ -600,8 +600,10 @@ Sanjiv Kumar`,
             </Button>
           </div>
           
-          <h2 className="text-lg font-semibold mb-3">Name Your Project</h2>
-          <div className="flex items-center gap-2 mb-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-1">Name Your Project</h2>
+            <p className="text-xs text-muted-foreground mb-3">Give your project a descriptive name to easily identify it later</p>
+          <div className="flex items-center gap-2">
             <Input
               value={projectTitle}
               onChange={(e) => setProjectTitle(e.target.value)}
@@ -624,40 +626,28 @@ Sanjiv Kumar`,
               Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
+          </div>
 
           {/* Output Goal */}
           <div className="mb-6">
-            <Label className="text-base font-semibold mb-3 block">What do you want to generate?</Label>
-            <RadioGroup value={goal} onValueChange={setGoal}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="substack_newsletter" id="substack" />
-                <Label htmlFor="substack">Substack newsletter</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="wordpress_blog" id="wordpress" />
-                <Label htmlFor="wordpress">Wordpress Blog</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="note" id="note" />
-                <Label htmlFor="note">Note</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="book_article" id="book" />
-                <Label htmlFor="book">Article for a book</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="story_children" id="children" />
-                <Label htmlFor="children">Story for small children</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="story_adults" id="adults" />
-                <Label htmlFor="adults">Story for adults</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="other" id="other" />
-                <Label htmlFor="other">Other</Label>
-              </div>
-            </RadioGroup>
+            <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
+            <Select value={goal} onValueChange={setGoal}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select content type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
+                <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
+                <SelectItem value="note">Note</SelectItem>
+                <SelectItem value="book_article">Article for a book</SelectItem>
+                <SelectItem value="story_children">Story for small children</SelectItem>
+                <SelectItem value="story_adults">Story for adults</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Choose the type of content you want to generate from your references
+            </p>
             {goal === "other" && (
               <Input
                 placeholder="Describe what you want to generate..."
@@ -693,7 +683,8 @@ Sanjiv Kumar`,
 
           {/* Raw Text References */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">Add Reference Text</h2>
+            <h2 className="text-lg font-semibold mb-1">Add Reference Text</h2>
+            <p className="text-xs text-muted-foreground mb-3">Paste or type any text content you want to use as reference material</p>
             <Textarea
               placeholder="Paste or type your reference text here..."
               value={currentRawText}
@@ -724,13 +715,15 @@ Sanjiv Kumar`,
         <div className="grid gap-6">
           {/* File Uploader */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">Upload Reference Files</h2>
+            <h2 className="text-lg font-semibold mb-1">Upload Reference Files</h2>
+            <p className="text-xs text-muted-foreground mb-3">Upload documents (PDF, Word, etc.) to extract content for your project</p>
             <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
           </div>
 
           {/* YouTube Link */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">Add YouTube Video</h2>
+            <h2 className="text-lg font-semibold mb-1">Add YouTube Video</h2>
+            <p className="text-xs text-muted-foreground mb-3">Extract transcripts from YouTube videos to use as reference material</p>
             <div className="flex gap-2">
               <Input
                 placeholder="Paste YouTube URL..."
@@ -747,7 +740,8 @@ Sanjiv Kumar`,
 
           {/* External URL */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">Add External Article</h2>
+            <h2 className="text-lg font-semibold mb-1">Add External Article</h2>
+            <p className="text-xs text-muted-foreground mb-3">Extract content from any web article or blog post by providing its URL</p>
             <div className="flex gap-2">
               <Input
                 placeholder="Paste article URL..."
@@ -766,9 +760,10 @@ Sanjiv Kumar`,
 
           {/* Vocabulary */}
           <div>
-            <Label htmlFor="vocabulary" className="text-base font-semibold mb-2 block">
+            <Label htmlFor="vocabulary" className="text-base font-semibold mb-1 block">
               Vocabulary / Terms to Enforce (Optional)
             </Label>
+            <p className="text-xs text-muted-foreground mb-2">Define key terms or abbreviations to ensure consistent usage in your generated content</p>
             <Textarea
               id="vocabulary"
               placeholder="Enter important terms, one per line. E.g.:&#10;AI → Artificial Intelligence&#10;ML → Machine Learning&#10;UX → User Experience"
@@ -783,9 +778,10 @@ Sanjiv Kumar`,
 
           {/* LLM Instructions */}
           <div>
-            <Label htmlFor="instructions" className="text-base font-semibold mb-2 block">
+            <Label htmlFor="instructions" className="text-base font-semibold mb-1 block">
               Additional Instructions (Optional)
             </Label>
+            <p className="text-xs text-muted-foreground mb-2">Provide specific guidance for the AI on tone, style, or how to use the references</p>
             <Textarea
               id="instructions"
               placeholder="E.g., Use a casual tone, prioritize statistics from source 2, include image 1 as an intro quote..."
@@ -800,7 +796,8 @@ Sanjiv Kumar`,
           {/* Reference Files Status */}
           {(referenceFiles.length > 0 || rawTextReferences.length > 0) && (
             <div>
-              <h2 className="text-lg font-semibold mb-3">Reference Files</h2>
+              <h2 className="text-lg font-semibold mb-1">Reference Files</h2>
+              <p className="text-xs text-muted-foreground mb-3">Review your uploaded references and add specific instructions for how each should be used</p>
               <div className="space-y-3">
                 {/* Uploaded Files */}
                 {referenceFiles.map((file) => (
