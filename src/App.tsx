@@ -10,6 +10,7 @@ import IntakePage from "./pages/project/IntakePage";
 import PublishPreview from "./pages/PublishPreview";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/project/:projectId/intake" element={<IntakePage />} />
           <Route path="/workspace/:projectId" element={<Workspace />} />
