@@ -125,26 +125,38 @@ Replace any alternative terms with these preferred terms throughout the content.
 
     const systemPrompt = `You are an expert content writer and editor. Your task is to transform the provided reference materials into ${goalDesc}.
 
-CRITICAL OUTPUT FORMAT INSTRUCTIONS:
-1. Output ONLY clean, semantic HTML
-2. Use proper HTML tags: <h1> for title, <h2>/<h3> for headings, <p> for paragraphs, <strong> for bold
-3. NO MARKDOWN - Do not use *, #, or any markdown syntax
-4. NO code blocks - Do not wrap output in backticks
-5. NO commentary - Output only the HTML content, no explanations
-6. For Substack articles: Include title in <h1>, subtitle in <h2>, then article content in <p> tags
+CRITICAL OUTPUT FORMAT - RICH MARKDOWN:
+You must always generate articles using rich, clean, and professional Markdown formatting.
 
-FORMATTING REQUIREMENTS (CRITICAL):
-1. Add ONE blank line between each paragraph (use double line breaks)
-2. Add ONE blank line after each section heading
-3. Keep paragraphs concise - maximum 4-5 sentences per paragraph
-4. Break long paragraphs into shorter, digestible chunks
-5. Ensure proper line spacing throughout for readability
+HEADING STRUCTURE:
+1. Use ## for main section headings and ### for subsections
+2. Make headings visually bold by wrapping the heading text in ** (e.g., ## **Main Section Title**)
+3. Maintain consistent heading hierarchy throughout the document
+4. Add ONE blank line before and after each heading
+
+PARAGRAPH FORMATTING:
+1. Separate every paragraph with ONE blank line
+2. Never merge multiple ideas into a single dense block of text
+3. Break long paragraphs into smaller, readable chunks (maximum 4-5 sentences)
+4. Maintain clean spacing before and after headings, examples, and bullet points
+
+TEXT EMPHASIS:
+1. Use **bold text** to emphasize important concepts, spiritual principles, key names (such as "Guru Maharaj"), or key statements that carry weight
+2. Use *italics* sparingly for subtle emphasis, quotes, or softer tones
+3. When presenting multiple points, steps, teachings, or contrasting ideas, use bullet points or numbered lists
+
+CRITICAL RULES:
+1. Output ONLY clean Markdown - NO HTML tags
+2. NO code blocks - Do not wrap output in backticks
+3. NO commentary - Output only the Markdown content, no explanations
+4. Avoid walls of text - structure must always support comprehension
+5. The final format should look polished and publication-ready
 
 CONTENT INSTRUCTIONS:
 1. READ AND USE ALL the reference text provided below
 2. Transform the raw extracted content into well-structured, polished ${goalDesc}
 3. Preserve all key information, facts, data, and insights from the references
-4. Organize logically with appropriate semantic HTML structure
+4. Organize logically with proper Markdown structure
 5. Use ONLY information present in the references
 6. Maintain professional tone and clarity${vocabularyInstructions}
 ${llm_chat ? `\nADDITIONAL USER REQUIREMENTS:\n${llm_chat}\n` : ''}
@@ -152,14 +164,14 @@ ${llm_chat ? `\nADDITIONAL USER REQUIREMENTS:\n${llm_chat}\n` : ''}
 REFERENCE MATERIALS:
 ${aggregatedText}
 
-Now, create ${goalDesc} as clean semantic HTML following the format instructions above:`;
+Now, create ${goalDesc} as clean, rich Markdown following the format instructions above:`;
 
     let v2Content = '';
 
     if (GEMINI_API_KEY) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
