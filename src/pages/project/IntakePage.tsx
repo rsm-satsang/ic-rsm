@@ -301,16 +301,15 @@ Sanjiv Kumar`,
 
     let instruction = instructions[goalType] || instructions.other;
     
-    // Add language instruction if not English
-    if (targetLanguage && targetLanguage !== "english") {
-      const languageNames: Record<string, string> = {
-        hindi: "Hindi",
-        tamil: "Tamil",
-        german: "German"
-      };
-      const languageName = languageNames[targetLanguage] || targetLanguage;
-      instruction += `\n\n**CRITICAL REQUIREMENT**: The entire content MUST be written in ${languageName}. Generate the complete output in ${languageName} language.`;
-    }
+    // Add language instruction for ALL languages including English
+    const languageNames: Record<string, string> = {
+      english: "English",
+      hindi: "Hindi",
+      tamil: "Tamil",
+      german: "German"
+    };
+    const languageName = languageNames[targetLanguage || "english"] || targetLanguage || "English";
+    instruction += `\n\n**CRITICAL REQUIREMENT**: The entire content MUST be written in ${languageName}. Generate the complete output in ${languageName} language.`;
 
     return instruction;
   };
