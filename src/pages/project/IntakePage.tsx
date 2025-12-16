@@ -40,11 +40,26 @@ export default function IntakePage() {
   const [showExtractedDraft, setShowExtractedDraft] = useState(false);
   const [extractedDraft, setExtractedDraft] = useState("");
   const [referenceNotes, setReferenceNotes] = useState<Record<string, string>>({});
-  const [generatedDraft, setGeneratedDraft] = useState("");
-  const [draftGenerated, setDraftGenerated] = useState(false);
+  const [generatedDraft, setGeneratedDraft] = useState(() => {
+    if (projectId) {
+      return localStorage.getItem(`draft_${projectId}`) || "";
+    }
+    return "";
+  });
+  const [draftGenerated, setDraftGenerated] = useState(() => {
+    if (projectId) {
+      return !!localStorage.getItem(`draft_${projectId}`);
+    }
+    return false;
+  });
   const [customInstructions, setCustomInstructions] = useState("");
   const [saving, setSaving] = useState(false);
-  const [usedModel, setUsedModel] = useState<string | null>(null);
+  const [usedModel, setUsedModel] = useState<string | null>(() => {
+    if (projectId) {
+      return localStorage.getItem(`draft_model_${projectId}`);
+    }
+    return null;
+  });
 
   const {
     referenceFiles,
@@ -74,6 +89,20 @@ export default function IntakePage() {
       }
     }
   }, [referenceFiles]);
+
+  // Persist draft to localStorage
+  useEffect(() => {
+    if (projectId && generatedDraft) {
+      localStorage.setItem(`draft_${projectId}`, generatedDraft);
+    }
+  }, [projectId, generatedDraft]);
+
+  // Persist used model to localStorage
+  useEffect(() => {
+    if (projectId && usedModel) {
+      localStorage.setItem(`draft_model_${projectId}`, usedModel);
+    }
+  }, [projectId, usedModel]);
 
   const loadProject = async () => {
     try {
