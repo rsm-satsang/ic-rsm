@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,7 +24,7 @@ const PublishPreview = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [project, setProject] = useState<Project | null>(null);
-  const [finalContent, setFinalContent] = useState<string>("");
+  const [markdownContent, setMarkdownContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [reviewedFeedback, setReviewedFeedback] = useState(false);
   const [readyToPublish, setReadyToPublish] = useState(false);
@@ -83,7 +84,25 @@ const PublishPreview = () => {
         .single();
 
       if (error) throw error;
-      setFinalContent(data.content || "");
+      
+      // Convert HTML to plain text preserving exact newlines
+      const htmlContent = data.content || "";
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = htmlContent;
+      
+      // Replace br with newlines
+      tempDiv.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+      
+      // Add proper spacing for block elements
+      tempDiv.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote").forEach((el) => {
+        el.prepend("\n\n");
+      });
+      
+      const plainText = (tempDiv.textContent || "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      
+      setMarkdownContent(plainText);
     } catch (error: any) {
       console.error("Failed to load version:", error);
       toast.error("Failed to load content");
@@ -91,63 +110,20 @@ const PublishPreview = () => {
   };
 
   const handleCopyToPublish = async () => {
-    if (!project || !user || !finalContent) {
+    if (!project || !user || !markdownContent) {
       toast.error("No content to copy");
       return;
     }
 
     try {
-      // Create a temporary div to parse HTML and extract text with markdown
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = finalContent;
-
-      // Convert HTML to markdown-style plain text
-      let markdownText = '';
-      
-      // Process each element
-      const elements = tempDiv.querySelectorAll('*');
-      elements.forEach((element) => {
-        const tagName = element.tagName.toLowerCase();
-        const text = element.textContent?.trim() || '';
-        
-        if (!text) return;
-        
-        // Add appropriate markdown formatting based on element type
-        if (tagName === 'h1') {
-          markdownText += `\n\n# ${text}\n\n`;
-        } else if (tagName === 'h2') {
-          markdownText += `\n\n## ${text}\n\n`;
-        } else if (tagName === 'h3') {
-          markdownText += `\n\n### ${text}\n\n`;
-        } else if (tagName === 'h4') {
-          markdownText += `\n\n#### ${text}\n\n`;
-        } else if (tagName === 'p') {
-          markdownText += `${text}\n\n`;
-        } else if (tagName === 'li') {
-          markdownText += `• ${text}\n`;
-        } else if (tagName === 'blockquote') {
-          markdownText += `\n> ${text}\n\n`;
-        } else if (tagName === 'strong' || tagName === 'b') {
-          markdownText += `**${text}**`;
-        } else if (tagName === 'em' || tagName === 'i') {
-          markdownText += `*${text}*`;
-        } else if (!element.querySelector('*')) {
-          // Only add text if element has no children (leaf node)
-          markdownText += `${text} `;
-        }
-      });
-
-      // Clean up extra whitespace
-      markdownText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-      
-      // Add title at the top
-      const contentToPublish = `# ${project.title}\n\n${markdownText}`;
+      // Add title at the top and copy as markdown
+      const contentToPublish = `# ${project.title}\n\n${markdownContent}`;
       
       // Copy to clipboard
       await navigator.clipboard.writeText(contentToPublish);
       
-      toast.success("Content copied to clipboard with markdown!", {
-        description: "Ready to paste into your publishing platform.",
+      toast.success("Markdown copied to clipboard!", {
+        description: "Ready to paste into Substack or your publishing platform.",
         duration: 6000,
       });
 
@@ -175,51 +151,13 @@ const PublishPreview = () => {
   };
 
   const handleExport = async () => {
-    if (!project || !finalContent) {
+    if (!project || !markdownContent) {
       toast.error("No content to export");
       return;
     }
 
     try {
-      // Create a temporary div to parse HTML and extract text with markdown
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = finalContent;
-
-      let markdownText = '';
-      
-      // Process each element for markdown
-      const elements = tempDiv.querySelectorAll('*');
-      elements.forEach((element) => {
-        const tagName = element.tagName.toLowerCase();
-        const text = element.textContent?.trim() || '';
-        
-        if (!text) return;
-        
-        if (tagName === 'h1') {
-          markdownText += `\n\n# ${text}\n\n`;
-        } else if (tagName === 'h2') {
-          markdownText += `\n\n## ${text}\n\n`;
-        } else if (tagName === 'h3') {
-          markdownText += `\n\n### ${text}\n\n`;
-        } else if (tagName === 'h4') {
-          markdownText += `\n\n#### ${text}\n\n`;
-        } else if (tagName === 'p') {
-          markdownText += `${text}\n\n`;
-        } else if (tagName === 'li') {
-          markdownText += `• ${text}\n`;
-        } else if (tagName === 'blockquote') {
-          markdownText += `\n> ${text}\n\n`;
-        } else if (tagName === 'strong' || tagName === 'b') {
-          markdownText += `**${text}**`;
-        } else if (tagName === 'em' || tagName === 'i') {
-          markdownText += `*${text}*`;
-        } else if (!element.querySelector('*')) {
-          markdownText += `${text} `;
-        }
-      });
-
-      markdownText = markdownText.replace(/\n{3,}/g, '\n\n').trim();
-      const contentToExport = `# ${project.title}\n\n${markdownText}`;
+      const contentToExport = `# ${project.title}\n\n${markdownContent}`;
       
       // Create a blob and download as .txt file (which can be opened as markdown)
       const blob = new Blob([contentToExport], { type: 'text/plain;charset=utf-8' });
@@ -302,10 +240,9 @@ const PublishPreview = () => {
         {/* Main Preview Area */}
         <div className="flex-1 overflow-y-auto bg-background p-8">
           <div className="max-w-4xl mx-auto">
-            <div 
-              className="prose prose-lg max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: finalContent }}
-            />
+            <article className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed">
+              <ReactMarkdown>{markdownContent}</ReactMarkdown>
+            </article>
           </div>
         </div>
 
@@ -317,7 +254,7 @@ const PublishPreview = () => {
               projectId={project.id}
               editorRef={null}
               projectMetadata={project.metadata}
-              previewContent={finalContent}
+              previewContent={markdownContent}
             />
           </div>
         </div>

@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, Send, CheckCircle } from "lucide-react";
-import CollaborativeEditor from "@/components/workspace/CollaborativeEditor";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code } from "lucide-react";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
@@ -45,6 +46,9 @@ const Workspace = () => {
   const [savingTitle, setSavingTitle] = useState(false);
   const [selectedVersionForView, setSelectedVersionForView] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [markdownContent, setMarkdownContent] = useState("");
+  const [loadingContent, setLoadingContent] = useState(true);
 
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
@@ -53,19 +57,19 @@ const Workspace = () => {
   const handleInsertText = async (text: string, aiFeatureName: string) => {
     console.log("Creating new version with AI output from:", aiFeatureName);
     
-    if (!editorRef?.commands || !project || !user) {
-      console.error("Editor reference or project not available");
-      toast.error("Editor not ready. Please try again.");
+    if (!project || !user) {
+      console.error("Project not available");
+      toast.error("Project not ready. Please try again.");
       return;
     }
 
     try {
-      // Replace text in editor first
-      editorRef.chain().focus().deleteSelection().insertContent(text).run();
+      // Append/insert text at cursor position or end
+      const updatedContent = markdownContent + "\n\n" + text;
+      setMarkdownContent(updatedContent);
       
-      // Get the updated content
-      const editorElement = document.querySelector('.ProseMirror');
-      const content = editorElement?.innerHTML || "";
+      // Convert to HTML for storage
+      const content = markdownToHtml(updatedContent);
 
       // Get current version name
       const { data: currentVersion } = await supabase
@@ -156,6 +160,96 @@ const Workspace = () => {
     checkUserAndLoadProject();
   }, [projectId]);
 
+  // Load version content when version changes
+  useEffect(() => {
+    if (selectedVersionForView) {
+      loadVersionContent(selectedVersionForView);
+    } else if (projectId) {
+      loadLatestVersionContent();
+    }
+  }, [selectedVersionForView, projectId]);
+
+  const loadVersionContent = async (versionId: string) => {
+    setLoadingContent(true);
+    try {
+      const { data, error } = await supabase
+        .from("versions")
+        .select("content")
+        .eq("id", versionId)
+        .single();
+      
+      if (error) throw error;
+      
+      // Convert HTML to markdown-ish plain text preserving line breaks
+      const content = htmlToMarkdown(data.content || "");
+      setMarkdownContent(content);
+    } catch (error) {
+      console.error("Error loading version:", error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const loadLatestVersionContent = async () => {
+    setLoadingContent(true);
+    try {
+      const { data, error } = await supabase
+        .from("versions")
+        .select("id, content")
+        .eq("project_id", projectId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setCurrentVersionId(data.id);
+        const content = htmlToMarkdown(data.content || "");
+        setMarkdownContent(content);
+      } else {
+        setMarkdownContent("Start writing your content here...");
+      }
+    } catch (error) {
+      console.error("Error loading latest version:", error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  // Convert HTML to plain text preserving exact newlines
+  const htmlToMarkdown = (html: string): string => {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    
+    // Replace br with newlines
+    tempDiv.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+    
+    // Add proper spacing for block elements
+    tempDiv.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote").forEach((el) => {
+      el.prepend("\n\n");
+    });
+    
+    const text = (tempDiv.textContent || "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    
+    return text;
+  };
+
+  // Convert plain text back to HTML for saving
+  const markdownToHtml = (text: string): string => {
+    // Split by double newlines for paragraphs
+    const paragraphs = text.split(/\n\n+/);
+    return paragraphs
+      .map((p) => {
+        // Handle single newlines within paragraphs as <br>
+        const withBreaks = p.replace(/\n/g, "<br>");
+        return `<p>${withBreaks}</p>`;
+      })
+      .join("");
+  };
+
   const checkUserAndLoadProject = async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -211,11 +305,10 @@ const Workspace = () => {
 
     setSaving(true);
     try {
-      // Get editor content
-      const editorElement = document.querySelector('.ProseMirror');
-      const content = editorElement?.innerHTML || "";
+      // Convert markdown content to HTML for storage
+      const content = markdownToHtml(markdownContent);
 
-      if (!content || content === "<p></p>" || content === "<p>Start writing your content here...</p>") {
+      if (!content || content === "<p></p>" || markdownContent.trim() === "" || markdownContent === "Start writing your content here...") {
         toast.error("No content to save");
         setSaving(false);
         return;
@@ -357,9 +450,8 @@ const Workspace = () => {
         throw lastError || new Error("Failed to update project after 3 attempts");
       }
 
-      // Get editor content
-      const editorElement = document.querySelector('.ProseMirror');
-      const content = editorElement?.innerHTML || "";
+      // Convert markdown content to HTML for storage
+      const content = markdownToHtml(markdownContent);
 
       // Get current max version number
       const { data: maxVersionData } = await supabase
@@ -734,16 +826,55 @@ const Workspace = () => {
           <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
         </div>
 
-        {/* Center - Editor */}
-        <div className="flex-1 min-w-0 overflow-y-auto bg-background">
-          <CollaborativeEditor
-            projectId={project.id} 
-            userId={user?.id || ""} 
-            onTextSelection={handleTextSelection}
-            onEditorReady={handleEditorReady}
-            onVersionChange={setCurrentVersionId}
-            selectedVersionId={selectedVersionForView}
-          />
+        {/* Center - Editor/Preview */}
+        <div className="flex-1 min-w-0 overflow-hidden bg-background flex flex-col">
+          {/* Edit/Preview Toggle */}
+          <div className="border-b bg-muted/30 px-4 py-2 flex items-center gap-2">
+            <Button
+              variant={viewMode === "edit" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("edit")}
+              className="gap-2"
+            >
+              <Code className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              variant={viewMode === "preview" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("preview")}
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Preview
+            </Button>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto">
+            {loadingContent ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-sm text-muted-foreground">Loading content...</p>
+                </div>
+              </div>
+            ) : viewMode === "edit" ? (
+              <Textarea
+                value={markdownContent}
+                onChange={(e) => setMarkdownContent(e.target.value)}
+                className="w-full h-full min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
+                placeholder="Start writing your content here..."
+                style={{ whiteSpace: "pre-wrap" }}
+              />
+            ) : (
+              <div className="p-8 max-w-4xl mx-auto">
+                <article className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed">
+                  <ReactMarkdown>{markdownContent}</ReactMarkdown>
+                </article>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Sidebar - AI Tools & References (Tabbed) */}
