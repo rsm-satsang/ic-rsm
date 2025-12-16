@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,9 +49,18 @@ const Workspace = () => {
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleTextSelection = (text: string) => {
-    setSelectedText(text);
+  const handleTextSelection = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start !== end) {
+        const text = markdownContent.substring(start, end);
+        setSelectedText(text);
+      }
+    }
   };
 
   const handleInsertText = async (text: string, aiFeatureName: string) => {
@@ -861,8 +870,12 @@ const Workspace = () => {
               </div>
             ) : viewMode === "edit" ? (
               <Textarea
+                ref={textareaRef}
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
+                onSelect={handleTextSelection}
+                onMouseUp={handleTextSelection}
+                onKeyUp={handleTextSelection}
                 className="w-full h-full min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
                 placeholder="Start writing your content here..."
                 style={{ whiteSpace: "pre-wrap" }}
