@@ -158,11 +158,20 @@ export default function IntakePage() {
         .limit(1);
 
       if (versions && versions.length > 0) {
-        // Convert HTML back to plain text for editing
+        // Convert HTML back to plain text for editing (preserve line breaks)
         const htmlContent = versions[0].content;
         const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
-        const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+        // Inject explicit newlines before extracting text so paragraphs/line breaks survive round-tripping
+        tempDiv.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+        tempDiv
+          .querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote")
+          .forEach((el) => el.append("\n\n"));
+
+        const plainText = (tempDiv.textContent || "")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
 
         setGeneratedDraft(plainText);
         setDraftGenerated(true);
