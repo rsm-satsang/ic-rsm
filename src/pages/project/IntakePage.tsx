@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { useExtractionJobs } from "@/hooks/useExtractionJobs";
 import { intakeAPI } from "@/lib/api/intake";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Loader2, Youtube, Link as LinkIcon, Sparkles, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Youtube, Link as LinkIcon, Sparkles, FileText, Trash2, Eye, Code } from "lucide-react";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -54,6 +55,7 @@ export default function IntakePage() {
   });
   const [customInstructions, setCustomInstructions] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [usedModel, setUsedModel] = useState<string | null>(() => {
     if (projectId) {
       return localStorage.getItem(`draft_model_${projectId}`);
@@ -1017,17 +1019,46 @@ Sanjiv Kumar`,
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-green-600">
-                  <Sparkles className="h-5 w-5" />
-                  <span className="text-sm font-medium">Draft Generated</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center bg-muted rounded-lg p-1">
+                    <Button
+                      variant={showPreview ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setShowPreview(true)}
+                      className="gap-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Preview
+                    </Button>
+                    <Button
+                      variant={!showPreview ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setShowPreview(false)}
+                      className="gap-1"
+                    >
+                      <Code className="h-4 w-4" />
+                      Raw
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 text-green-600">
+                    <Sparkles className="h-5 w-5" />
+                    <span className="text-sm font-medium">Draft Generated</span>
+                  </div>
                 </div>
               </div>
-              <Textarea
-                value={generatedDraft}
-                onChange={(e) => setGeneratedDraft(e.target.value)}
-                rows={25}
-                className="font-mono text-sm mb-4"
-              />
+              
+              {showPreview ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none border rounded-md p-6 bg-card min-h-[400px] overflow-auto mb-4">
+                  <ReactMarkdown>{generatedDraft}</ReactMarkdown>
+                </div>
+              ) : (
+                <Textarea
+                  value={generatedDraft}
+                  onChange={(e) => setGeneratedDraft(e.target.value)}
+                  rows={25}
+                  className="font-mono text-sm mb-4"
+                />
+              )}
 
               {/* Custom Instructions for Regeneration */}
               <div className="mb-4">
