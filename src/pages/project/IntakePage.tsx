@@ -44,6 +44,7 @@ export default function IntakePage() {
   const [draftGenerated, setDraftGenerated] = useState(false);
   const [customInstructions, setCustomInstructions] = useState("");
   const [saving, setSaving] = useState(false);
+  const [usedModel, setUsedModel] = useState<string | null>(null);
 
   const {
     referenceFiles,
@@ -437,6 +438,7 @@ Sanjiv Kumar`,
 
       setGeneratedDraft(response.data?.text || "");
       setDraftGenerated(true);
+      setUsedModel(selectedModel);
       toast.success("Draft generated successfully!");
     } catch (error: any) {
       console.error("Error generating draft:", error);
@@ -966,7 +968,18 @@ Sanjiv Kumar`,
           {draftGenerated && (
             <div className="mt-8 pt-6 border-t">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold">Generated Draft</h2>
+                <div>
+                  <h2 className="text-2xl font-semibold">Generated Draft</h2>
+                  {usedModel && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Generated using: <span className="font-medium">{
+                        usedModel === "gemini" ? "Gemini 2.0 Flash" :
+                        usedModel === "gpt-5-mini" ? "GPT-5 Mini" :
+                        usedModel === "gpt-5-nano" ? "GPT-5 Nano" : usedModel
+                      }</span>
+                    </p>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-green-600">
                   <Sparkles className="h-5 w-5" />
                   <span className="text-sm font-medium">Draft Generated</span>
