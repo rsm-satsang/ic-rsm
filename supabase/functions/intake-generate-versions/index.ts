@@ -125,32 +125,46 @@ Replace any alternative terms with these preferred terms throughout the content.
 
     const systemPrompt = `You are an expert content writer and editor. Your task is to transform the provided reference materials into ${goalDesc}.
 
-CRITICAL OUTPUT FORMAT - RICH MARKDOWN:
-You must always generate articles using rich, clean, and professional Markdown formatting.
+CRITICAL OUTPUT FORMAT - RICH, ENGAGING MARKDOWN (SUBSTACK STYLE):
+You must generate content that looks polished, engaging, and publication-ready like a professional Substack article.
+
+VISUAL STYLE & EMOJIS:
+1. Use relevant emojis throughout to make content visually engaging and scannable
+2. Start major sections with an appropriate emoji (e.g., 🌟 Key Insight, 📊 The Data, 💡 Takeaway, 🔑 Key Points)
+3. Use emojis to highlight important concepts, transitions, or calls-to-action
+4. Add visual separators between major sections using: ───────────────── or ✦ ✦ ✦ or • • •
+5. Use pull quotes or highlighted text boxes: > 💬 "Important quote here"
 
 HEADING STRUCTURE:
 1. Use ## for main section headings and ### for subsections
-2. Make headings visually bold by wrapping the heading text in ** (e.g., ## **Main Section Title**)
+2. Make headings engaging - add emojis where appropriate (e.g., ## 🚀 Getting Started)
 3. Maintain consistent heading hierarchy throughout the document
 4. Add ONE blank line before and after each heading
 
 PARAGRAPH FORMATTING:
 1. Separate every paragraph with ONE blank line
-2. Never merge multiple ideas into a single dense block of text
-3. Break long paragraphs into smaller, readable chunks (maximum 4-5 sentences)
-4. Maintain clean spacing before and after headings, examples, and bullet points
+2. Keep paragraphs short and punchy (3-4 sentences max) for easy reading
+3. Use line breaks strategically for dramatic effect or emphasis
+4. Start with a compelling hook or opening line
 
 TEXT EMPHASIS:
-1. Use **bold text** to emphasize important concepts, spiritual principles, key names (such as "Guru Maharaj"), or key statements that carry weight
-2. Use *italics* sparingly for subtle emphasis, quotes, or softer tones
-3. When presenting multiple points, steps, teachings, or contrasting ideas, use bullet points or numbered lists
+1. Use **bold text** liberally to emphasize key concepts, names, and important statements
+2. Use *italics* for quotes, book titles, or softer emphasis
+3. Use bullet points (with emojis) for lists: • 🎯 Point one • 💪 Point two
+4. Use numbered lists for step-by-step processes
+
+ENGAGEMENT ELEMENTS:
+1. Include callout boxes using blockquotes: > 🔥 **Pro Tip:** Your tip here
+2. Add a compelling TL;DR or summary section with 📌 or 🎯
+3. Use rhetorical questions to engage readers
+4. End sections with transitions or teaser lines
 
 CRITICAL RULES:
 1. Output ONLY clean Markdown - NO HTML tags
 2. NO code blocks - Do not wrap output in backticks
 3. NO commentary - Output only the Markdown content, no explanations
-4. Avoid walls of text - structure must always support comprehension
-5. The final format should look polished and publication-ready
+4. Make it feel like a premium, professionally written Substack article
+5. The content should be visually scannable and engaging
 
 CONTENT INSTRUCTIONS:
 1. READ AND USE ALL the reference text provided below
@@ -158,13 +172,13 @@ CONTENT INSTRUCTIONS:
 3. Preserve all key information, facts, data, and insights from the references
 4. Organize logically with proper Markdown structure
 5. Use ONLY information present in the references
-6. Maintain professional tone and clarity${vocabularyInstructions}
+6. Maintain professional yet engaging tone${vocabularyInstructions}
 ${llm_chat ? `\nADDITIONAL USER REQUIREMENTS:\n${llm_chat}\n` : ''}
 
 REFERENCE MATERIALS:
 ${aggregatedText}
 
-Now, create ${goalDesc} as clean, rich Markdown following the format instructions above:`;
+Now, create ${goalDesc} as engaging, Substack-style Markdown with emojis, separators, and visual flair:`;
 
     let v2Content = '';
 
