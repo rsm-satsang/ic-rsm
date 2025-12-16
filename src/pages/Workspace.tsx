@@ -50,6 +50,7 @@ const Workspace = () => {
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const selectionRef = useRef<{ start: number; end: number } | null>(null);
 
   const handleTextSelection = () => {
     const textarea = textareaRef.current;
@@ -59,6 +60,7 @@ const Workspace = () => {
       if (start !== end) {
         const text = markdownContent.substring(start, end);
         setSelectedText(text);
+        selectionRef.current = { start, end };
       }
     }
   };
@@ -73,9 +75,17 @@ const Workspace = () => {
     }
 
     try {
-      // Append/insert text at cursor position or end
-      const updatedContent = markdownContent + "\n\n" + text;
+      // Replace selected text with AI response, or append if no selection
+      let updatedContent: string;
+      if (selectionRef.current && selectedText) {
+        const { start, end } = selectionRef.current;
+        updatedContent = markdownContent.substring(0, start) + text + markdownContent.substring(end);
+      } else {
+        updatedContent = markdownContent + "\n\n" + text;
+      }
       setMarkdownContent(updatedContent);
+      setSelectedText(""); // Clear selection after insert
+      selectionRef.current = null;
       
       // Convert to HTML for storage
       const content = markdownToHtml(updatedContent);
