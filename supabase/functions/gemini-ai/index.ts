@@ -45,7 +45,11 @@ serve(async (req) => {
     let generatedText = '';
 
     // Route to appropriate model
-    if (model === 'gpt-5-mini' || model === 'gpt-5-nano') {
+    // Check if it's an OpenAI model
+    const openaiModels = ['gpt-5', 'gpt-5.2', 'gpt-5-mini', 'gpt-5-nano'];
+    const isOpenAIModel = openaiModels.includes(model);
+
+    if (isOpenAIModel) {
       // Use OpenAI
       if (!openaiApiKey) {
         return new Response(
@@ -59,7 +63,14 @@ serve(async (req) => {
         );
       }
 
-      const modelName = model === 'gpt-5-mini' ? 'gpt-5-mini-2025-08-07' : 'gpt-5-nano-2025-08-07';
+      // Map model selection to actual OpenAI model names
+      const modelMapping: Record<string, string> = {
+        'gpt-5': 'gpt-5-2025-08-07',
+        'gpt-5.2': 'gpt-5.2-2025-08-07',
+        'gpt-5-mini': 'gpt-5-mini-2025-08-07',
+        'gpt-5-nano': 'gpt-5-nano-2025-08-07',
+      };
+      const modelName = modelMapping[model] || 'gpt-5-mini-2025-08-07';
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -106,9 +117,13 @@ serve(async (req) => {
         );
       }
 
-      // Call Gemini API - using gemini-2.5-flash (latest stable model)
+      // Determine which Gemini model to use
+      const geminiModelName = model === 'gemini-3' ? 'gemini-3.0-flash' : 'gemini-2.5-flash';
+      console.log('Using Gemini model:', geminiModelName);
+
+      // Call Gemini API
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${geminiApiKey}`,
         {
           method: 'POST',
           headers: {
