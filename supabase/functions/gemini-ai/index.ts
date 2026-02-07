@@ -118,8 +118,8 @@ serve(async (req) => {
       }
 
       // Determine which Gemini model to use
-      // Available models: gemini-2.5-flash (GA), gemini-2.0-flash (GA), gemini-3-pro-preview (Preview)
-      const geminiModelName = model === 'gemini-3' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+      // Available models: gemini-2.5-flash (GA), gemini-2.0-flash (GA), gemini-3-flash-preview (Preview)
+      const geminiModelName = model === 'gemini-3' ? 'gemini-3-flash-preview' : 'gemini-2.5-flash';
       console.log('Using Gemini model:', geminiModelName);
 
       // Call Gemini API
