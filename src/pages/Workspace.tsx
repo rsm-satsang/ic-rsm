@@ -887,6 +887,7 @@ const Workspace = () => {
             editorRef={editorRef}
             projectMetadata={project.metadata}
             markdownContent={markdownContent}
+            onContentUpdate={setMarkdownContent}
           />
         </div>
       </div>

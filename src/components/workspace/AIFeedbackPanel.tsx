@@ -17,12 +17,21 @@ interface FeedbackItem {
 
 interface AIFeedbackPanelProps {
   projectId: string;
-  editorRef: any;
+  editorRef?: any;
   projectMetadata?: any;
-  previewContent?: string; // For preview mode without editor
+  previewContent?: string;
+  isPreviewMode?: boolean; // True only for PublishPreview page
+  onContentUpdate?: (newContent: string) => void; // Callback to update content in parent
 }
 
-const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata, previewContent }: AIFeedbackPanelProps) => {
+const AIFeedbackPanel = ({ 
+  projectId, 
+  editorRef, 
+  projectMetadata, 
+  previewContent,
+  isPreviewMode = false,
+  onContentUpdate
+}: AIFeedbackPanelProps) => {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -43,16 +52,14 @@ const AIFeedbackPanel = ({ projectId, editorRef, projectMetadata, previewContent
         return;
       }
 
-      // Get current content from editor or preview
+      // Get current content from previewContent or editor
       let currentContent = "";
       
       if (previewContent) {
-        // For preview mode, extract text from HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = previewContent;
-        currentContent = tempDiv.textContent || tempDiv.innerText || "";
+        // Use the provided content directly (it's already plain text/markdown)
+        currentContent = previewContent;
       } else if (editorRef?.getHTML) {
-        // For editor mode
+        // For TipTap editor mode (legacy)
         const editorElement = document.querySelector('.ProseMirror');
         currentContent = editorElement?.textContent || "";
       } else {
@@ -185,13 +192,14 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
       return;
     }
 
-    // Check if we're in preview mode (no editor)
-    if (previewContent) {
+    // Check if we're in actual preview mode (PublishPreview page)
+    if (isPreviewMode) {
       toast.error("Regeneration is not available in preview mode. Please go to the workspace editor to make changes.");
       return;
     }
 
-    if (!editorRef?.getHTML) {
+    // We need either previewContent (textarea mode) or editorRef (TipTap mode)
+    if (!previewContent && !editorRef?.getHTML) {
       toast.error("Editor not ready. Please try again.");
       return;
     }
@@ -208,8 +216,7 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
       }
 
       // Get current content
-      const editorElement = document.querySelector('.ProseMirror');
-      const currentContent = editorElement?.textContent || "";
+      const currentContent = previewContent || "";
 
       // Get selected feedback items
       const selectedFeedbackItems = feedbackItems.filter(item => 
@@ -223,34 +230,39 @@ CRITICAL: Return ONLY the raw JSON array. Do NOT wrap it in markdown code blocks
       const language = projectMetadata?.language || "english";
       const selectedModel = projectMetadata?.selectedModel || "gemini";
 
-      // Construct regeneration prompt - only feedback, no goal/instructions
+      // Construct regeneration prompt - preserve formatting exactly
       const regeneratePrompt = `You are an expert content editor. Please regenerate the following draft text by addressing ONLY the specific feedback points provided below.
 
 **TARGET LANGUAGE:**
 ${language}
 
-**FORMATTING REQUIREMENTS (CRITICAL):**
-1. Add ONE blank line between each paragraph (use double line breaks)
-2. Add ONE blank line after each section heading
-3. Keep paragraphs concise - maximum 4-5 sentences per paragraph
-4. Break long paragraphs into shorter, digestible chunks
-5. Ensure proper line spacing throughout for readability
+**CRITICAL FORMATTING PRESERVATION:**
+You MUST preserve the EXACT formatting of the original content:
+1. Keep ALL existing headings with their exact formatting (## **Title** style)
+2. Keep ALL existing emojis (🌿 🌸 🕊️ etc.) in their original positions
+3. Keep ALL visual separators (───────────────── or ✦ ✦ ✦) exactly as they appear
+4. Keep ALL pull quotes (💬) and reflection boxes (🌸 Reflection) exactly as formatted
+5. Keep the same paragraph structure and line breaks
+6. Do NOT add any new formatting, emojis, or separators that weren't in the original
+7. Do NOT remove any formatting, emojis, or separators from the original
+8. Maintain exact spacing between sections
 
-**CURRENT DRAFT:**
+**CURRENT DRAFT (preserve this formatting exactly):**
 ${currentContent}
 
 **FEEDBACK TO ADDRESS:**
 ${feedbackText}
 
 **CRITICAL INSTRUCTIONS:**
-1. Make ONLY minimal changes needed to address the feedback points listed above
-2. Do NOT rewrite or restructure the entire draft
-3. Focus ONLY on fixing the specific issues mentioned in the feedback
-4. Maintain the overall structure, intent, and tone of the original draft
+1. Make ONLY minimal text changes needed to address the feedback points
+2. Do NOT change any formatting, structure, or visual elements
+3. Focus ONLY on fixing the specific text issues mentioned in the feedback
+4. Maintain the exact same line breaks, spacing, and structure
 5. Ensure the content remains in ${language}
-6. Do NOT add new content or sections that were not requested in the feedback
+6. Do NOT add, remove, or modify any emojis, separators, or formatting
+7. The output should look IDENTICAL to the input except for the specific text fixes
 
-Return ONLY the improved draft text. Do not include explanations, notes, or any other commentary.`;
+Return ONLY the improved draft text with preserved formatting. Do not include explanations, notes, or any other commentary.`;
 
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
         body: { 
@@ -272,8 +284,12 @@ Return ONLY the improved draft text. Do not include explanations, notes, or any 
       }
 
       if (data?.text) {
-        // Insert regenerated content into editor
-        editorRef.commands.setContent(data.text);
+        // Update content via callback (for textarea mode) or editor (for TipTap mode)
+        if (onContentUpdate) {
+          onContentUpdate(data.text);
+        } else if (editorRef?.commands?.setContent) {
+          editorRef.commands.setContent(data.text);
+        }
 
         // Get current version to determine next version number
         const { data: maxVersionData } = await supabase
@@ -282,16 +298,22 @@ Return ONLY the improved draft text. Do not include explanations, notes, or any 
           .eq("project_id", projectId)
           .order("version_number", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         const nextVersionNumber = (maxVersionData?.version_number || 0) + 1;
+
+        // Convert to HTML for storage (wrap paragraphs)
+        const htmlContent = data.text
+          .split(/\n\n+/)
+          .map((p: string) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+          .join("");
 
         // Create new version
         const { error: versionError } = await supabase
           .from("versions")
           .insert({
             project_id: projectId,
-            content: data.text,
+            content: htmlContent,
             title: `AI-Improved Draft ${nextVersionNumber}`,
             description: `Regenerated based on ${selectedItems.length} feedback item(s)`,
             version_number: nextVersionNumber,
@@ -430,7 +452,7 @@ Return ONLY the improved draft text. Do not include explanations, notes, or any 
                 ))}
               </div>
 
-              {selectedItems.length > 0 && (
+              {selectedItems.length > 0 && !isPreviewMode && (
                 <Button 
                   onClick={handleRegenerateWithFeedback}
                   disabled={regenerating}
