@@ -60,10 +60,8 @@ interface Project {
 }
 
 interface ProjectWithDetails extends Project {
-  lastVersionName: string | null;
   assignedToName: string | null;
   lastUpdatedByName: string | null;
-  lastNote: string | null;
   collaboratorCount: number;
 }
 
@@ -104,18 +102,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       const projectIds = projects.map(p => p.id);
       
       // Fetch all related data in parallel
-      const [versionsRes, notesRes, collaboratorsRes, tasksRes] = await Promise.all([
-        // Get latest version for each project
+      const [versionsRes, collaboratorsRes, tasksRes] = await Promise.all([
+        // Get latest version for each project (for last updated by)
         supabase
           .from("versions")
-          .select("project_id, title, version_number, created_by")
-          .in("project_id", projectIds)
-          .order("version_number", { ascending: false }),
-        
-        // Get latest note for each project
-        supabase
-          .from("version_notes")
-          .select("project_id, content, created_at")
+          .select("project_id, created_by")
           .in("project_id", projectIds)
           .order("created_at", { ascending: false }),
         
@@ -150,11 +141,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
       // Build the enhanced project data
       const enhanced = projects.map(project => {
-        // Find latest version
+        // Find latest version (for last updated by)
         const latestVersion = versionsRes.data?.find(v => v.project_id === project.id);
-        
-        // Find latest note
-        const latestNote = notesRes.data?.find(n => n.project_id === project.id);
         
         // Count collaborators (add 1 for owner)
         const collabCount = (collaboratorsRes.data?.filter(c => c.project_id === project.id).length || 0) + 1;
@@ -164,10 +152,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         
         return {
           ...project,
-          lastVersionName: latestVersion?.title || (latestVersion ? `v${latestVersion.version_number}` : null),
           assignedToName: activeTask ? userMap.get(activeTask.assigned_to) || null : null,
           lastUpdatedByName: latestVersion ? userMap.get(latestVersion.created_by) || null : userMap.get(project.owner_id) || null,
-          lastNote: latestNote?.content || null,
           collaboratorCount: collabCount,
         };
       });
@@ -264,6 +250,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           aVal = a.title.toLowerCase();
           bVal = b.title.toLowerCase();
           break;
+        case "type":
+          aVal = a.type;
+          bVal = b.type;
+          break;
         case "status":
           aVal = a.status;
           bVal = b.status;
@@ -355,7 +345,16 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <ArrowUpDown className="h-3 w-3" />
                 </div>
               </TableHead>
-              <TableHead>Last Version</TableHead>
+              <TableHead 
+                className="cursor-pointer hover:bg-muted/80"
+                onClick={() => handleSort("type")}
+              >
+                <div className="flex items-center gap-1">
+                  Outcome Type
+                  <ArrowUpDown className="h-3 w-3" />
+                </div>
+              </TableHead>
+              <TableHead>Theme</TableHead>
               <TableHead 
                 className="cursor-pointer hover:bg-muted/80"
                 onClick={() => handleSort("status")}
@@ -376,8 +375,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <ArrowUpDown className="h-3 w-3" />
                 </div>
               </TableHead>
-              <TableHead>Last Note</TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/80 text-center"
                 onClick={() => handleSort("collaboratorCount")}
               >
@@ -392,7 +390,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-32 text-center">
+                <TableCell colSpan={8} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <FileText className="h-8 w-8" />
                     <span>No projects found</span>
@@ -411,8 +409,13 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                       <ExternalLink className="h-3 w-3" />
                     </button>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">
+                      {project.type.replace("_", " ")}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {project.lastVersionName || "-"}
+                    {(project.metadata as any)?.theme || "-"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusColor(project.status)}>
@@ -435,15 +438,6 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                         })}
                       </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {project.lastNote ? (
-                      <span className="text-muted-foreground text-sm line-clamp-2 max-w-[200px]">
-                        {project.lastNote}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className="font-normal">
