@@ -12,8 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare } from "lucide-react";
-import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code } from "lucide-react";
+import SavePanel from "@/components/workspace/SavePanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
@@ -41,8 +41,6 @@ const Workspace = () => {
   const [saving, setSaving] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [editorRef, setEditorRef] = useState<any>(null);
-  const [showVersionDialog, setShowVersionDialog] = useState(false);
-  const [versionName, setVersionName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [savingTitle, setSavingTitle] = useState(false);
@@ -313,11 +311,6 @@ const Workspace = () => {
     }
   };
 
-  const handleSaveAsClick = () => {
-    setShowVersionDialog(true);
-    setVersionName("");
-  };
-
   const handleSaveCurrentVersion = async () => {
     if (!project || !user) {
       toast.error("Project or user not loaded");
@@ -421,10 +414,9 @@ const Workspace = () => {
     }
   };
 
-  const handleSaveAs = async () => {
-    if (!project || !user || !versionName.trim()) return;
+  const handleSaveAsNewVersion = async (newVersionName: string) => {
+    if (!project || !user || !newVersionName.trim()) return;
 
-    setShowVersionDialog(false);
     setSaving(true);
     try {
       console.log("Starting save operation...");
@@ -489,7 +481,7 @@ const Workspace = () => {
       const { error: versionError } = await supabase.from("versions").insert({
         project_id: project.id,
         version_number: newVersionNumber,
-        title: versionName.trim(),
+        title: newVersionName.trim(),
         content: content,
         created_by: user.id,
       });
@@ -506,13 +498,12 @@ const Workspace = () => {
       await supabase.from("timeline").insert({
         project_id: project.id,
         event_type: "edited",
-        event_details: { action: "saved", version: newVersionNumber, versionName: versionName.trim() },
+        event_details: { action: "saved", version: newVersionNumber, versionName: newVersionName.trim() },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
       });
 
       toast.success("Project saved successfully!");
-      setVersionName("");
     } catch (error: any) {
       console.error("Save failed:", error);
       const errorMessage = error?.message || "Failed to save project";
@@ -748,22 +739,9 @@ const Workspace = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <Separator orientation="vertical" className="h-6" />
-              <div className="flex items-center gap-2">
-                <Input
-                  value={projectTitle}
-                  onChange={(e) => setProjectTitle(e.target.value)}
-                  className="max-w-md font-semibold text-lg border-none shadow-none focus-visible:ring-0"
-                  placeholder="Project title..."
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSaveTitle}
-                  disabled={savingTitle || projectTitle === project?.title}
-                >
-                  {savingTitle ? "Saving..." : "Save Title"}
-                </Button>
-              </div>
+              <span className="font-semibold text-lg truncate max-w-md">
+                {projectTitle}
+              </span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -776,30 +754,27 @@ const Workspace = () => {
                 Back to Reference Intake
               </Button>
 
-              <Select value={currentStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                </SelectContent>
-              </Select>
-
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Notes
+                  <Button className="gap-2">
+                    <Save className="h-4 w-4" />
+                    Save
                   </Button>
                 </SheetTrigger>
                 <SheetContent className="w-[400px] sm:w-[540px] p-0">
-                  <VersionNotesPanel
+                  <SavePanel
                     projectId={project.id}
                     versionId={currentVersionId}
+                    projectTitle={projectTitle}
+                    onProjectTitleChange={setProjectTitle}
+                    onSaveTitle={handleSaveTitle}
+                    savingTitle={savingTitle}
+                    originalTitle={project.title}
+                    currentStatus={currentStatus}
+                    onStatusChange={handleStatusChange}
+                    onSaveCurrentVersion={handleSaveCurrentVersion}
+                    onSaveAs={handleSaveAsNewVersion}
+                    saving={saving}
                   />
                 </SheetContent>
               </Sheet>
@@ -824,20 +799,6 @@ const Workspace = () => {
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4" />
-              </Button>
-
-              <Button 
-                onClick={handleSaveCurrentVersion} 
-                disabled={saving}
-                variant="outline"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? "Saving..." : "Save"}
-              </Button>
-
-              <Button onClick={handleSaveAsClick} disabled={saving}>
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? "Saving..." : "Save As"}
               </Button>
 
               {showPublishButton && (
@@ -933,42 +894,6 @@ const Workspace = () => {
       <div className="border-t bg-card">
         <TimelineFeed projectId={project.id} />
       </div>
-
-      {/* Version Name Dialog */}
-      <Dialog open={showVersionDialog} onOpenChange={setShowVersionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save As New Version</DialogTitle>
-            <DialogDescription>
-              Give this version a meaningful name to help identify it later.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="version-name">Version Name</Label>
-              <Input
-                id="version-name"
-                placeholder="e.g., Final Draft, Client Review, etc."
-                value={versionName}
-                onChange={(e) => setVersionName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && versionName.trim()) {
-                    handleSaveAs();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowVersionDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveAs} disabled={!versionName.trim() || saving}>
-              {saving ? "Saving..." : "Save Version"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
