@@ -334,21 +334,21 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg">
+      <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/20 rounded-xl border border-border/50">
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Filter by project name..."
+            placeholder="Search projects..."
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
-            className="h-9"
+            className="h-9 bg-background/50"
           />
         </div>
         
         <Select value={outcomeTypeFilter} onValueChange={setOutcomeTypeFilter}>
-          <SelectTrigger className="w-[180px] h-9">
+          <SelectTrigger className="w-[180px] h-9 bg-background/50">
             <SelectValue placeholder="Outcome Type" />
           </SelectTrigger>
           <SelectContent>
@@ -362,7 +362,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </Select>
         
         <Select value={themeFilter} onValueChange={setThemeFilter}>
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-[150px] h-9 bg-background/50">
             <SelectValue placeholder="Theme" />
           </SelectTrigger>
           <SelectContent>
@@ -376,28 +376,28 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </Select>
         
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-[140px] h-9 bg-background/50">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             {uniqueStatuses.map(status => (
-              <SelectItem key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")}
+              <SelectItem key={status} value={status} className="capitalize">
+                {status.replace("_", " ")}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         
         <Input
-          placeholder="Filter by assigned to..."
+          placeholder="Assigned to..."
           value={assignedToFilter}
           onChange={(e) => setAssignedToFilter(e.target.value)}
-          className="w-[180px] h-9"
+          className="w-[160px] h-9 bg-background/50"
         />
         
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4 mr-1" />
             Clear
           </Button>
@@ -405,103 +405,111 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-xl overflow-hidden shadow-sm bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
+            <TableRow className="bg-muted/30 border-b">
               <TableHead 
-                className="cursor-pointer hover:bg-muted/80"
+                className="cursor-pointer hover:bg-muted/50 transition-colors py-4"
                 onClick={() => handleSort("title")}
               >
-                <div className="flex items-center gap-1">
-                  Project Name
-                  <ArrowUpDown className="h-3 w-3" />
+                <div className="flex items-center gap-2 font-semibold">
+                  Project
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/80"
-                onClick={() => handleSort("type")}
-              >
-                <div className="flex items-center gap-1">
-                  Outcome Type
-                  <ArrowUpDown className="h-3 w-3" />
-                </div>
+              <TableHead className="py-4">
+                <span className="font-semibold">Currently Assigned to</span>
               </TableHead>
-              <TableHead>Theme</TableHead>
               <TableHead 
-                className="cursor-pointer hover:bg-muted/80"
-                onClick={() => handleSort("status")}
-              >
-                <div className="flex items-center gap-1">
-                  Status
-                  <ArrowUpDown className="h-3 w-3" />
-                </div>
-              </TableHead>
-              <TableHead>Currently Assigned to</TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/80"
+                className="cursor-pointer hover:bg-muted/50 transition-colors py-4"
                 onClick={() => handleSort("updated_at")}
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 font-semibold">
                   Last Updated
-                  <ArrowUpDown className="h-3 w-3" />
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-muted/80 text-center"
+                className="cursor-pointer hover:bg-muted/50 transition-colors py-4 text-center"
                 onClick={() => handleSort("collaboratorCount")}
               >
-                <div className="flex items-center justify-center gap-1">
-                  <Users className="h-3 w-3" />
-                  <ArrowUpDown className="h-3 w-3" />
+                <div className="flex items-center justify-center gap-2 font-semibold">
+                  <Users className="h-4 w-4" />
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
               </TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[50px] py-4"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <FileText className="h-8 w-8" />
-                    <span>No projects found</span>
+                <TableCell colSpan={5} className="h-40 text-center">
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <div className="p-4 rounded-full bg-muted/50">
+                      <FileText className="h-8 w-8" />
+                    </div>
+                    <span className="text-base">No projects found</span>
+                    <span className="text-sm">Try adjusting your filters</span>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               filteredProjects.map((project) => (
-                <TableRow key={project.id} className="hover:bg-muted/30">
-                  <TableCell>
-                    <button
-                      onClick={() => handleOpenProject(project)}
-                      className="text-left font-medium text-primary hover:underline"
-                    >
-                      {project.title}
-                    </button>
+                <TableRow 
+                  key={project.id} 
+                  className="hover:bg-muted/20 transition-colors border-b last:border-b-0"
+                >
+                  {/* Merged Project Column */}
+                  <TableCell className="py-4">
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => handleOpenProject(project)}
+                        className="text-left font-semibold text-foreground hover:text-primary transition-colors text-base"
+                      >
+                        {project.title}
+                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge 
+                          variant="secondary" 
+                          className="text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 border-0"
+                        >
+                          {formatGoal((project.metadata as any)?.goal)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {(project.metadata as any)?.theme || "General"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <Badge 
+                          variant={getStatusColor(project.status)}
+                          className="text-xs capitalize"
+                        >
+                          {project.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {formatGoal((project.metadata as any)?.goal)}
-                    </Badge>
+                  
+                  {/* Assigned To */}
+                  <TableCell className="py-4">
+                    <span className="text-sm text-muted-foreground">
+                      {project.assignedToName || "—"}
+                    </span>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {(project.metadata as any)?.theme || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusColor(project.status)}>
-                      {project.status.replace("_", " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {project.assignedToName || "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  
+                  {/* Last Updated */}
+                  <TableCell className="py-4">
                     <div className="flex items-center gap-2">
                       <div className="flex flex-col">
-                        <span className="text-sm">{project.lastUpdatedByName || "-"}</span>
-                        <span className="text-xs">
-                          {new Date(project.updated_at).toLocaleDateString()}{" "}
+                        <span className="text-sm font-medium">{project.lastUpdatedByName || "—"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(project.updated_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric"
+                          })}{" · "}
                           {new Date(project.updated_at).toLocaleTimeString([], { 
                             hour: '2-digit', 
                             minute: '2-digit' 
@@ -512,31 +520,33 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button className="text-muted-foreground hover:text-primary">
+                              <button className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
                                 <MessageSquare className="h-4 w-4" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[300px]">
-                              <p className="text-sm">{project.lastNote}</p>
+                            <TooltipContent side="top" className="max-w-[300px] p-3">
+                              <p className="text-sm leading-relaxed">{project.lastNote}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className="font-normal">
+                  
+                  {/* Collaborators */}
+                  <TableCell className="text-center py-4">
+                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted/50 text-sm font-medium">
                       {project.collaboratorCount}
-                    </Badge>
+                    </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted/50">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem onClick={() => handleOpenProject(project)}>
                           Open
                         </DropdownMenuItem>
@@ -561,8 +571,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       </div>
 
       {/* Results count */}
-      <div className="text-sm text-muted-foreground">
-        Showing {filteredProjects.length} of {projectsWithDetails.length} projects
+      <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+        <span>
+          Showing <span className="font-medium text-foreground">{filteredProjects.length}</span> of{" "}
+          <span className="font-medium text-foreground">{projectsWithDetails.length}</span> projects
+        </span>
       </div>
 
       {/* Delete Confirmation Dialog */}
