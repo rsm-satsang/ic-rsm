@@ -15,7 +15,18 @@ import { useExtractionJobs } from "@/hooks/useExtractionJobs";
 import { intakeAPI } from "@/lib/api/intake";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Loader2, Youtube, Link as LinkIcon, Sparkles, FileText, Trash2, Eye, Code } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Youtube,
+  Link as LinkIcon,
+  Sparkles,
+  FileText,
+  Trash2,
+  Eye,
+  Code,
+} from "lucide-react";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -167,13 +178,9 @@ export default function IntakePage() {
 
         // Inject explicit newlines before extracting text so paragraphs/line breaks survive round-tripping
         tempDiv.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
-        tempDiv
-          .querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote")
-          .forEach((el) => el.append("\n\n"));
+        tempDiv.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote").forEach((el) => el.append("\n\n"));
 
-        const plainText = (tempDiv.textContent || "")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
+        const plainText = (tempDiv.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
 
         setGeneratedDraft(plainText);
         setDraftGenerated(true);
@@ -282,6 +289,10 @@ Unless the source material clearly demands a different structure, follow this te
 4️⃣ Deeper Teaching Section (clear spiritual explanation)
 5️⃣ Practical Integration into Daily Life or Inner Growth
 6️⃣ Soft Reflective Closing that leaves the reader peaceful and uplifted
+7️⃣ You need to end all the article only this "Love, Light and Peace". Also, The newsletter must be authored under the name: Mr. Sanjiv Kumar 
+
+
+
 
 Teach progressively. Keep language simple but meaningful.
 
@@ -370,13 +381,13 @@ Each reference text provided will come with explicit instructions and context. Y
     };
 
     let instruction = instructions[goalType] || instructions.other;
-    
+
     // Add language instruction for ALL languages including English
     const languageNames: Record<string, string> = {
       english: "English",
       hindi: "Hindi",
       tamil: "Tamil",
-      german: "German"
+      german: "German",
     };
     const languageName = languageNames[targetLanguage || "english"] || targetLanguage || "English";
     instruction += `\n\n**CRITICAL REQUIREMENT**: The entire content MUST be written in ${languageName}. Generate the complete output in ${languageName} language.`;
@@ -487,17 +498,17 @@ Each reference text provided will come with explicit instructions and context. Y
 
       // Rebuild the prompt with CURRENT goal instructions and language (not the old ones baked into extractedDraft)
       const currentGoalInstructions = getGoalInstructions(goal, customGoal, language);
-      
+
       // Extract just the reference text from extractedDraft (remove old instructions)
       let referenceTextOnly = extractedDraft;
       const referenceMarker = "--- REFERENCE TEXT BELOW ---";
       if (extractedDraft.includes(referenceMarker)) {
         referenceTextOnly = extractedDraft.split(referenceMarker)[1] || extractedDraft;
       }
-      
+
       // Build fresh prompt with current goal instructions
       let freshPrompt = currentGoalInstructions + "\n\n--- REFERENCE TEXT BELOW ---\n" + referenceTextOnly;
-      
+
       // Add custom instructions if provided
       const promptToUse = customInstructions.trim() ? `${customInstructions}\n\n${freshPrompt}` : freshPrompt;
 
@@ -711,48 +722,42 @@ Each reference text provided will come with explicit instructions and context. Y
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/dashboard")}
-            >
+            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
           </div>
-          
+
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-1">Name Your Project</h2>
-            <p className="text-xs text-muted-foreground mb-3">Give your project a descriptive name to easily identify it later</p>
-          <div className="flex items-center gap-2">
-            <Input
-              value={projectTitle}
-              onChange={(e) => setProjectTitle(e.target.value)}
-              className="flex-1 text-lg font-medium"
-              placeholder="Project title..."
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSaveTitle}
-              disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
-            >
-              {savingTitle ? "Saving..." : "Save"}
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate(`/workspace/${projectId}`)}
-            >
-              Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Give your project a descriptive name to easily identify it later
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                value={projectTitle}
+                onChange={(e) => setProjectTitle(e.target.value)}
+                className="flex-1 text-lg font-medium"
+                placeholder="Project title..."
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveTitle}
+                disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
+              >
+                {savingTitle ? "Saving..." : "Save"}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate(`/workspace/${projectId}`)}>
+                Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Define Outcome Section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Define Outcome</h2>
-            
+
             <div className="pl-4 space-y-4">
               {/* Output Goal */}
               <div>
@@ -827,7 +832,8 @@ Each reference text provided will come with explicit instructions and context. Y
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-2">Add References</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Upload documents, paste text, or add links to articles and videos that will serve as source material for generating your content.
+              Upload documents, paste text, or add links to articles and videos that will serve as source material for
+              generating your content.
             </p>
 
             <div className="pl-4 space-y-6">
@@ -906,7 +912,6 @@ Each reference text provided will come with explicit instructions and context. Y
         )}
 
         <div className="grid gap-6">
-
           <Separator />
 
           {/* Vocabulary */}
@@ -1083,11 +1088,16 @@ Each reference text provided will come with explicit instructions and context. Y
                   <h2 className="text-2xl font-semibold">Generated Draft</h2>
                   {usedModel && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      Generated using: <span className="font-medium">{
-                        usedModel === "gemini" ? "Gemini 2.0 Flash" :
-                        usedModel === "gpt-5-mini" ? "GPT-5 Mini" :
-                        usedModel === "gpt-5-nano" ? "GPT-5 Nano" : usedModel
-                      }</span>
+                      Generated using:{" "}
+                      <span className="font-medium">
+                        {usedModel === "gemini"
+                          ? "Gemini 2.0 Flash"
+                          : usedModel === "gpt-5-mini"
+                            ? "GPT-5 Mini"
+                            : usedModel === "gpt-5-nano"
+                              ? "GPT-5 Nano"
+                              : usedModel}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -1118,7 +1128,7 @@ Each reference text provided will come with explicit instructions and context. Y
                   </div>
                 </div>
               </div>
-              
+
               {showPreview ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none border rounded-md p-6 bg-card min-h-[400px] overflow-auto mb-4">
                   <ReactMarkdown>{generatedDraft}</ReactMarkdown>
