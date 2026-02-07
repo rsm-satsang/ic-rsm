@@ -445,6 +445,7 @@ Sanjiv Kumar`,
           action: "generate_draft",
           prompt: promptToUse,
           model: selectedModel,
+          projectId: projectId,
         },
       });
 
