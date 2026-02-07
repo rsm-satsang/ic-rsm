@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   FileText,
@@ -12,10 +10,7 @@ import {
   LogOut,
   Settings,
   Bell,
-  ListTodo,
-  FolderOpen,
 } from "lucide-react";
-import MyTasksTab from "@/components/dashboard/MyTasksTab";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import type { User } from "@supabase/supabase-js";
 
@@ -36,8 +31,6 @@ const Dashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
-  const [activeTab, setActiveTab] = useState("projects");
-  const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +49,6 @@ const Dashboard = () => {
       setUser(currentUser);
       await fetchProjects(currentUser.id);
       await fetchPendingInvites(currentUser.id);
-      await fetchPendingTasksCount(currentUser.id);
     } catch (error) {
       console.error("Error checking user:", error);
       navigate("/auth");
@@ -127,21 +119,6 @@ const Dashboard = () => {
       setPendingInvitesCount(data?.length || 0);
     } catch (error) {
       console.error("Error fetching pending invites:", error);
-    }
-  };
-
-  const fetchPendingTasksCount = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_tasks")
-        .select("id")
-        .eq("assigned_to", userId)
-        .in("status", ["pending", "in_progress"]);
-
-      if (error) throw error;
-      setPendingTasksCount(data?.length || 0);
-    } catch (error) {
-      console.error("Error fetching pending tasks:", error);
     }
   };
 
@@ -274,52 +251,30 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Tabs for Projects and Tasks */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="projects" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
-              My Projects
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="gap-2">
-              <ListTodo className="h-4 w-4" />
-              My Tasks
-              {pendingTasksCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5">
-                  {pendingTasksCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="projects" className="space-y-6">
-            {user && (
-              <ProjectsTable 
-                projects={projects} 
-                userId={user.id} 
-                onProjectDeleted={handleProjectDeleted} 
-              />
-            )}
-            
-            {projects.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first project to get started
-                </p>
-                <Button onClick={createNewProject}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Project
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="tasks">
-            {user && <MyTasksTab userId={user.id} />}
-          </TabsContent>
-        </Tabs>
+        {/* Projects */}
+        <div className="space-y-6">
+          {user && (
+            <ProjectsTable 
+              projects={projects} 
+              userId={user.id} 
+              onProjectDeleted={handleProjectDeleted} 
+            />
+          )}
+          
+          {projects.length === 0 && (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Create your first project to get started
+              </p>
+              <Button onClick={createNewProject}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Project
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
