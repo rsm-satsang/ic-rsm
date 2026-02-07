@@ -886,6 +886,7 @@ const Workspace = () => {
             onInsertText={handleInsertText}
             editorRef={editorRef}
             projectMetadata={project.metadata}
+            markdownContent={markdownContent}
           />
         </div>
       </div>
