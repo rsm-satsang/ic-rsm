@@ -742,7 +742,7 @@ Sanjiv Kumar`,
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="gemini">Gemini 2.5 Flash (Default - Fast & Balanced)</SelectItem>
-                    <SelectItem value="gemini-3">Gemini 3 Flash (Preview - Advanced Reasoning)</SelectItem>
+                    <SelectItem value="gemini-3">Gemini 3 Pro (Preview - Advanced Reasoning)</SelectItem>
                     <SelectItem value="gpt-5">GPT-5 (Premium - Best Quality)</SelectItem>
                     <SelectItem value="gpt-5.2">GPT-5.2 (Latest - Enhanced Reasoning)</SelectItem>
                     <SelectItem value="gpt-5-mini">GPT-5 Mini (Fast & Cost-Efficient)</SelectItem>
