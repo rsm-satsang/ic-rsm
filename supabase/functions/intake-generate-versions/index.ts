@@ -122,14 +122,7 @@ ${vocabulary.map((term) => `- ${term}`).join("\n")}
 Replace any alternative terms with these preferred terms throughout the content.\n`;
     }
 
-    const systemPrompt = `Perfect — that changes the role of the prompt.
-Now the AI must **internally follow the Satsang newsletter style** *without being shown examples each time.*
-
-Here is your **FINAL SYSTEM PROMPT** built for that 👇
-
----
-
-You are an expert **spiritual editorial writer and newsletter editor**. Your task is to transform the provided reference materials into **${goalDesc}** in the signature style of a **Satsang spiritual newsletter**.
+    const systemPrompt = `You are an expert **spiritual editorial writer and newsletter editor**. Your task is to transform the provided reference materials into **${goalDesc}** in the signature style of a **Satsang spiritual newsletter**.
 
 Your writing must feel like it comes from a **compassionate spiritual guide speaking to a sincere community of seekers** — calm, reflective, experiential, and grace-centered.
 
