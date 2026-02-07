@@ -412,27 +412,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Merged Project Column */}
       <TableCell className="py-4">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleOpenProject(project)}
-              className="text-left font-semibold text-foreground hover:text-primary transition-colors text-base"
-            >
-              {project.title}
-            </button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {project.daysOld}d
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-sm">Project age: {project.daysOld} days</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+          <button
+            onClick={() => handleOpenProject(project)}
+            className="text-left font-semibold text-foreground hover:text-primary transition-colors text-base"
+          >
+            {project.title}
+          </button>
           <div className="flex flex-wrap items-center gap-2">
             <Badge 
               variant="secondary" 
@@ -452,6 +437,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
               {project.status.replace("_", " ")}
             </Badge>
           </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-1">
+            <Calendar className="h-3 w-3" />
+            <span>{project.daysOld} days old</span>
+          </div>
         </div>
       </TableCell>
       
@@ -465,13 +454,23 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Last Updated with time since */}
       <TableCell className="py-4">
         <div className="flex items-center gap-2">
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{project.lastUpdatedByName || "—"}</span>
-              <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {project.timeSinceUpdate}
-              </span>
+              {project.lastNote && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[300px] p-3">
+                      <p className="text-sm leading-relaxed">{project.lastNote}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <span className="text-xs text-muted-foreground">
               {new Date(project.updated_at).toLocaleDateString("en-US", {
@@ -480,21 +479,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                 year: "numeric"
               })}
             </span>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-0.5">
+              <Clock className="h-3 w-3" />
+              <span>{project.timeSinceUpdate}</span>
+            </div>
           </div>
-          {project.lastNote && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
-                    <MessageSquare className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[300px] p-3">
-                  <p className="text-sm leading-relaxed">{project.lastNote}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
         </div>
       </TableCell>
       
