@@ -908,6 +908,7 @@ const Workspace = () => {
             onInsertText={handleInsertText}
             editorRef={editorRef}
             projectMetadata={project.metadata}
+            currentVersionId={currentVersionId}
           />
         </div>
       </div>

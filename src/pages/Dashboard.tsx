@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
@@ -20,6 +21,8 @@ import {
   Bell,
   Trash2,
   MoreVertical,
+  ListTodo,
+  FolderOpen,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -28,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import CollaboratorCount from "@/components/workspace/CollaboratorCount";
+import MyTasksTab from "@/components/dashboard/MyTasksTab";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -49,6 +53,8 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [activeTab, setActiveTab] = useState("projects");
+  const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -67,6 +73,7 @@ const Dashboard = () => {
       setUser(currentUser);
       await fetchProjects(currentUser.id);
       await fetchPendingInvites(currentUser.id);
+      await fetchPendingTasksCount(currentUser.id);
     } catch (error) {
       console.error("Error checking user:", error);
       navigate("/auth");
@@ -137,6 +144,21 @@ const Dashboard = () => {
       setPendingInvitesCount(data?.length || 0);
     } catch (error) {
       console.error("Error fetching pending invites:", error);
+    }
+  };
+
+  const fetchPendingTasksCount = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_tasks")
+        .select("id")
+        .eq("assigned_to", userId)
+        .in("status", ["pending", "in_progress"]);
+
+      if (error) throw error;
+      setPendingTasksCount(data?.length || 0);
+    } catch (error) {
+      console.error("Error fetching pending tasks:", error);
     }
   };
 
@@ -289,38 +311,87 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Tabs for Projects and Tasks */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="projects" className="gap-2">
+              <FolderOpen className="h-4 w-4" />
+              My Projects
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="gap-2">
+              <ListTodo className="h-4 w-4" />
+              My Tasks
+              {pendingTasksCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                  {pendingTasksCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <Card
-              key={project.id}
-              className="hover:shadow-lg transition-all group relative"
-            >
-              <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={async () => {
+          <TabsContent value="projects" className="space-y-6">
+            {/* Search and Filter */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search projects..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline" size="icon">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Projects Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProjects.map((project) => (
+                <Card
+                  key={project.id}
+                  className="hover:shadow-lg transition-all group relative"
+                >
+                  <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={async () => {
+                          // Check if project has any references
+                          const { data: references } = await supabase
+                            .from("reference_files")
+                            .select("id")
+                            .eq("project_id", project.id)
+                            .limit(1);
+                          
+                          if (references && references.length > 0) {
+                            navigate(`/workspace/${project.id}`);
+                          } else {
+                            navigate(`/project/${project.id}/intake`);
+                          }
+                        }}>
+                          Open
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
+                          Add References
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setDeletingProject(project)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div 
+                    onClick={async () => {
                       // Check if project has any references
                       const { data: references } = await supabase
                         .from("reference_files")
@@ -333,93 +404,69 @@ const Dashboard = () => {
                       } else {
                         navigate(`/project/${project.id}/intake`);
                       }
-                    }}>
-                      Open
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
-                      Add References
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => setDeletingProject(project)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div 
-                onClick={async () => {
-                  // Check if project has any references
-                  const { data: references } = await supabase
-                    .from("reference_files")
-                    .select("id")
-                    .eq("project_id", project.id)
-                    .limit(1);
-                  
-                  if (references && references.length > 0) {
-                    navigate(`/workspace/${project.id}`);
-                  } else {
-                    navigate(`/project/${project.id}/intake`);
-                  }
-                }} 
-                className="cursor-pointer"
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2 pr-8">
-                    <Badge variant="secondary">{project.type}</Badge>
-                    <Badge
-                    variant={
-                      project.status === "published"
-                        ? "default"
-                        : project.status === "review"
-                        ? "secondary"
-                        : "outline"
-                    }
+                    }} 
+                    className="cursor-pointer"
                   >
-                    {project.status}
-                  </Badge>
-                </div>
-                <CardTitle className="text-lg">{project.title}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {project.description || "No description"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{new Date(project.updated_at).toLocaleDateString()}</span>
+                    <CardHeader>
+                      <div className="flex items-start justify-between mb-2 pr-8">
+                        <Badge variant="secondary">{project.type}</Badge>
+                        <Badge
+                        variant={
+                          project.status === "published"
+                            ? "default"
+                            : project.status === "review"
+                            ? "secondary"
+                            : "outline"
+                        }
+                      >
+                        {project.status}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {project.description || "No description"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{new Date(project.updated_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <CollaboratorCount projectId={project.id} ownerId={project.owner_id} userId={user?.id || ""} />
+                      </div>
+                    </div>
+                  </CardContent>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <CollaboratorCount projectId={project.id} ownerId={project.owner_id} userId={user?.id || ""} />
-                  </div>
-                </div>
-              </CardContent>
-              </div>
-            </Card>
-          ))}
-        </div>
+                </Card>
+              ))}
+            </div>
 
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchQuery
-                ? "No projects match your search"
-                : "Create your first project to get started"}
-            </p>
-            {!searchQuery && (
-              <Button onClick={createQuickNote}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Quick Note
-              </Button>
+            {filteredProjects.length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery
+                    ? "No projects match your search"
+                    : "Create your first project to get started"}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={createQuickNote}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Quick Note
+                  </Button>
+                )}
+              </div>
             )}
-          </div>
-        )}
+          </TabsContent>
+
+          <TabsContent value="tasks">
+            {user && <MyTasksTab userId={user.id} />}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Delete Confirmation Dialog */}
