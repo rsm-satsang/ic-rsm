@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
-  ExternalLink,
   Trash2,
   MoreVertical,
   Search,
@@ -45,7 +44,14 @@ import {
   FileText,
   Users,
   ArrowUpDown,
+  MessageSquare,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Project {
   id: string;
@@ -62,6 +68,7 @@ interface Project {
 interface ProjectWithDetails extends Project {
   assignedToName: string | null;
   lastUpdatedByName: string | null;
+  lastNote: string | null;
   collaboratorCount: number;
 }
 
@@ -81,6 +88,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [assignedToFilter, setAssignedToFilter] = useState("");
+  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("all");
+  const [themeFilter, setThemeFilter] = useState<string>("all");
   
   // Sort state
   const [sortField, setSortField] = useState<string>("updated_at");
@@ -102,7 +111,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       const projectIds = projects.map(p => p.id);
       
       // Fetch all related data in parallel
-      const [versionsRes, collaboratorsRes, tasksRes] = await Promise.all([
+      const [versionsRes, collaboratorsRes, tasksRes, notesRes] = await Promise.all([
         // Get latest version for each project (for last updated by)
         supabase
           .from("versions")
@@ -122,6 +131,13 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           .select("project_id, assigned_to")
           .in("project_id", projectIds)
           .in("status", ["pending", "in_progress"]),
+        
+        // Get latest note for each project
+        supabase
+          .from("version_notes")
+          .select("project_id, content")
+          .in("project_id", projectIds)
+          .order("created_at", { ascending: false }),
       ]);
 
       // Get unique user IDs we need to fetch names for
@@ -150,10 +166,14 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         // Find assigned user (first pending/in_progress task assignee)
         const activeTask = tasksRes.data?.find(t => t.project_id === project.id);
         
+        // Find latest note
+        const latestNote = notesRes.data?.find(n => n.project_id === project.id);
+        
         return {
           ...project,
           assignedToName: activeTask ? userMap.get(activeTask.assigned_to) || null : null,
           lastUpdatedByName: latestVersion ? userMap.get(latestVersion.created_by) || null : userMap.get(project.owner_id) || null,
+          lastNote: latestNote?.content || null,
           collaboratorCount: collabCount,
         };
       });
@@ -229,9 +249,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     setNameFilter("");
     setStatusFilter("all");
     setAssignedToFilter("");
+    setOutcomeTypeFilter("all");
+    setThemeFilter("all");
   };
 
-  const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter;
+  const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter || outcomeTypeFilter !== "all" || themeFilter !== "all";
 
   // Filter and sort projects
   const filteredProjects = projectsWithDetails
@@ -240,7 +262,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       const matchesStatus = statusFilter === "all" || project.status === statusFilter;
       const matchesAssigned = !assignedToFilter || 
         (project.assignedToName?.toLowerCase().includes(assignedToFilter.toLowerCase()));
-      return matchesName && matchesStatus && matchesAssigned;
+      const matchesOutcomeType = outcomeTypeFilter === "all" || project.type === outcomeTypeFilter;
+      const projectTheme = (project.metadata as any)?.theme || "";
+      const matchesTheme = themeFilter === "all" || projectTheme === themeFilter;
+      return matchesName && matchesStatus && matchesAssigned && matchesOutcomeType && matchesTheme;
     })
     .sort((a, b) => {
       let aVal: any, bVal: any;
@@ -278,6 +303,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     });
 
   const uniqueStatuses = [...new Set(projects.map(p => p.status))];
+  const uniqueTypes = [...new Set(projects.map(p => p.type))];
+  const uniqueThemes = [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
 
   if (loading) {
     return (
@@ -301,6 +328,34 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             className="h-9"
           />
         </div>
+        
+        <Select value={outcomeTypeFilter} onValueChange={setOutcomeTypeFilter}>
+          <SelectTrigger className="w-[150px] h-9">
+            <SelectValue placeholder="Outcome Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {uniqueTypes.map(type => (
+              <SelectItem key={type} value={type}>
+                {type.charAt(0).toUpperCase() + type.slice(1).replace("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Select value={themeFilter} onValueChange={setThemeFilter}>
+          <SelectTrigger className="w-[150px] h-9">
+            <SelectValue placeholder="Theme" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Themes</SelectItem>
+            {uniqueThemes.map(theme => (
+              <SelectItem key={theme} value={theme}>
+                {theme}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] h-9">
@@ -364,8 +419,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <ArrowUpDown className="h-3 w-3" />
                 </div>
               </TableHead>
-              <TableHead>Currently With</TableHead>
-              <TableHead>Last Updated By</TableHead>
+              <TableHead>Currently Assigned to</TableHead>
               <TableHead 
                 className="cursor-pointer hover:bg-muted/80"
                 onClick={() => handleSort("updated_at")}
@@ -390,7 +444,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <FileText className="h-8 w-8" />
                     <span>No projects found</span>
@@ -403,10 +457,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <TableCell>
                     <button
                       onClick={() => handleOpenProject(project)}
-                      className="text-left font-medium text-primary hover:underline flex items-center gap-1"
+                      className="text-left font-medium text-primary hover:underline"
                     >
                       {project.title}
-                      <ExternalLink className="h-3 w-3" />
                     </button>
                   </TableCell>
                   <TableCell>
@@ -426,17 +479,31 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                     {project.assignedToName || "-"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {project.lastUpdatedByName || "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <div className="flex flex-col">
-                      <span>{new Date(project.updated_at).toLocaleDateString()}</span>
-                      <span className="text-xs">
-                        {new Date(project.updated_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm">{project.lastUpdatedByName || "-"}</span>
+                        <span className="text-xs">
+                          {new Date(project.updated_at).toLocaleDateString()}{" "}
+                          {new Date(project.updated_at).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                      </div>
+                      {project.lastNote && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button className="text-muted-foreground hover:text-primary">
+                                <MessageSquare className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[300px]">
+                              <p className="text-sm">{project.lastNote}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
@@ -453,13 +520,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleOpenProject(project)}>
-                          <ExternalLink className="h-4 w-4 mr-2" />
                           Open
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
                           Add References
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => setDeletingProject(project)}
                           className="text-destructive focus:text-destructive"
                         >
