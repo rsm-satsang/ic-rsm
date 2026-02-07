@@ -5,13 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare } from "lucide-react";
+import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
@@ -787,6 +789,21 @@ const Workspace = () => {
                 </SelectContent>
               </Select>
 
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Notes
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-[400px] sm:w-[540px] p-0">
+                  <VersionNotesPanel
+                    projectId={project.id}
+                    versionId={currentVersionId}
+                  />
+                </SheetContent>
+              </Sheet>
+
               <InviteDialog 
                 projectId={project.id} 
                 projectOwnerId={project.owner_id}
@@ -908,7 +925,6 @@ const Workspace = () => {
             onInsertText={handleInsertText}
             editorRef={editorRef}
             projectMetadata={project.metadata}
-            currentVersionId={currentVersionId}
           />
         </div>
       </div>
