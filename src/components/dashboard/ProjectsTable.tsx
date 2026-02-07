@@ -256,13 +256,31 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter || outcomeTypeFilter !== "all" || themeFilter !== "all";
 
   // Filter and sort projects
+  // Format goal value for display
+  const formatGoal = (goal: string | undefined) => {
+    if (!goal) return "-";
+    const goalLabels: Record<string, string> = {
+      substack_newsletter: "Substack Newsletter",
+      wordpress_blog: "WordPress Blog",
+      note: "Note",
+      book_article: "Book Article",
+      story_children: "Story (Children)",
+      story_adults: "Story (Adults)",
+      proofreading: "Proofreading",
+      translation: "Translation",
+      other: "Other",
+    };
+    return goalLabels[goal] || goal.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   const filteredProjects = projectsWithDetails
     .filter(project => {
       const matchesName = project.title.toLowerCase().includes(nameFilter.toLowerCase());
       const matchesStatus = statusFilter === "all" || project.status === statusFilter;
       const matchesAssigned = !assignedToFilter || 
         (project.assignedToName?.toLowerCase().includes(assignedToFilter.toLowerCase()));
-      const matchesOutcomeType = outcomeTypeFilter === "all" || project.type === outcomeTypeFilter;
+      const projectGoal = (project.metadata as any)?.goal || "";
+      const matchesOutcomeType = outcomeTypeFilter === "all" || projectGoal === outcomeTypeFilter;
       const projectTheme = (project.metadata as any)?.theme || "";
       const matchesTheme = themeFilter === "all" || projectTheme === themeFilter;
       return matchesName && matchesStatus && matchesAssigned && matchesOutcomeType && matchesTheme;
@@ -276,8 +294,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           bVal = b.title.toLowerCase();
           break;
         case "type":
-          aVal = a.type;
-          bVal = b.type;
+          aVal = (a.metadata as any)?.goal || "";
+          bVal = (b.metadata as any)?.goal || "";
           break;
         case "status":
           aVal = a.status;
@@ -303,7 +321,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     });
 
   const uniqueStatuses = [...new Set(projects.map(p => p.status))];
-  const uniqueTypes = [...new Set(projects.map(p => p.type))];
+  const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
   const uniqueThemes = [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
 
   if (loading) {
@@ -330,14 +348,14 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </div>
         
         <Select value={outcomeTypeFilter} onValueChange={setOutcomeTypeFilter}>
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-[180px] h-9">
             <SelectValue placeholder="Outcome Type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            {uniqueTypes.map(type => (
-              <SelectItem key={type} value={type}>
-                {type.charAt(0).toUpperCase() + type.slice(1).replace("_", " ")}
+            {uniqueGoals.map(goal => (
+              <SelectItem key={goal} value={goal}>
+                {formatGoal(goal)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -463,8 +481,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                     </button>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">
-                      {project.type.replace("_", " ")}
+                    <Badge variant="outline">
+                      {formatGoal((project.metadata as any)?.goal)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
