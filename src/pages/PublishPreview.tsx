@@ -255,6 +255,7 @@ const PublishPreview = () => {
               editorRef={null}
               projectMetadata={project.metadata}
               previewContent={markdownContent}
+              isPreviewMode={true}
             />
           </div>
         </div>

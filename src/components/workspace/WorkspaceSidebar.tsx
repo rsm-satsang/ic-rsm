@@ -9,9 +9,18 @@ interface WorkspaceSidebarProps {
   editorRef?: any;
   projectMetadata?: any;
   markdownContent?: string;
+  onContentUpdate?: (newContent: string) => void;
 }
 
-export const WorkspaceSidebar = ({ projectId, selectedText, onInsertText, editorRef, projectMetadata, markdownContent }: WorkspaceSidebarProps) => {
+export const WorkspaceSidebar = ({ 
+  projectId, 
+  selectedText, 
+  onInsertText, 
+  editorRef, 
+  projectMetadata, 
+  markdownContent,
+  onContentUpdate 
+}: WorkspaceSidebarProps) => {
   return (
     <Tabs defaultValue="feedback" className="flex flex-col h-full w-full">
       <TabsList className="w-full grid grid-cols-2 h-auto p-0 bg-transparent border-b rounded-none flex-shrink-0">
@@ -36,6 +45,7 @@ export const WorkspaceSidebar = ({ projectId, selectedText, onInsertText, editor
             editorRef={editorRef}
             projectMetadata={projectMetadata}
             previewContent={markdownContent}
+            onContentUpdate={onContentUpdate}
           />
         </div>
       </TabsContent>
