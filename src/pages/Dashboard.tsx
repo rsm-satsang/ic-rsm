@@ -14,6 +14,7 @@ import logoImg from "@/assets/logo_rsm_lotus.png";
 import feedbackIcon from "@/assets/feedback-icon.jpg";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import type { User } from "@supabase/supabase-js";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 interface Project {
   id: string;
