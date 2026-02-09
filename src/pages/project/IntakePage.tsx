@@ -717,9 +717,9 @@ Each reference text provided will come with explicit instructions and context. Y
     <div className="min-h-screen bg-background">
       <PageNavigationBanner
         title="Bring ideas and create first draft"
-        leftLabel="choose a project or create new project"
+        leftLabel="Choose a project or Create New Project"
         leftPath="/dashboard"
-        rightLabel="edit and refine"
+        rightLabel="Edit and Refine"
         rightPath={`/workspace/${projectId}`}
       />
       <div className="container max-w-5xl py-8">
