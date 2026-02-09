@@ -243,6 +243,33 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          comments: Json
+          created_at: string
+          general_feedback: string | null
+          id: string
+          ratings: Json
+          user_id: string
+        }
+        Insert: {
+          comments?: Json
+          created_at?: string
+          general_feedback?: string | null
+          id?: string
+          ratings?: Json
+          user_id: string
+        }
+        Update: {
+          comments?: Json
+          created_at?: string
+          general_feedback?: string | null
+          id?: string
+          ratings?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       files: {
         Row: {
           created_at: string

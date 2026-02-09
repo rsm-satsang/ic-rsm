@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FeedbackDialogProps {
   open: boolean;
@@ -46,7 +47,25 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("You must be logged in to submit feedback.");
+      return;
+    }
+
+    const { error } = await supabase.from("feedback").insert({
+      user_id: user.id,
+      ratings,
+      comments,
+      general_feedback: generalFeedback || null,
+    });
+
+    if (error) {
+      toast.error("Failed to submit feedback.");
+      return;
+    }
+
     toast.success("Thank you for your feedback!");
     setRatings({ 0: null, 1: null, 2: null, 3: null });
     setComments({ 0: "", 1: "", 2: "", 3: "" });
