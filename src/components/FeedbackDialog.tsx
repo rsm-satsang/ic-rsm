@@ -96,6 +96,25 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
         </DialogHeader>
 
         <div className="space-y-6 py-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Name *</Label>
+              <Input
+                placeholder="Your name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Email *</Label>
+              <Input
+                type="email"
+                placeholder="Your email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+              />
+            </div>
+          </div>
           {questions.map((question, idx) => (
             <div key={idx} className="space-y-2">
               <Label className="text-sm font-semibold">
