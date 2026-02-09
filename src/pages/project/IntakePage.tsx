@@ -92,7 +92,72 @@ export default function IntakePage() {
 
   useEffect(() => {
     loadProject();
+    fetchThemes();
   }, [projectId]);
+
+  const fetchThemes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("themes")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      setThemes(data || []);
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+    }
+  };
+
+  const handleAddTheme = async () => {
+    if (!newThemeName.trim()) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from("themes")
+        .insert({ name: newThemeName.trim(), created_by: user.id })
+        .select()
+        .single();
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Theme already exists");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      setThemes(prev => [...prev, { id: data.id, name: data.name }].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedTheme(data.name);
+      saveThemeToProject(data.name);
+      setNewThemeName("");
+      setShowAddTheme(false);
+      toast.success("Theme added!");
+    } catch (error: any) {
+      console.error("Error adding theme:", error);
+      toast.error("Failed to add theme");
+    }
+  };
+
+  const saveThemeToProject = async (themeName: string) => {
+    try {
+      const currentMetadata = project?.metadata || {};
+      await supabase
+        .from("projects")
+        .update({ metadata: { ...currentMetadata, theme: themeName }, updated_at: new Date().toISOString() })
+        .eq("id", projectId);
+    } catch (error) {
+      console.error("Error saving theme:", error);
+    }
+  };
+
+  const handleThemeChange = (value: string) => {
+    if (value === "__add_theme__") {
+      setShowAddTheme(true);
+      return;
+    }
+    setSelectedTheme(value);
+    saveThemeToProject(value);
+  };
 
   // Load reference notes from reference files
   useEffect(() => {
