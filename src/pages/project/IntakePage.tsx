@@ -725,13 +725,6 @@ Each reference text provided will come with explicit instructions and context. Y
       <div className="container max-w-5xl py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </div>
-
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-1">Name Your Project</h2>
             <p className="text-xs text-muted-foreground mb-3">
@@ -751,9 +744,6 @@ Each reference text provided will come with explicit instructions and context. Y
                 disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
               >
                 {savingTitle ? "Saving..." : "Save"}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate(`/workspace/${projectId}`)}>
-                Skip & Open Editor <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
