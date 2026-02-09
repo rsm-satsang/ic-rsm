@@ -101,8 +101,8 @@ All colors MUST be HSL.
     --sidebar-border: 215 30% 16%;
     --sidebar-ring: 200 95% 48%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(200 95% 48%) 0%, hsl(175 65% 55%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(175 65% 55%) 0%, hsl(30 95% 65%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(200 95% 48%) 0%, hsl(200 60% 75%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(200 80% 60%) 0%, hsl(200 40% 85%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(215 30% 10%) 0%, hsl(215 30% 8%) 100%);
 
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
