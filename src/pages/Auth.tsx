@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { FileText, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import logoImg from "@/assets/logo_rsm_lotus.png";
 
 const Auth = () => {
   const [email, setEmail] = useState("");

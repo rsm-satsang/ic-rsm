@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
-  FileText,
   Plus,
   LogOut,
   Settings,
   Bell,
 } from "lucide-react";
+import logoImg from "@/assets/logo_rsm_lotus.png";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import type { User } from "@supabase/supabase-js";
 
