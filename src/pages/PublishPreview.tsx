@@ -204,7 +204,7 @@ const PublishPreview = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-subtle">
+    <div className="h-screen flex flex-col bg-gradient-subtle ml-14">
       {/* Page Navigation Banner */}
       <PageNavigationBanner title="Publish" leftLabel="Edit and Refine" leftPath={`/workspace/${projectId}`} />
 
