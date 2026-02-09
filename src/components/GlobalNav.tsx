@@ -15,31 +15,29 @@ const GlobalNav = () => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 z-50 h-full w-14 flex flex-col items-center pt-4 gap-3 bg-sidebar border-r border-sidebar-border shadow-md">
+      <div className="fixed top-0 left-0 z-50 h-full w-14 flex flex-col items-center pt-4 gap-4 bg-sidebar border-r border-sidebar-border shadow-md">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant={isHome ? "default" : "ghost"}
-              size="icon"
-              className="rounded-lg text-sidebar-foreground hover:bg-sidebar-accent"
+            <button
+              className="flex flex-col items-center gap-0.5 text-sidebar-foreground hover:bg-sidebar-accent rounded-lg p-1.5 transition-colors"
               onClick={() => navigate("/dashboard")}
             >
               <Home className="h-5 w-5" />
-            </Button>
+              <span className="text-[9px] leading-tight">Home</span>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="right">Home</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-lg text-sidebar-foreground hover:bg-sidebar-accent"
+            <button
+              className="flex flex-col items-center gap-0.5 text-sidebar-foreground hover:bg-sidebar-accent rounded-lg p-1.5 transition-colors"
               onClick={() => setFeedbackOpen(true)}
             >
-              <img src={feedbackIcon} alt="Feedback" className="h-6 w-6 rounded" />
-            </Button>
+              <img src={feedbackIcon} alt="Feedback" className="h-5 w-5 rounded" />
+              <span className="text-[9px] leading-tight">Feedback</span>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="right">Feedback</TooltipContent>
         </Tooltip>
