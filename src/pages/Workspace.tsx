@@ -788,12 +788,17 @@ const Workspace = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Notes & Tasks
+                    <Settings className="h-4 w-4" />
+                    Manage
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden" align="end">
-                  <VersionNotesPanel projectId={project.id} versionId={currentVersionId} />
+                <PopoverContent className="w-[420px] p-0 max-h-[550px] overflow-hidden" align="end">
+                  <ManagePanel
+                    projectId={project.id}
+                    versionId={currentVersionId}
+                    currentStatus={currentStatus}
+                    onStatusChange={handleStatusChange}
+                  />
                 </PopoverContent>
               </Popover>
 
