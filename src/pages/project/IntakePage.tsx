@@ -231,6 +231,9 @@ export default function IntakePage() {
       if (metadata?.llm_instructions) {
         setLlmInstructions(metadata.llm_instructions);
       }
+      if (metadata?.theme) {
+        setSelectedTheme(metadata.theme);
+      }
 
       // Load the latest generated draft from versions
       const { data: versions } = await supabase
