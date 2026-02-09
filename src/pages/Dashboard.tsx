@@ -258,6 +258,8 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
+    <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    </>
   );
 };
 
