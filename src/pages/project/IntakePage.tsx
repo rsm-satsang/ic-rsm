@@ -836,7 +836,7 @@ Each reference text provided will come with explicit instructions and context. Y
             <div className="pl-4 space-y-6">
               {/* Raw Text References */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Add Reference Text</h3>
+                <h3 className="text-lg font-semibold mb-3">Add Simple Text</h3>
                 <Textarea
                   placeholder="Paste or type your reference text here..."
                   value={currentRawText}
@@ -1061,7 +1061,7 @@ Each reference text provided will come with explicit instructions and context. Y
                   {generating ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Generating Versions...
+                      Generating Draft...
                     </>
                   ) : (
                     <>
@@ -1088,7 +1088,7 @@ Each reference text provided will come with explicit instructions and context. Y
                       Generated using:{" "}
                       <span className="font-medium">
                         {usedModel === "gemini"
-                          ? "Gemini 2.0 Flash"
+                          ? "Gemini 2.5 Flash"
                           : usedModel === "gpt-5-mini"
                             ? "GPT-5 Mini"
                             : usedModel === "gpt-5-nano"
