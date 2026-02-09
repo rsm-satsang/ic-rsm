@@ -232,18 +232,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     }
   };
 
-  const handleOpenProject = async (project: Project) => {
-    const { data: references } = await supabase
-      .from("reference_files")
-      .select("id")
-      .eq("project_id", project.id)
-      .limit(1);
-    
-    if (references && references.length > 0) {
-      navigate(`/workspace/${project.id}`);
-    } else {
-      navigate(`/project/${project.id}/intake`);
-    }
+  const handleOpenProject = (project: Project) => {
+    navigate(`/workspace/${project.id}`);
   };
 
   const handleDeleteProject = async () => {
