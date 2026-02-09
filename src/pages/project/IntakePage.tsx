@@ -27,6 +27,7 @@ import {
   Trash2,
   Eye,
   Code,
+  Plus,
 } from "lucide-react";
 
 export default function IntakePage() {
@@ -69,6 +70,10 @@ export default function IntakePage() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [selectedTheme, setSelectedTheme] = useState("General");
+  const [themes, setThemes] = useState<Array<{ id: string; name: string }>>([]);
+  const [showAddTheme, setShowAddTheme] = useState(false);
+  const [newThemeName, setNewThemeName] = useState("");
   const [usedModel, setUsedModel] = useState<string | null>(() => {
     if (projectId) {
       return localStorage.getItem(`draft_model_${projectId}`);
@@ -88,7 +93,72 @@ export default function IntakePage() {
 
   useEffect(() => {
     loadProject();
+    fetchThemes();
   }, [projectId]);
+
+  const fetchThemes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("themes")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      setThemes(data || []);
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+    }
+  };
+
+  const handleAddTheme = async () => {
+    if (!newThemeName.trim()) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from("themes")
+        .insert({ name: newThemeName.trim(), created_by: user.id })
+        .select()
+        .single();
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Theme already exists");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      setThemes(prev => [...prev, { id: data.id, name: data.name }].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedTheme(data.name);
+      saveThemeToProject(data.name);
+      setNewThemeName("");
+      setShowAddTheme(false);
+      toast.success("Theme added!");
+    } catch (error: any) {
+      console.error("Error adding theme:", error);
+      toast.error("Failed to add theme");
+    }
+  };
+
+  const saveThemeToProject = async (themeName: string) => {
+    try {
+      const currentMetadata = project?.metadata || {};
+      await supabase
+        .from("projects")
+        .update({ metadata: { ...currentMetadata, theme: themeName }, updated_at: new Date().toISOString() })
+        .eq("id", projectId);
+    } catch (error) {
+      console.error("Error saving theme:", error);
+    }
+  };
+
+  const handleThemeChange = (value: string) => {
+    if (value === "__add_theme__") {
+      setShowAddTheme(true);
+      return;
+    }
+    setSelectedTheme(value);
+    saveThemeToProject(value);
+  };
 
   // Load reference notes from reference files
   useEffect(() => {
@@ -161,6 +231,9 @@ export default function IntakePage() {
       }
       if (metadata?.llm_instructions) {
         setLlmInstructions(metadata.llm_instructions);
+      }
+      if (metadata?.theme) {
+        setSelectedTheme(metadata.theme);
       }
 
       // Load the latest generated draft from versions
@@ -756,6 +829,56 @@ Each reference text provided will come with explicit instructions and context. Y
               />
               {savingTitle && <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>}
             </div>
+          </div>
+
+          {/* Choose Theme */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-1">Choose Theme</h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Categorize your project under a theme for easy filtering
+            </p>
+            {!showAddTheme ? (
+              <Select value={selectedTheme} onValueChange={handleThemeChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {themes.map((theme) => (
+                    <SelectItem key={theme.id} value={theme.name}>
+                      {theme.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__add_theme__">
+                    <span className="flex items-center gap-1">
+                      <Plus className="h-3 w-3" /> Add Theme
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newThemeName}
+                  onChange={(e) => setNewThemeName(e.target.value)}
+                  placeholder="Enter theme name..."
+                  className="flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddTheme();
+                    if (e.key === "Escape") {
+                      setShowAddTheme(false);
+                      setNewThemeName("");
+                    }
+                  }}
+                />
+                <Button size="sm" onClick={handleAddTheme} disabled={!newThemeName.trim()}>
+                  Add
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowAddTheme(false); setNewThemeName(""); }}>
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Define Outcome Section */}

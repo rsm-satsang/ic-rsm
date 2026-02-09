@@ -116,6 +116,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [projectsWithDetails, setProjectsWithDetails] = useState<ProjectWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [dbThemes, setDbThemes] = useState<string[]>([]);
   
   // Filter states
   const [nameFilter, setNameFilter] = useState("");
@@ -130,7 +131,21 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
   useEffect(() => {
     fetchProjectDetails();
+    fetchDbThemes();
   }, [projects]);
+
+  const fetchDbThemes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("themes")
+        .select("name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      setDbThemes((data || []).map(t => t.name));
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+    }
+  };
 
   const fetchProjectDetails = async () => {
     if (projects.length === 0) {
@@ -393,7 +408,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
   const uniqueStatuses = [...new Set(projects.map(p => p.status))];
   const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
-  const uniqueThemes = [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
+  const uniqueThemes = dbThemes.length > 0 ? dbThemes : [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
 
   if (loading) {
     return (
