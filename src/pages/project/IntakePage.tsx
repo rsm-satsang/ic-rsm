@@ -853,7 +853,7 @@ Each reference text provided will come with explicit instructions and context. Y
 
               {/* File Uploader */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Upload Reference Files</h3>
+                <h3 className="text-lg font-semibold mb-3">Add Files</h3>
                 <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
               </div>
 
@@ -944,7 +944,7 @@ Each reference text provided will come with explicit instructions and context. Y
           {/* Reference Files Status */}
           {(referenceFiles.length > 0 || rawTextReferences.length > 0) && (
             <div>
-              <h2 className="text-lg font-semibold mb-3">Reference Files</h2>
+              <h2 className="text-lg font-semibold mb-3">Review your reference text/ document and add instructions</h2>
               <div className="space-y-3">
                 {/* Uploaded Files */}
                 {referenceFiles.map((file) => (
@@ -1028,7 +1028,7 @@ Each reference text provided will come with explicit instructions and context. Y
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-5 w-5" />
-                    Extract & Show Draft
+                    Prepare consolidated input to AI
                   </>
                 )}
               </Button>
@@ -1066,7 +1066,7 @@ Each reference text provided will come with explicit instructions and context. Y
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-5 w-5" />
-                      Generate Versions
+                      Ask AI to generate draft
                     </>
                   )}
                 </Button>
