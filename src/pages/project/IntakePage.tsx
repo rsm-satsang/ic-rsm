@@ -944,7 +944,7 @@ Each reference text provided will come with explicit instructions and context. Y
           {/* Reference Files Status */}
           {(referenceFiles.length > 0 || rawTextReferences.length > 0) && (
             <div>
-              <h2 className="text-lg font-semibold mb-3">Review your reference text/ document and add instructions</h2>
+              <h2 className="text-lg font-semibold mb-3">Review your reference text / document and add Instructions</h2>
               <div className="space-y-3">
                 {/* Uploaded Files */}
                 {referenceFiles.map((file) => (
