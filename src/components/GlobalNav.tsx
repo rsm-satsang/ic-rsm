@@ -38,7 +38,7 @@ const GlobalNav = () => {
               className="rounded-lg text-sidebar-foreground hover:bg-sidebar-accent"
               onClick={() => setFeedbackOpen(true)}
             >
-              <MessageSquareText className="h-5 w-5" />
+              <img src={feedbackIcon} alt="Feedback" className="h-6 w-6 rounded" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Feedback</TooltipContent>
