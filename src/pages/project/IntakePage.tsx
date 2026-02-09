@@ -290,11 +290,10 @@ Unless the source material clearly demands a different structure, follow this te
 4️⃣ Deeper Teaching Section (clear spiritual explanation)
 5️⃣ Practical Integration into Daily Life or Inner Growth
 6️⃣ Soft Reflective Closing that leaves the reader peaceful and uplifted
-7️⃣ End every newsletter with the exact closing signature written on three separate lines:
-    With light, love, and peace,
-    Sanjiv Kumar
-    Ramashram Satsang Mathura
-    
+7️⃣ End every newsletter with the exact closing signature written on three separate lines: ***With light, love, and peace,
+Sanjiv Kumar
+Ramashram Satsang Mathura***
+
 Teach progressively. Keep language simple but meaningful.
 
 CRITICAL OUTPUT FORMAT — RICH, ENGAGING MARKDOWN (SUBSTACK STYLE)
