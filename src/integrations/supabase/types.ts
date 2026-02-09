@@ -250,7 +250,9 @@ export type Database = {
           general_feedback: string | null
           id: string
           ratings: Json
+          user_email: string | null
           user_id: string
+          user_name: string | null
         }
         Insert: {
           comments?: Json
@@ -258,7 +260,9 @@ export type Database = {
           general_feedback?: string | null
           id?: string
           ratings?: Json
+          user_email?: string | null
           user_id: string
+          user_name?: string | null
         }
         Update: {
           comments?: Json
@@ -266,7 +270,9 @@ export type Database = {
           general_feedback?: string | null
           id?: string
           ratings?: Json
+          user_email?: string | null
           user_id?: string
+          user_name?: string | null
         }
         Relationships: []
       }
