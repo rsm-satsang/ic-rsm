@@ -232,30 +232,40 @@ export default function IntakePage() {
     }
   };
 
-  const handleSaveTitle = async () => {
-    if (!projectTitle.trim()) {
-      toast.error("Project title cannot be empty");
-      return;
-    }
+  const handleSaveTitle = useCallback(async (title: string) => {
+    if (!title.trim()) return;
 
     setSavingTitle(true);
     try {
       const { error } = await supabase
         .from("projects")
-        .update({ title: projectTitle, updated_at: new Date().toISOString() })
+        .update({ title, updated_at: new Date().toISOString() })
         .eq("id", projectId);
 
       if (error) throw error;
-
-      toast.success("Project title saved!");
-      setProject({ ...project, title: projectTitle });
+      setProject((prev: any) => ({ ...prev, title }));
     } catch (error: any) {
       console.error("Title save failed:", error);
       toast.error("Failed to save title");
     } finally {
       setSavingTitle(false);
     }
+  }, [projectId]);
+
+  const handleTitleChange = (newTitle: string) => {
+    setProjectTitle(newTitle);
+    if (titleSaveTimerRef.current) clearTimeout(titleSaveTimerRef.current);
+    titleSaveTimerRef.current = setTimeout(() => {
+      handleSaveTitle(newTitle);
+    }, 800);
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimerRef.current) clearTimeout(titleSaveTimerRef.current);
+    };
+  }, []);
 
   const getGoalInstructions = (goalType: string, customGoalText?: string, targetLanguage?: string) => {
     const instructions: Record<string, string> = {
