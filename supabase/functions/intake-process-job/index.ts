@@ -461,78 +461,131 @@ async function transcribeYouTube(refFile: any): Promise<string> {
   }
   const videoId = videoIdMatch[1];
 
+  // Strategy 1: Try YouTube captions first (fastest)
   try {
-    // Fetch transcript using YouTube's timedtext API
-    // First, try to get available caption tracks
-    const playerResponse = await fetch(
-      `https://www.youtube.com/watch?v=${videoId}`
-    );
-    
-    if (!playerResponse.ok) {
-      throw new Error('Failed to access YouTube video. Video may be private or unavailable.');
+    const captionText = await fetchYouTubeCaptions(videoId);
+    if (captionText && captionText.trim().length > 50) {
+      console.log(`Got YouTube captions: ${captionText.length} characters`);
+      return captionText;
     }
-
-    const playerHtml = await playerResponse.text();
-    
-    // Extract caption tracks from player response
-    const captionTracksMatch = playerHtml.match(/"captionTracks":\s*(\[.*?\])/);
-    
-    if (!captionTracksMatch) {
-      throw new Error('No captions/subtitles available for this video. Please use a video with captions enabled.');
-    }
-
-    const captionTracks = JSON.parse(captionTracksMatch[1]);
-    
-    if (captionTracks.length === 0) {
-      throw new Error('No captions/subtitles available for this video.');
-    }
-
-    // Prefer English captions, or use the first available
-    let captionUrl = captionTracks.find((track: any) => 
-      track.languageCode === 'en' || track.languageCode === 'en-US'
-    )?.baseUrl || captionTracks[0]?.baseUrl;
-
-    if (!captionUrl) {
-      throw new Error('Could not find caption URL');
-    }
-
-    // Fetch the transcript
-    const transcriptResponse = await fetch(captionUrl);
-    if (!transcriptResponse.ok) {
-      throw new Error('Failed to fetch transcript from YouTube');
-    }
-
-    const transcriptXml = await transcriptResponse.text();
-    
-    // Parse XML and extract text
-    const textMatches = transcriptXml.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
-    const transcriptParts = [];
-    
-    for (const match of textMatches) {
-      let text = match[1];
-      // Decode HTML entities
-      text = text.replace(/&amp;/g, '&')
-                 .replace(/&lt;/g, '<')
-                 .replace(/&gt;/g, '>')
-                 .replace(/&quot;/g, '"')
-                 .replace(/&#39;/g, "'")
-                 .replace(/&nbsp;/g, ' ');
-      transcriptParts.push(text);
-    }
-
-    if (transcriptParts.length === 0) {
-      throw new Error('No text found in transcript');
-    }
-
-    const fullTranscript = transcriptParts.join(' ');
-    console.log(`Successfully extracted YouTube transcript: ${fullTranscript.length} characters`);
-    
-    return fullTranscript;
-
-  } catch (error: any) {
-    console.error('YouTube transcript extraction error:', error);
-    throw new Error(`Failed to extract YouTube transcript: ${error.message}`);
+  } catch (err: any) {
+    console.log('Captions not available, falling back to Gemini:', err.message);
   }
+
+  // Strategy 2: Use Gemini to transcribe YouTube video directly via URL
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key not configured and no captions available');
+  }
+
+  console.log('Using Gemini to transcribe YouTube video:', videoId);
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              text: `Transcribe this YouTube video completely and accurately:
+
+1. Transcribe ALL spoken words from the video
+2. Include speaker changes if multiple speakers are present
+3. Preserve natural speech patterns
+4. Format the transcription into readable paragraphs
+5. Return ONLY the transcription without any commentary or meta-information
+
+Begin transcription:`
+            },
+            {
+              file_data: {
+                file_uri: `https://www.youtube.com/watch?v=${videoId}`,
+                mime_type: 'video/mp4'
+              }
+            }
+          ]
+        }]
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || data.error) {
+    console.error('Gemini YouTube transcription error:', {
+      status: response.status,
+      error: data.error,
+    });
+    throw new Error(data.error?.message || `Gemini YouTube transcription failed with HTTP ${response.status}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text || !text.trim()) {
+    console.error('Gemini YouTube transcription returned empty content', data);
+    throw new Error('Gemini YouTube transcription returned empty content');
+  }
+
+  console.log(`Successfully transcribed YouTube video via Gemini: ${text.length} characters`);
+  return text;
+}
+
+async function fetchYouTubeCaptions(videoId: string): Promise<string> {
+  const playerResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+  
+  if (!playerResponse.ok) {
+    throw new Error('Failed to access YouTube video');
+  }
+
+  const playerHtml = await playerResponse.text();
+  
+  const captionTracksMatch = playerHtml.match(/"captionTracks":\s*(\[.*?\])/);
+  
+  if (!captionTracksMatch) {
+    throw new Error('No captions available');
+  }
+
+  const captionTracks = JSON.parse(captionTracksMatch[1]);
+  
+  if (captionTracks.length === 0) {
+    throw new Error('No captions available');
+  }
+
+  let captionUrl = captionTracks.find((track: any) => 
+    track.languageCode === 'en' || track.languageCode === 'en-US'
+  )?.baseUrl || captionTracks[0]?.baseUrl;
+
+  if (!captionUrl) {
+    throw new Error('Could not find caption URL');
+  }
+
+  const transcriptResponse = await fetch(captionUrl);
+  if (!transcriptResponse.ok) {
+    throw new Error('Failed to fetch transcript');
+  }
+
+  const transcriptXml = await transcriptResponse.text();
+  
+  const textMatches = transcriptXml.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
+  const transcriptParts = [];
+  
+  for (const match of textMatches) {
+    let text = match[1];
+    text = text.replace(/&amp;/g, '&')
+               .replace(/&lt;/g, '<')
+               .replace(/&gt;/g, '>')
+               .replace(/&quot;/g, '"')
+               .replace(/&#39;/g, "'")
+               .replace(/&nbsp;/g, ' ');
+    transcriptParts.push(text);
+  }
+
+  if (transcriptParts.length === 0) {
+    throw new Error('No text found in transcript');
+  }
+
+  return transcriptParts.join(' ');
 }
 
 async function extractURL(refFile: any): Promise<string> {
