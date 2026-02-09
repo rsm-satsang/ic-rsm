@@ -27,6 +27,7 @@ import {
   Trash2,
   Eye,
   Code,
+  Plus,
 } from "lucide-react";
 
 export default function IntakePage() {
