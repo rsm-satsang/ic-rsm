@@ -408,7 +408,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
   const uniqueStatuses = [...new Set(projects.map(p => p.status))];
   const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
-  const uniqueThemes = [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
+  const uniqueThemes = dbThemes.length > 0 ? dbThemes : [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
 
   if (loading) {
     return (
