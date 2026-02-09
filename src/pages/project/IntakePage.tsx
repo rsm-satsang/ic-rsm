@@ -840,7 +840,7 @@ Each reference text provided will come with explicit instructions and context. Y
               generating your content.
             </p>
 
-            <div className="pl-4 space-y-6">
+            <div className="pl-4 space-y-4">
               {/* Raw Text References */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Paste or type your text here</h3>
