@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, MessageSquareText } from "lucide-react";
+import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import feedbackIcon from "@/assets/feedback-icon.jpg";
 
 const GlobalNav = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -37,7 +38,7 @@ const GlobalNav = () => {
               className="rounded-lg text-sidebar-foreground hover:bg-sidebar-accent"
               onClick={() => setFeedbackOpen(true)}
             >
-              <MessageSquareText className="h-5 w-5" />
+              <img src={feedbackIcon} alt="Feedback" className="h-6 w-6 rounded" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Feedback</TooltipContent>

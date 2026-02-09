@@ -11,8 +11,10 @@ import {
   Bell,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
+import feedbackIcon from "@/assets/feedback-icon.jpg";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import type { User } from "@supabase/supabase-js";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 interface Project {
   id: string;
@@ -27,6 +29,7 @@ interface Project {
 }
 
 const Dashboard = () => {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,6 +163,7 @@ const Dashboard = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-subtle ml-14">
       {/* Header */}
       <header className="border-b bg-card shadow-sm">
@@ -214,6 +218,19 @@ const Dashboard = () => {
               </div>
             </CardHeader>
           </Card>
+          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={() => setFeedbackOpen(true)}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-accent rounded-xl">
+                  <img src={feedbackIcon} alt="Feedback" className="h-6 w-6 rounded" />
+                </div>
+                <div>
+                  <CardTitle>Give Feedback</CardTitle>
+                  <CardDescription>We would love to hear from you especially during this test period.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
         </div>
 
         {/* Projects */}
@@ -242,6 +259,8 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
+    <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    </>
   );
 };
 
