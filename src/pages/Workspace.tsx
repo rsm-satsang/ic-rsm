@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo } from "lucide-react";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
+import ManagePanel from "@/components/workspace/ManagePanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
