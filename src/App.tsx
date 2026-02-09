@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <GlobalNav />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth" element={<Auth />} />
