@@ -131,7 +131,21 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
   useEffect(() => {
     fetchProjectDetails();
+    fetchDbThemes();
   }, [projects]);
+
+  const fetchDbThemes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("themes")
+        .select("name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      setDbThemes((data || []).map(t => t.name));
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+    }
+  };
 
   const fetchProjectDetails = async () => {
     if (projects.length === 0) {
