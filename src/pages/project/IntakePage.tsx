@@ -840,7 +840,7 @@ Each reference text provided will come with explicit instructions and context. Y
               generating your content.
             </p>
 
-            <div className="pl-4 space-y-4">
+            <div className="pl-4 space-y-6">
               {/* Raw Text References */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Paste or type your text here</h3>
@@ -1024,7 +1024,7 @@ Each reference text provided will come with explicit instructions and context. Y
                   <strong>Note:</strong> This draft includes goal-based instructions at the top (based on your selected
                   goal: <strong>{goal === "other" ? customGoal : goal.replace(/_/g, " ")}</strong>). You can edit or
                   remove these instructions if they cause AI generation issues. Your edits will be used when you click
-                  "Generate Versions".
+                  "Prepare consolidated input to AI".
                 </p>
               </div>
               <Textarea
