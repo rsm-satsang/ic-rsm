@@ -107,7 +107,7 @@ const Dashboard = () => {
           title: `Quick Note - ${new Date().toLocaleDateString()}`,
           type: "note",
           owner_id: user.id,
-          status: "draft",
+          status: "in_progress",
         })
         .select()
         .single();
