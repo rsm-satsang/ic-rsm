@@ -35,7 +35,7 @@ export default function IntakePage() {
   const [loading, setLoading] = useState(true);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
-  const [goal, setGoal] = useState("substack_article");
+  const [goal, setGoal] = useState("substack_newsletter");
   const [customGoal, setCustomGoal] = useState("");
   const [language, setLanguage] = useState("english");
   const [selectedModel, setSelectedModel] = useState("gpt-5");
