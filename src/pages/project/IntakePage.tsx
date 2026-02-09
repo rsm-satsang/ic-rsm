@@ -886,7 +886,7 @@ Each reference text provided will come with explicit instructions and context. Y
                 <h3 className="text-lg font-semibold mb-3">Add Weblink</h3>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Paste article URL..."
+                    placeholder="Paste any URL..."
                     value={externalUrl}
                     onChange={(e) => setExternalUrl(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddURL()}
