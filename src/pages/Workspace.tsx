@@ -728,7 +728,7 @@ const Workspace = () => {
     <div className="h-screen flex flex-col bg-gradient-subtle">
       {/* Page Navigation Banner */}
       <PageNavigationBanner
-        title="edit and refine"
+        title="Edit and Refine"
         leftLabel="Bring ideas and create first draft"
         leftPath={`/project/${projectId}/intake`}
         rightLabel="Publish"
