@@ -230,12 +230,7 @@ const PublishPreview = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate(`/workspace/${projectId}`)}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-xl font-semibold">Publish Preview</h1>
-            </div>
+            <h1 className="text-xl font-semibold">Publish Preview</h1>
             <div className="text-lg font-medium text-muted-foreground">
               {project.title}
             </div>
