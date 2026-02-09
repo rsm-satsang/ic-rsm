@@ -28,6 +28,7 @@ interface Project {
 }
 
 const Dashboard = () => {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
