@@ -81,6 +81,8 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
     setRatings({ 0: null, 1: null, 2: null, 3: null });
     setComments({ 0: "", 1: "", 2: "", 3: "" });
     setGeneralFeedback("");
+    setUserName("");
+    setUserEmail("");
     onOpenChange(false);
   };
 
