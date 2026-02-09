@@ -56,8 +56,17 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
       return;
     }
 
+    // Fetch user profile for name and email
+    const { data: profile } = await supabase
+      .from("users")
+      .select("name, email")
+      .eq("id", user.id)
+      .single();
+
     const { error } = await supabase.from("feedback").insert({
       user_id: user.id,
+      user_name: profile?.name || null,
+      user_email: profile?.email || null,
       ratings,
       comments,
       general_feedback: generalFeedback || null,
