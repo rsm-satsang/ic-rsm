@@ -883,7 +883,7 @@ Each reference text provided will come with explicit instructions and context. Y
 
               {/* External URL */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Add External Article</h3>
+                <h3 className="text-lg font-semibold mb-3">Add Weblink</h3>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Paste article URL..."
