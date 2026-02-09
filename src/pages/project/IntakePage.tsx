@@ -915,36 +915,6 @@ Each reference text provided will come with explicit instructions and context. Y
         <div className="grid gap-6">
           <Separator />
 
-          {/* Vocabulary */}
-          <div>
-            <Label htmlFor="vocabulary" className="text-base font-semibold mb-2 block">
-              Vocabulary / Terms to Enforce (Optional)
-            </Label>
-            <Textarea
-              id="vocabulary"
-              placeholder="Enter important terms, one per line. E.g.:&#10;AI → Artificial Intelligence&#10;ML → Machine Learning&#10;UX → User Experience"
-              value={vocabulary}
-              onChange={(e) => setVocabulary(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          {/* LLM Instructions */}
-          <div>
-            <Label htmlFor="instructions" className="text-base font-semibold mb-2 block">
-              Additional Instructions (Optional)
-            </Label>
-            <Textarea
-              id="instructions"
-              placeholder="E.g., Use a casual tone, prioritize statistics from source 2, include image 1 as an intro quote..."
-              value={llmInstructions}
-              onChange={(e) => setLlmInstructions(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <Separator />
-
           {/* Reference Files Status */}
           {(referenceFiles.length > 0 || rawTextReferences.length > 0) && (
             <div>
