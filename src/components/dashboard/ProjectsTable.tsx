@@ -116,6 +116,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [projectsWithDetails, setProjectsWithDetails] = useState<ProjectWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [dbThemes, setDbThemes] = useState<string[]>([]);
   
   // Filter states
   const [nameFilter, setNameFilter] = useState("");
