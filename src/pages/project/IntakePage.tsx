@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,7 @@ export default function IntakePage() {
     return `New Project - ${today}`;
   });
   const [savingTitle, setSavingTitle] = useState(false);
+  const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [generating, setGenerating] = useState(false);
   const [rawTextReferences, setRawTextReferences] = useState<Array<{ id: string; text: string; title: string }>>([]);
   const [currentRawText, setCurrentRawText] = useState("");
@@ -231,30 +232,40 @@ export default function IntakePage() {
     }
   };
 
-  const handleSaveTitle = async () => {
-    if (!projectTitle.trim()) {
-      toast.error("Project title cannot be empty");
-      return;
-    }
+  const handleSaveTitle = useCallback(async (title: string) => {
+    if (!title.trim()) return;
 
     setSavingTitle(true);
     try {
       const { error } = await supabase
         .from("projects")
-        .update({ title: projectTitle, updated_at: new Date().toISOString() })
+        .update({ title, updated_at: new Date().toISOString() })
         .eq("id", projectId);
 
       if (error) throw error;
-
-      toast.success("Project title saved!");
-      setProject({ ...project, title: projectTitle });
+      setProject((prev: any) => ({ ...prev, title }));
     } catch (error: any) {
       console.error("Title save failed:", error);
       toast.error("Failed to save title");
     } finally {
       setSavingTitle(false);
     }
+  }, [projectId]);
+
+  const handleTitleChange = (newTitle: string) => {
+    setProjectTitle(newTitle);
+    if (titleSaveTimerRef.current) clearTimeout(titleSaveTimerRef.current);
+    titleSaveTimerRef.current = setTimeout(() => {
+      handleSaveTitle(newTitle);
+    }, 800);
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimerRef.current) clearTimeout(titleSaveTimerRef.current);
+    };
+  }, []);
 
   const getGoalInstructions = (goalType: string, customGoalText?: string, targetLanguage?: string) => {
     const instructions: Record<string, string> = {
@@ -736,18 +747,11 @@ Each reference text provided will come with explicit instructions and context. Y
             <div className="flex items-center gap-2">
               <Input
                 value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
+                onChange={(e) => handleTitleChange(e.target.value)}
                 className="flex-1 text-lg font-medium"
                 placeholder="Project title..."
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveTitle}
-                disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
-              >
-                {savingTitle ? "Saving..." : "Save"}
-              </Button>
+              {savingTitle && <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>}
             </div>
           </div>
 
@@ -909,36 +913,6 @@ Each reference text provided will come with explicit instructions and context. Y
         )}
 
         <div className="grid gap-6">
-          <Separator />
-
-          {/* Vocabulary */}
-          <div>
-            <Label htmlFor="vocabulary" className="text-base font-semibold mb-2 block">
-              Vocabulary / Terms to Enforce (Optional)
-            </Label>
-            <Textarea
-              id="vocabulary"
-              placeholder="Enter important terms, one per line. E.g.:&#10;AI → Artificial Intelligence&#10;ML → Machine Learning&#10;UX → User Experience"
-              value={vocabulary}
-              onChange={(e) => setVocabulary(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          {/* LLM Instructions */}
-          <div>
-            <Label htmlFor="instructions" className="text-base font-semibold mb-2 block">
-              Additional Instructions (Optional)
-            </Label>
-            <Textarea
-              id="instructions"
-              placeholder="E.g., Use a casual tone, prioritize statistics from source 2, include image 1 as an intro quote..."
-              value={llmInstructions}
-              onChange={(e) => setLlmInstructions(e.target.value)}
-              rows={3}
-            />
-          </div>
-
           <Separator />
 
           {/* Reference Files Status */}
