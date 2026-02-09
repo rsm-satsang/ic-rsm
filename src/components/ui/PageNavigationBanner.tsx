@@ -39,7 +39,7 @@ const PageNavigationBanner = ({
 
           {/* Center Title */}
           <div className="flex-shrink-0">
-            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">{title}</h1>
           </div>
 
           {/* Right Arrow */}
