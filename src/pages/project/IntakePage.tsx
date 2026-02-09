@@ -1239,21 +1239,6 @@ Each reference text provided will come with explicit instructions and context. Y
                 />
               )}
 
-              {/* Custom Instructions for Regeneration */}
-              <div className="mb-4">
-                <Label htmlFor="customInstructions" className="text-sm font-medium mb-2 block">
-                  Custom Instructions (Optional - for regeneration)
-                </Label>
-                <Textarea
-                  id="customInstructions"
-                  placeholder="Add any specific instructions for regenerating the draft..."
-                  value={customInstructions}
-                  onChange={(e) => setCustomInstructions(e.target.value)}
-                  rows={3}
-                  className="text-sm"
-                />
-              </div>
-
               <div className="flex gap-3">
                 <Button onClick={handleSaveVersion} disabled={saving} size="lg" className="flex-1">
                   {saving ? (
@@ -1263,16 +1248,6 @@ Each reference text provided will come with explicit instructions and context. Y
                     </>
                   ) : (
                     "Save & Go to Workspace"
-                  )}
-                </Button>
-                <Button onClick={handleGenerateVersions} variant="outline" size="lg" disabled={generating}>
-                  {generating ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    "Regenerate"
                   )}
                 </Button>
               </div>
