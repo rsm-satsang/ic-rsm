@@ -768,7 +768,7 @@ const Workspace = () => {
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    Notes
+                    Notes & Tasks
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden" align="end">
