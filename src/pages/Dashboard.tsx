@@ -166,9 +166,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-primary rounded-xl">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
+              <img src={logoImg} alt="Srijan Logo" className="h-10 w-10 rounded-full" />
               <div>
                 <h1 className="text-2xl font-bold">Srijan</h1>
                 <p className="text-sm text-muted-foreground">Content Creation for RSM</p>
