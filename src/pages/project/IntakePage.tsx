@@ -831,6 +831,56 @@ Each reference text provided will come with explicit instructions and context. Y
             </div>
           </div>
 
+          {/* Choose Theme */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-1">Choose Theme</h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Categorize your project under a theme for easy filtering
+            </p>
+            {!showAddTheme ? (
+              <Select value={selectedTheme} onValueChange={handleThemeChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {themes.map((theme) => (
+                    <SelectItem key={theme.id} value={theme.name}>
+                      {theme.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__add_theme__">
+                    <span className="flex items-center gap-1">
+                      <Plus className="h-3 w-3" /> Add Theme
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newThemeName}
+                  onChange={(e) => setNewThemeName(e.target.value)}
+                  placeholder="Enter theme name..."
+                  className="flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddTheme();
+                    if (e.key === "Escape") {
+                      setShowAddTheme(false);
+                      setNewThemeName("");
+                    }
+                  }}
+                />
+                <Button size="sm" onClick={handleAddTheme} disabled={!newThemeName.trim()}>
+                  Add
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowAddTheme(false); setNewThemeName(""); }}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Define Outcome Section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Define Outcome</h2>
