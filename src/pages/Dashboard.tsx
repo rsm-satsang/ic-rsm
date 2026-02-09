@@ -132,7 +132,7 @@ const Dashboard = () => {
           title: `New Project - ${new Date().toLocaleDateString()}`,
           type: "document",
           owner_id: user.id,
-          status: "draft",
+          status: "in_progress",
         })
         .select()
         .single();
