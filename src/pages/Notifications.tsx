@@ -168,7 +168,7 @@ const Notifications = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle ml-14">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>

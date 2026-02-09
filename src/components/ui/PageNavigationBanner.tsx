@@ -20,7 +20,7 @@ const PageNavigationBanner = ({
   const navigate = useNavigate();
 
   return (
-    <div className="bg-muted/50 border-b">
+    <div className="border-b" style={{ background: "linear-gradient(135deg, hsl(200 60% 92%) 0%, hsl(0 0% 100%) 50%, hsl(200 50% 94%) 100%)" }}>
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Left Arrow */}
