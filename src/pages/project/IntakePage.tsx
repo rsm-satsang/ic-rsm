@@ -747,18 +747,11 @@ Each reference text provided will come with explicit instructions and context. Y
             <div className="flex items-center gap-2">
               <Input
                 value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
+                onChange={(e) => handleTitleChange(e.target.value)}
                 className="flex-1 text-lg font-medium"
                 placeholder="Project title..."
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveTitle}
-                disabled={savingTitle || projectTitle === project?.title || !projectTitle.trim()}
-              >
-                {savingTitle ? "Saving..." : "Save"}
-              </Button>
+              {savingTitle && <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>}
             </div>
           </div>
 
