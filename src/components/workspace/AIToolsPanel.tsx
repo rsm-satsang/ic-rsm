@@ -398,19 +398,8 @@ Provide the complete translated and formatted newsletter.`;
             })}
           </div>
 
-          {/* Newsletter Info */}
-          {selectedTool === "newsletter" && (
-            <Card className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20">
-              <CardContent className="p-3">
-                <p className="text-xs font-medium mb-1 text-cyan-900 dark:text-cyan-100">
-                  Newsletter Generation Pipeline
-                </p>
-                <p className="text-xs text-cyan-700 dark:text-cyan-200">
-                  Input Hindi text → Translate to English → Format as Substack newsletter
-                </p>
-              </CardContent>
-            </Card>
-          )}
+
+
 
           {/* Selected Text Info */}
           {selectedText ? (
