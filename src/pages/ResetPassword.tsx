@@ -140,9 +140,7 @@ const ResetPassword = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-center">
-            <div className="p-3 bg-gradient-primary rounded-2xl">
-              <FileText className="h-8 w-8 text-white" />
-            </div>
+              <img src={logoImg} alt="Srijan Logo" className="h-14 w-14 rounded-full" />
           </div>
           <CardTitle className="text-2xl text-center">Set New Password</CardTitle>
           <CardDescription className="text-center">

@@ -228,7 +228,7 @@ const Dashboard = () => {
           
           {projects.length === 0 && (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <img src={logoImg} alt="Srijan Logo" className="h-12 w-12 rounded-full mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
               <p className="text-muted-foreground mb-4">
                 Create your first project to get started
