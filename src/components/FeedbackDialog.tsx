@@ -19,10 +19,10 @@ interface FeedbackDialogProps {
 }
 
 const questions = [
-  "Quality of Output",
-  "User experience of the application",
+  "Overall Utility in your work",
+  "User experience / Navigation",
   "Functionality of various features",
-  "Utility of the tool",
+  "Quality of Output",
 ];
 
 const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
@@ -48,7 +48,9 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
   };
 
   const handleSubmit = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       toast.error("You must be logged in to submit feedback.");
       return;
@@ -78,9 +80,7 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Share Your Feedback</DialogTitle>
-          <DialogDescription>
-            Rate each area on a scale of 1 to 5.
-          </DialogDescription>
+          <DialogDescription>Rate each area on a scale of 1 to 5.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-2">
@@ -125,7 +125,7 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Additional Comments</Label>
             <Textarea
-              placeholder="Let us know any changes or difficulties you face using this platform."
+              placeholder="Let us know if there are any new features or refinements you would like us to make which are not captured in our feedback."
               value={generalFeedback}
               onChange={(e) => setGeneralFeedback(e.target.value)}
               rows={3}
