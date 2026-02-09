@@ -726,7 +726,7 @@ const Workspace = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-subtle">
+    <div className="h-screen flex flex-col bg-gradient-subtle ml-14">
       {/* Page Navigation Banner */}
       <PageNavigationBanner
         title="Edit and Refine"
