@@ -19,6 +19,7 @@ import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -731,6 +732,15 @@ const Workspace = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-subtle">
+      {/* Page Navigation Banner */}
+      <PageNavigationBanner
+        title="edit and refine"
+        leftLabel="Bring ideas and create first draft"
+        leftPath={`/project/${projectId}/intake`}
+        rightLabel="publish"
+        rightPath={`/publish/${projectId}`}
+      />
+
       {/* Top Bar */}
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">

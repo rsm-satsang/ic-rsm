@@ -15,6 +15,7 @@ import { useExtractionJobs } from "@/hooks/useExtractionJobs";
 import { intakeAPI } from "@/lib/api/intake";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import {
   ArrowLeft,
   ArrowRight,
@@ -714,6 +715,13 @@ Each reference text provided will come with explicit instructions and context. Y
 
   return (
     <div className="min-h-screen bg-background">
+      <PageNavigationBanner
+        title="Bring ideas and create first draft"
+        leftLabel="choose a project or create new project"
+        leftPath="/dashboard"
+        rightLabel="edit and refine"
+        rightPath={`/workspace/${projectId}`}
+      />
       <div className="container max-w-5xl py-8">
         {/* Header */}
         <div className="mb-8">

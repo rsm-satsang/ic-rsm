@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Copy } from "lucide-react";
 import AIFeedbackPanel from "@/components/workspace/AIFeedbackPanel";
+import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import type { User } from "@supabase/supabase-js";
 
 interface Project {
@@ -218,6 +219,13 @@ const PublishPreview = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-subtle">
+      {/* Page Navigation Banner */}
+      <PageNavigationBanner
+        title="publish"
+        leftLabel="edit and refine"
+        leftPath={`/workspace/${projectId}`}
+      />
+
       {/* Top Bar */}
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
