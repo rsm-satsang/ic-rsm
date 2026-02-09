@@ -26,6 +26,8 @@ const questions = [
 ];
 
 const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [ratings, setRatings] = useState<Record<number, number | null>>({
     0: null,
     1: null,

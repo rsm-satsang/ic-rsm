@@ -364,9 +364,6 @@ Provide the complete translated and formatted newsletter.`;
     { id: "translate", label: "Translate", icon: Languages, color: "text-blue-500" },
     { id: "rephrase", label: "Rephrase", icon: RefreshCw, color: "text-purple-500" },
     { id: "summarize", label: "Summarize", icon: FileText, color: "text-green-500" },
-    { id: "generate", label: "Generate", icon: Wand2, color: "text-amber-500" },
-    { id: "email", label: "Email Draft", icon: Mail, color: "text-red-500" },
-    { id: "newsletter", label: "Newsletter", icon: Newspaper, color: "text-cyan-500" },
   ];
 
   return (
