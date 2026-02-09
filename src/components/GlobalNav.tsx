@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, MessageSquareText } from "lucide-react";
+import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import feedbackIcon from "@/assets/feedback-icon.jpg";
 
 const GlobalNav = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
