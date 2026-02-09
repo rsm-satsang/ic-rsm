@@ -289,10 +289,6 @@ Unless the source material clearly demands a different structure, follow this te
 4️⃣ Deeper Teaching Section (clear spiritual explanation)
 5️⃣ Practical Integration into Daily Life or Inner Growth
 6️⃣ Soft Reflective Closing that leaves the reader peaceful and uplifted
-7️⃣ You need to end all the article only this "Love, Light and Peace". Also, The newsletter must be authored under the name: Mr. Sanjiv Kumar 
-
-
-
 
 Teach progressively. Keep language simple but meaningful.
 
@@ -419,7 +415,7 @@ Each reference text provided will come with explicit instructions and context. Y
         if (file.extracted_text) {
           consolidatedText += `\n\n=== BEGIN SOURCE: ${file.file_name || "Unnamed"} ===\n`;
           if (referenceNotes[file.id]) {
-            consolidatedText += `[Instructions on how to use this text: ${referenceNotes[file.id]}]\n\n`;
+            consolidatedText += `[Please add instructions on how to use the above document /resource. For example - "Use only the story around service from this document, ignore everything else"  or "Leverage only the scientific facts quoted in this document for the newsletter": ${referenceNotes[file.id]}]\n\n`;
           }
           consolidatedText += file.extracted_text;
           consolidatedText += `\n=== END SOURCE: ${file.file_name || "Unnamed"} ===`;
