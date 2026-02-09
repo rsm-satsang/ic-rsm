@@ -9,8 +9,24 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo } from "lucide-react";
@@ -38,7 +54,9 @@ const Workspace = () => {
   const [user, setUser] = useState<User | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [projectTitle, setProjectTitle] = useState("");
-  const [currentStatus, setCurrentStatus] = useState<"draft" | "in_progress" | "review" | "approved" | "published">("draft");
+  const [currentStatus, setCurrentStatus] = useState<"draft" | "in_progress" | "review" | "approved" | "published">(
+    "draft",
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedText, setSelectedText] = useState("");
@@ -69,7 +87,7 @@ const Workspace = () => {
 
   const handleInsertText = async (text: string, aiFeatureName: string) => {
     console.log("Creating new version with AI output from:", aiFeatureName);
-    
+
     if (!project || !user) {
       console.error("Project not available");
       toast.error("Project not ready. Please try again.");
@@ -88,7 +106,7 @@ const Workspace = () => {
       setMarkdownContent(updatedContent);
       setSelectedText(""); // Clear selection after insert
       selectionRef.current = null;
-      
+
       // Convert to HTML for storage
       const content = markdownToHtml(updatedContent);
 
@@ -111,11 +129,11 @@ const Workspace = () => {
       let nextNumber = 1;
       if (existingVersions && existingVersions.length > 0) {
         const numbers = existingVersions
-          .map(v => {
+          .map((v) => {
             const match = v.title.match(/\s(\d+)$/);
             return match ? parseInt(match[1]) : 0;
           })
-          .filter(n => n > 0);
+          .filter((n) => n > 0);
         nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
       }
 
@@ -144,16 +162,17 @@ const Workspace = () => {
       if (versionError) throw versionError;
 
       // Log to timeline
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
       await supabase.from("timeline").insert({
         project_id: project.id,
         event_type: "edited",
-        event_details: { action: "ai_version_created", version: newVersionNumber, versionName: newVersionName, aiFeature: aiFeatureName },
+        event_details: {
+          action: "ai_version_created",
+          version: newVersionNumber,
+          versionName: newVersionName,
+          aiFeature: aiFeatureName,
+        },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
       });
@@ -193,14 +212,10 @@ const Workspace = () => {
   const loadVersionContent = async (versionId: string) => {
     setLoadingContent(true);
     try {
-      const { data, error } = await supabase
-        .from("versions")
-        .select("content")
-        .eq("id", versionId)
-        .single();
-      
+      const { data, error } = await supabase.from("versions").select("content").eq("id", versionId).single();
+
       if (error) throw error;
-      
+
       // Convert HTML to markdown-ish plain text preserving line breaks
       const content = htmlToMarkdown(data.content || "");
       setMarkdownContent(content);
@@ -221,9 +236,9 @@ const Workspace = () => {
         .order("version_number", { ascending: false })
         .limit(1)
         .maybeSingle();
-      
+
       if (error) throw error;
-      
+
       if (data) {
         setCurrentVersionId(data.id);
         const content = htmlToMarkdown(data.content || "");
@@ -242,19 +257,17 @@ const Workspace = () => {
   const htmlToMarkdown = (html: string): string => {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = html;
-    
+
     // Replace br with newlines
     tempDiv.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
-    
+
     // Add proper spacing for block elements
     tempDiv.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote").forEach((el) => {
       el.prepend("\n\n");
     });
-    
-    const text = (tempDiv.textContent || "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-    
+
+    const text = (tempDiv.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+
     return text;
   };
 
@@ -273,8 +286,10 @@ const Workspace = () => {
 
   const checkUserAndLoadProject = async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
       if (!currentUser) {
         navigate("/auth");
         return;
@@ -295,11 +310,7 @@ const Workspace = () => {
 
   const loadProject = async (id: string) => {
     try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
 
       if (error) throw error;
 
@@ -324,7 +335,12 @@ const Workspace = () => {
       // Convert markdown content to HTML for storage
       const content = markdownToHtml(markdownContent);
 
-      if (!content || content === "<p></p>" || markdownContent.trim() === "" || markdownContent === "Start writing your content here...") {
+      if (
+        !content ||
+        content === "<p></p>" ||
+        markdownContent.trim() === "" ||
+        markdownContent === "Start writing your content here..."
+      ) {
         toast.error("No content to save");
         setSaving(false);
         return;
@@ -340,7 +356,7 @@ const Workspace = () => {
           .order("version_number", { ascending: false })
           .limit(1)
           .maybeSingle();
-        
+
         if (latestVersion) {
           versionId = latestVersion.id;
           setCurrentVersionId(versionId);
@@ -359,27 +375,20 @@ const Workspace = () => {
         .single();
 
       // Update current version
-      const { error: versionError } = await supabase
-        .from("versions")
-        .update({ content: content })
-        .eq("id", versionId);
+      const { error: versionError } = await supabase.from("versions").update({ content: content }).eq("id", versionId);
 
       if (versionError) throw versionError;
 
       // Add timeline entry
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
       await supabase.from("timeline").insert({
         project_id: project.id,
         event_type: "edited",
-        event_details: { 
-          action: "version_updated", 
+        event_details: {
+          action: "version_updated",
           version: versionData?.version_number,
-          versionName: versionData?.title 
+          versionName: versionData?.title,
         },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
@@ -422,20 +431,20 @@ const Workspace = () => {
     setSaving(true);
     try {
       console.log("Starting save operation...");
-      
+
       // Retry logic for project update
       let updateSuccess = false;
       let lastError = null;
-      
+
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           console.log(`Attempt ${attempt} to update project...`);
-          
+
           const { error: projectError } = await supabase
             .from("projects")
-            .update({ 
+            .update({
               title: projectTitle,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             })
             .eq("id", project.id);
 
@@ -443,12 +452,12 @@ const Workspace = () => {
             console.error(`Attempt ${attempt} failed:`, projectError);
             lastError = projectError;
             if (attempt < 3) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
               continue;
             }
             throw projectError;
           }
-          
+
           console.log("Project updated successfully");
           updateSuccess = true;
           break;
@@ -456,7 +465,7 @@ const Workspace = () => {
           console.error(`Update attempt ${attempt} error:`, err);
           lastError = err;
           if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
           }
         }
       }
@@ -491,11 +500,7 @@ const Workspace = () => {
       if (versionError) throw versionError;
 
       // Log to timeline
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
       await supabase.from("timeline").insert({
         project_id: project.id,
@@ -510,7 +515,7 @@ const Workspace = () => {
       console.error("Save failed:", error);
       const errorMessage = error?.message || "Failed to save project";
       toast.error(errorMessage);
-      
+
       // Show more detailed error in console
       if (error?.code) {
         console.error("Error code:", error.code);
@@ -528,15 +533,15 @@ const Workspace = () => {
 
     try {
       console.log("Updating status to:", newStatus);
-      
+
       // Retry logic for status update
       let updateSuccess = false;
       let lastError = null;
-      
+
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           console.log(`Attempt ${attempt} to update status...`);
-          
+
           const { error: statusError } = await supabase
             .from("projects")
             .update({ status: newStatus })
@@ -546,12 +551,12 @@ const Workspace = () => {
             console.error(`Attempt ${attempt} failed:`, statusError);
             lastError = statusError;
             if (attempt < 3) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
               continue;
             }
             throw statusError;
           }
-          
+
           console.log("Status updated successfully");
           updateSuccess = true;
           break;
@@ -559,7 +564,7 @@ const Workspace = () => {
           console.error(`Status update attempt ${attempt} error:`, err);
           lastError = err;
           if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
           }
         }
       }
@@ -569,11 +574,7 @@ const Workspace = () => {
       }
 
       // Log status change
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
       await supabase.from("status_history").insert({
         project_id: project.id,
@@ -603,10 +604,7 @@ const Workspace = () => {
     if (!project || !user) return;
 
     try {
-      const { error } = await supabase
-        .from("projects")
-        .delete()
-        .eq("id", project.id);
+      const { error } = await supabase.from("projects").delete().eq("id", project.id);
 
       if (error) throw error;
 
@@ -626,7 +624,7 @@ const Workspace = () => {
 
     try {
       // Get editor content
-      const editorElement = document.querySelector('.ProseMirror');
+      const editorElement = document.querySelector(".ProseMirror");
       const htmlContent = editorElement?.innerHTML || "";
 
       if (!htmlContent || htmlContent === "<p></p>") {
@@ -635,70 +633,65 @@ const Workspace = () => {
       }
 
       // Create a temporary div to parse HTML and extract text
-      const tempDiv = document.createElement('div');
+      const tempDiv = document.createElement("div");
       tempDiv.innerHTML = htmlContent;
 
       // Convert HTML to plain text with proper formatting
-      let plainText = '';
-      
+      let plainText = "";
+
       // Process each element
-      const elements = tempDiv.querySelectorAll('*');
+      const elements = tempDiv.querySelectorAll("*");
       elements.forEach((element) => {
         const tagName = element.tagName.toLowerCase();
-        const text = element.textContent?.trim() || '';
-        
+        const text = element.textContent?.trim() || "";
+
         if (!text) return;
-        
+
         // Add appropriate spacing based on element type
-        if (tagName === 'h1') {
+        if (tagName === "h1") {
           plainText += `\n\n# ${text}\n\n`;
-        } else if (tagName === 'h2') {
+        } else if (tagName === "h2") {
           plainText += `\n\n## ${text}\n\n`;
-        } else if (tagName === 'h3') {
+        } else if (tagName === "h3") {
           plainText += `\n\n### ${text}\n\n`;
-        } else if (tagName === 'p') {
+        } else if (tagName === "p") {
           plainText += `${text}\n\n`;
-        } else if (tagName === 'li') {
+        } else if (tagName === "li") {
           plainText += `• ${text}\n`;
-        } else if (tagName === 'blockquote') {
+        } else if (tagName === "blockquote") {
           plainText += `\n> ${text}\n\n`;
-        } else if (!element.querySelector('*')) {
+        } else if (!element.querySelector("*")) {
           // Only add text if element has no children (leaf node)
           plainText += `${text} `;
         }
       });
 
       // Clean up extra whitespace
-      plainText = plainText.replace(/\n{3,}/g, '\n\n').trim();
-      
+      plainText = plainText.replace(/\n{3,}/g, "\n\n").trim();
+
       // Add title at the top
       const contentToPublish = `${projectTitle}\n\n${plainText}`;
-      
+
       // Copy to clipboard
       await navigator.clipboard.writeText(contentToPublish);
-      
+
       toast.success("Content copied to clipboard!", {
         description: "Plain text format ready to paste into Substack or WordPress.",
         duration: 6000,
       });
 
       // Log to timeline
-      const { data: userData } = await supabase
-        .from("users")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
       await supabase.from("timeline").insert({
         project_id: project.id,
         event_type: "edited",
-        event_details: { 
-          action: "exported_to_publish"
+        event_details: {
+          action: "exported_to_publish",
         },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
       });
-
     } catch (error: any) {
       console.error("Export failed:", error);
       toast.error(error?.message || "Failed to copy content");
@@ -706,7 +699,8 @@ const Workspace = () => {
   };
 
   // Determine if publish button should be shown
-  const showPublishButton = project?.type === "article" || 
+  const showPublishButton =
+    project?.type === "article" ||
     project?.type === "document" ||
     (project?.metadata as any)?.goal === "substack_newsletter" ||
     (project?.metadata as any)?.goal === "substack_article" ||
@@ -737,7 +731,7 @@ const Workspace = () => {
         title="edit and refine"
         leftLabel="Bring ideas and create first draft"
         leftPath={`/project/${projectId}/intake`}
-        rightLabel="publish"
+        rightLabel="Publish"
         rightPath={`/publish/${projectId}`}
       />
 
@@ -745,17 +739,10 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-semibold text-lg truncate max-w-md">
-              {projectTitle}
-            </span>
+            <span className="font-semibold text-lg truncate max-w-md">{projectTitle}</span>
 
             <div className="flex items-center gap-3">
-
-              <Button 
-                onClick={handleSaveCurrentVersion}
-                disabled={saving}
-                className="gap-2"
-              >
+              <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
                 <Save className="h-4 w-4" />
                 {saving ? "Saving..." : "Save"}
               </Button>
@@ -768,41 +755,22 @@ const Workspace = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden" align="end">
-                  <VersionNotesPanel
-                    projectId={project.id}
-                    versionId={currentVersionId}
-                  />
+                  <VersionNotesPanel projectId={project.id} versionId={currentVersionId} />
                 </PopoverContent>
               </Popover>
 
-              <InviteDialog 
-                projectId={project.id} 
-                projectOwnerId={project.owner_id}
-                currentUserId={user?.id || ""}
-              />
+              <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
 
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => navigate("/settings")}
-              >
+              <Button variant="outline" size="icon" onClick={() => navigate("/settings")}>
                 <Settings className="h-4 w-4" />
               </Button>
 
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => setShowDeleteDialog(true)}
-              >
+              <Button variant="outline" size="icon" onClick={() => setShowDeleteDialog(true)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
 
               {showPublishButton && (
-                <Button 
-                  onClick={() => navigate(`/publish/${projectId}`)}
-                  variant="default"
-                  className="gap-2"
-                >
+                <Button onClick={() => navigate(`/publish/${projectId}`)} variant="default" className="gap-2">
                   <CheckCircle className="h-4 w-4" />
                   Ready to Publish
                 </Button>
@@ -876,7 +844,7 @@ const Workspace = () => {
 
         {/* Right Sidebar - AI Tools & References (Tabbed) */}
         <div className="w-80 lg:w-96 flex-shrink-0 border-l bg-card overflow-hidden hidden lg:block">
-          <WorkspaceSidebar 
+          <WorkspaceSidebar
             projectId={project.id}
             selectedText={selectedText}
             onInsertText={handleInsertText}
@@ -899,12 +867,16 @@ const Workspace = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{projectTitle}"? This action cannot be undone and will delete all versions, comments, and related data.
+              Are you sure you want to delete "{projectTitle}"? This action cannot be undone and will delete all
+              versions, comments, and related data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
