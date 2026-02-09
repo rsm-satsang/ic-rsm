@@ -73,6 +73,43 @@ const Workspace = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
 
+  // Autosave: title
+  const autosaveTitle = useCallback(async (title: string) => {
+    if (!project || !user || title === project.title) return;
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ title, updated_at: new Date().toISOString() })
+        .eq("id", project.id);
+      if (error) throw error;
+      setProject(prev => prev ? { ...prev, title } : prev);
+      console.log("Title autosaved");
+    } catch (e) {
+      console.error("Title autosave failed:", e);
+    }
+  }, [project, user]);
+
+  useAutosave(projectTitle, autosaveTitle, 1500, !!project && !!user);
+
+  // Autosave: editor content
+  const autosaveContent = useCallback(async (content: string) => {
+    if (!project || !user || !currentVersionId) return;
+    if (!content.trim() || content === "Start writing your content here...") return;
+    const html = markdownToHtml(content);
+    try {
+      const { error } = await supabase
+        .from("versions")
+        .update({ content: html })
+        .eq("id", currentVersionId);
+      if (error) throw error;
+      console.log("Content autosaved");
+    } catch (e) {
+      console.error("Content autosave failed:", e);
+    }
+  }, [project, user, currentVersionId]);
+
+  useAutosave(markdownContent, autosaveContent, 2000, !!project && !!user && !!currentVersionId);
+
   const handleTextSelection = () => {
     const textarea = textareaRef.current;
     if (textarea) {
