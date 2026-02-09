@@ -415,7 +415,7 @@ Each reference text provided will come with explicit instructions and context. Y
         if (file.extracted_text) {
           consolidatedText += `\n\n=== BEGIN SOURCE: ${file.file_name || "Unnamed"} ===\n`;
           if (referenceNotes[file.id]) {
-            consolidatedText += `[Please add instructions on how to use the above document /resource. For example - "Use only the story around service from this document, ignore everything else"  or "Leverage only the scientific facts quoted in this document for the newsletter": ${referenceNotes[file.id]}]\n\n`;
+            consolidatedText += `[Please add instructions on how to use the above document /resource. For example - 'Use only the story around service from this document, ignore everything else'  or 'Leverage only the scientific facts quoted in this document for the newsletter": ${referenceNotes[file.id]}]\n\n`;
           }
           consolidatedText += file.extracted_text;
           consolidatedText += `\n=== END SOURCE: ${file.file_name || "Unnamed"} ===`;
