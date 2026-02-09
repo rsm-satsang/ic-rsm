@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code } from "lucide-react";
-import SavePanel from "@/components/workspace/SavePanel";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo } from "lucide-react";
+import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
@@ -754,30 +755,29 @@ const Workspace = () => {
                 Back to Reference Intake
               </Button>
 
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button className="gap-2">
-                    <Save className="h-4 w-4" />
-                    Save
+              <Button 
+                onClick={handleSaveCurrentVersion}
+                disabled={saving}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? "Saving..." : "Save"}
+              </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Notes
                   </Button>
-                </SheetTrigger>
-                <SheetContent className="w-[400px] sm:w-[540px] p-0">
-                  <SavePanel
+                </PopoverTrigger>
+                <PopoverContent className="w-96 p-0 max-h-[500px] overflow-hidden" align="end">
+                  <VersionNotesPanel
                     projectId={project.id}
                     versionId={currentVersionId}
-                    projectTitle={projectTitle}
-                    onProjectTitleChange={setProjectTitle}
-                    onSaveTitle={handleSaveTitle}
-                    savingTitle={savingTitle}
-                    originalTitle={project.title}
-                    currentStatus={currentStatus}
-                    onStatusChange={handleStatusChange}
-                    onSaveCurrentVersion={handleSaveCurrentVersion}
-                    onSaveAs={handleSaveAsNewVersion}
-                    saving={saving}
                   />
-                </SheetContent>
-              </Sheet>
+                </PopoverContent>
+              </Popover>
 
               <InviteDialog 
                 projectId={project.id} 
