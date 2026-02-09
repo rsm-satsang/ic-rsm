@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
-  FileText,
   Plus,
   LogOut,
   Settings,
   Bell,
 } from "lucide-react";
+import logoImg from "@/assets/logo_rsm_lotus.png";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import type { User } from "@supabase/supabase-js";
 
@@ -166,9 +166,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-primary rounded-xl">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
+              <img src={logoImg} alt="Srijan Logo" className="h-10 w-10 rounded-full" />
               <div>
                 <h1 className="text-2xl font-bold">Srijan</h1>
                 <p className="text-sm text-muted-foreground">Content Creation for RSM</p>
@@ -230,7 +228,7 @@ const Dashboard = () => {
           
           {projects.length === 0 && (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <img src={logoImg} alt="Srijan Logo" className="h-12 w-12 rounded-full mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
               <p className="text-muted-foreground mb-4">
                 Create your first project to get started

@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { FileText, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logoImg from "@/assets/logo_rsm_lotus.png";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -114,9 +115,7 @@ const ResetPassword = () => {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="space-y-3">
             <div className="flex items-center justify-center">
-              <div className="p-3 bg-destructive/10 rounded-2xl">
-                <FileText className="h-8 w-8 text-destructive" />
-              </div>
+              <img src={logoImg} alt="Srijan Logo" className="h-14 w-14 rounded-full opacity-50" />
             </div>
             <CardTitle className="text-2xl text-center">Link Expired</CardTitle>
             <CardDescription className="text-center">
@@ -141,9 +140,7 @@ const ResetPassword = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-center">
-            <div className="p-3 bg-gradient-primary rounded-2xl">
-              <FileText className="h-8 w-8 text-white" />
-            </div>
+              <img src={logoImg} alt="Srijan Logo" className="h-14 w-14 rounded-full" />
           </div>
           <CardTitle className="text-2xl text-center">Set New Password</CardTitle>
           <CardDescription className="text-center">

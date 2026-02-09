@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { FileText, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import logoImg from "@/assets/logo_rsm_lotus.png";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -116,9 +117,7 @@ const Auth = () => {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="space-y-3">
             <div className="flex items-center justify-center">
-              <div className="p-3 bg-gradient-primary rounded-2xl">
-                <FileText className="h-8 w-8 text-white" />
-              </div>
+              <img src={logoImg} alt="Srijan Logo" className="h-14 w-14 rounded-full" />
             </div>
             <CardTitle className="text-2xl text-center">Reset Password</CardTitle>
             <CardDescription className="text-center">
@@ -160,11 +159,9 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-3">
-          <div className="flex items-center justify-center">
-            <div className="p-3 bg-gradient-primary rounded-2xl">
-              <FileText className="h-8 w-8 text-white" />
+            <div className="flex items-center justify-center">
+              <img src={logoImg} alt="Srijan Logo" className="h-14 w-14 rounded-full" />
             </div>
-          </div>
           <CardTitle className="text-2xl text-center">Srijan</CardTitle>
           <CardDescription className="text-center">
             Content Creation for RSM
