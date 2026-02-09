@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -26,6 +27,8 @@ const questions = [
 ];
 
 const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [ratings, setRatings] = useState<Record<number, number | null>>({
     0: null,
     1: null,
@@ -48,6 +51,11 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
   };
 
   const handleSubmit = async () => {
+    if (!userName.trim() || !userEmail.trim()) {
+      toast.error("Please enter your name and email.");
+      return;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -56,17 +64,10 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
       return;
     }
 
-    // Fetch user profile for name and email
-    const { data: profile } = await supabase
-      .from("users")
-      .select("name, email")
-      .eq("id", user.id)
-      .single();
-
     const { error } = await supabase.from("feedback").insert({
       user_id: user.id,
-      user_name: profile?.name || null,
-      user_email: profile?.email || null,
+      user_name: userName.trim(),
+      user_email: userEmail.trim(),
       ratings,
       comments,
       general_feedback: generalFeedback || null,
@@ -81,6 +82,8 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
     setRatings({ 0: null, 1: null, 2: null, 3: null });
     setComments({ 0: "", 1: "", 2: "", 3: "" });
     setGeneralFeedback("");
+    setUserName("");
+    setUserEmail("");
     onOpenChange(false);
   };
 
@@ -93,6 +96,25 @@ const FeedbackDialog = ({ open, onOpenChange }: FeedbackDialogProps) => {
         </DialogHeader>
 
         <div className="space-y-6 py-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Name *</Label>
+              <Input
+                placeholder="Your name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Email *</Label>
+              <Input
+                type="email"
+                placeholder="Your email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+              />
+            </div>
+          </div>
           {questions.map((question, idx) => (
             <div key={idx} className="space-y-2">
               <Label className="text-sm font-semibold">

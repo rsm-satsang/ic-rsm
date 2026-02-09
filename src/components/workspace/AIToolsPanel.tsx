@@ -364,9 +364,6 @@ Provide the complete translated and formatted newsletter.`;
     { id: "translate", label: "Translate", icon: Languages, color: "text-blue-500" },
     { id: "rephrase", label: "Rephrase", icon: RefreshCw, color: "text-purple-500" },
     { id: "summarize", label: "Summarize", icon: FileText, color: "text-green-500" },
-    { id: "generate", label: "Generate", icon: Wand2, color: "text-amber-500" },
-    { id: "email", label: "Email Draft", icon: Mail, color: "text-red-500" },
-    { id: "newsletter", label: "Newsletter", icon: Newspaper, color: "text-cyan-500" },
   ];
 
   return (
@@ -401,19 +398,8 @@ Provide the complete translated and formatted newsletter.`;
             })}
           </div>
 
-          {/* Newsletter Info */}
-          {selectedTool === "newsletter" && (
-            <Card className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20">
-              <CardContent className="p-3">
-                <p className="text-xs font-medium mb-1 text-cyan-900 dark:text-cyan-100">
-                  Newsletter Generation Pipeline
-                </p>
-                <p className="text-xs text-cyan-700 dark:text-cyan-200">
-                  Input Hindi text → Translate to English → Format as Substack newsletter
-                </p>
-              </CardContent>
-            </Card>
-          )}
+
+
 
           {/* Selected Text Info */}
           {selectedText ? (
