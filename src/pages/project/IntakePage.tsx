@@ -47,6 +47,7 @@ export default function IntakePage() {
     return `New Project - ${today}`;
   });
   const [savingTitle, setSavingTitle] = useState(false);
+  const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [generating, setGenerating] = useState(false);
   const [rawTextReferences, setRawTextReferences] = useState<Array<{ id: string; text: string; title: string }>>([]);
   const [currentRawText, setCurrentRawText] = useState("");
