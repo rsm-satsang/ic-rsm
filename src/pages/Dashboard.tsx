@@ -217,6 +217,19 @@ const Dashboard = () => {
               </div>
             </CardHeader>
           </Card>
+          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={() => setFeedbackOpen(true)}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-accent rounded-xl">
+                  <img src={feedbackIcon} alt="Feedback" className="h-6 w-6 rounded" />
+                </div>
+                <div>
+                  <CardTitle>Give Feedback</CardTitle>
+                  <CardDescription>We would love to hear from you especially during this test period.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
         </div>
 
         {/* Projects */}
