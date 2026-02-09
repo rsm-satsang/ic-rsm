@@ -232,25 +232,28 @@ export default function IntakePage() {
     }
   };
 
-  const handleSaveTitle = useCallback(async (title: string) => {
-    if (!title.trim()) return;
+  const handleSaveTitle = useCallback(
+    async (title: string) => {
+      if (!title.trim()) return;
 
-    setSavingTitle(true);
-    try {
-      const { error } = await supabase
-        .from("projects")
-        .update({ title, updated_at: new Date().toISOString() })
-        .eq("id", projectId);
+      setSavingTitle(true);
+      try {
+        const { error } = await supabase
+          .from("projects")
+          .update({ title, updated_at: new Date().toISOString() })
+          .eq("id", projectId);
 
-      if (error) throw error;
-      setProject((prev: any) => ({ ...prev, title }));
-    } catch (error: any) {
-      console.error("Title save failed:", error);
-      toast.error("Failed to save title");
-    } finally {
-      setSavingTitle(false);
-    }
-  }, [projectId]);
+        if (error) throw error;
+        setProject((prev: any) => ({ ...prev, title }));
+      } catch (error: any) {
+        console.error("Title save failed:", error);
+        toast.error("Failed to save title");
+      } finally {
+        setSavingTitle(false);
+      }
+    },
+    [projectId],
+  );
 
   const handleTitleChange = (newTitle: string) => {
     setProjectTitle(newTitle);
@@ -731,9 +734,9 @@ Each reference text provided will come with explicit instructions and context. Y
     <div className="min-h-screen bg-background">
       <PageNavigationBanner
         title="Bring ideas and create first draft"
-        leftLabel="choose a project or create new project"
+        leftLabel="Project Dashboard"
         leftPath="/dashboard"
-        rightLabel="edit and refine"
+        rightLabel="Edit and refine"
         rightPath={`/workspace/${projectId}`}
       />
       <div className="container max-w-5xl py-8">
@@ -840,7 +843,7 @@ Each reference text provided will come with explicit instructions and context. Y
             <div className="pl-4 space-y-6">
               {/* Raw Text References */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Add Simple Text</h3>
+                <h3 className="text-lg font-semibold mb-3">Paste or type your text here</h3>
                 <Textarea
                   placeholder="Paste or type your reference text here..."
                   value={currentRawText}
@@ -997,7 +1000,7 @@ Each reference text provided will come with explicit instructions and context. Y
                 {generating ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Extracting Draft...
+                    Preparing input for AI...
                   </>
                 ) : (
                   <>
@@ -1007,7 +1010,7 @@ Each reference text provided will come with explicit instructions and context. Y
                 )}
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-2">
-                This will combine all references into an editable draft
+                This will combine text from references and instructions into a consolidated input to AI.
               </p>
             </div>
           )}
@@ -1015,7 +1018,7 @@ Each reference text provided will come with explicit instructions and context. Y
           {/* Extracted Draft View */}
           {showExtractedDraft && (
             <div className="mt-8 pt-6 border-t">
-              <h2 className="text-xl font-semibold mb-3">Raw Extracted Draft (Editable)</h2>
+              <h2 className="text-xl font-semibold mb-3">Consolidated input to AI(editable)</h2>
               <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
                 <p className="text-sm text-muted-foreground">
                   <strong>Note:</strong> This draft includes goal-based instructions at the top (based on your selected
