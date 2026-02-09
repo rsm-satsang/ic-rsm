@@ -745,25 +745,11 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Separator orientation="vertical" className="h-6" />
-              <span className="font-semibold text-lg truncate max-w-md">
-                {projectTitle}
-              </span>
-            </div>
+            <span className="font-semibold text-lg truncate max-w-md">
+              {projectTitle}
+            </span>
 
             <div className="flex items-center gap-3">
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/project/${projectId}/intake`)}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Reference Intake
-              </Button>
 
               <Button 
                 onClick={handleSaveCurrentVersion}
