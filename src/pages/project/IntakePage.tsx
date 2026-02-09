@@ -38,7 +38,7 @@ export default function IntakePage() {
   const [goal, setGoal] = useState("substack_article");
   const [customGoal, setCustomGoal] = useState("");
   const [language, setLanguage] = useState("english");
-  const [selectedModel, setSelectedModel] = useState("gemini");
+  const [selectedModel, setSelectedModel] = useState("gpt-5");
   const [llmInstructions, setLlmInstructions] = useState("");
   const [vocabulary, setVocabulary] = useState("");
   const [projectTitle, setProjectTitle] = useState(() => {
