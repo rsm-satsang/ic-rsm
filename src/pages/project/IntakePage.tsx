@@ -951,7 +951,7 @@ Each reference text provided will come with explicit instructions and context. Y
                     <JobStatusCard file={file} onDelete={handleDeleteFile} onRetry={handleRetry} />
                     <div className="mt-2 pl-11">
                       <Textarea
-                        placeholder="Add instructions on how to use this reference"
+                        placeholder="Please add instructions on how to use the above document /resource. For example - "Use only the story around service from this document, ignore everything else"  or "Leverage only the scientific facts quoted in this document for the newsletter"
                         value={referenceNotes[file.id] || ""}
                         onChange={(e) => setReferenceNotes({ ...referenceNotes, [file.id]: e.target.value })}
                         rows={2}
