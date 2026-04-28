@@ -23,6 +23,7 @@ import {
   Plus,
 } from "lucide-react";
 import { GoogleDrivePickerDialog } from "@/components/upload/GoogleDrivePickerDialog";
+import { VideoClipsList, type VideoClip } from "@/components/video/VideoClipsList";
 
 const VIDEO_PROMPT = `You are an expert short-form video scriptwriter. Based on the provided video reference(s), create a punchy, engaging YouTube Shorts script (under 60 seconds, ~150 words max). Include: a strong 3-second hook, a tight narrative or insight from the source video, on-screen text suggestions in [brackets], suggested b-roll/cut points, and a clear CTA at the end. Keep language simple, energetic, and optimized for vertical video.`;
 
