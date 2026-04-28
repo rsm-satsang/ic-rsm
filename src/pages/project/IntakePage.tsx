@@ -24,11 +24,13 @@ import {
   Link as LinkIcon,
   Sparkles,
   FileText,
+  FileVideo,
   Trash2,
   Eye,
   Code,
   Plus,
 } from "lucide-react";
+import { GoogleDrivePickerDialog } from "@/components/upload/GoogleDrivePickerDialog";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -74,6 +76,7 @@ export default function IntakePage() {
   const [themes, setThemes] = useState<Array<{ id: string; name: string }>>([]);
   const [showAddTheme, setShowAddTheme] = useState(false);
   const [newThemeName, setNewThemeName] = useState("");
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [usedModel, setUsedModel] = useState<string | null>(() => {
     if (projectId) {
       return localStorage.getItem(`draft_model_${projectId}`);
@@ -805,6 +808,7 @@ Each reference text provided will come with explicit instructions and context. Y
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background ml-14">
       <PageNavigationBanner
         title="Bring ideas and create first draft"
@@ -985,7 +989,20 @@ Each reference text provided will come with explicit instructions and context. Y
 
               {/* File Uploader */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Add Files</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Add Files</h3>
+                  {goal === "video_to_youtube_short" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDrivePicker(true)}
+                    >
+                      <FileVideo className="mr-2 h-4 w-4" />
+                      Select from Google Drive
+                    </Button>
+                  )}
+                </div>
                 <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
               </div>
 
@@ -1258,5 +1275,12 @@ Each reference text provided will come with explicit instructions and context. Y
         </div>
       </div>
     </div>
+    <GoogleDrivePickerDialog
+      open={showDrivePicker}
+      onOpenChange={setShowDrivePicker}
+      projectId={projectId!}
+      onImported={invalidateJobs}
+    />
+    </>
   );
 }
