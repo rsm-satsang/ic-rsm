@@ -54,6 +54,9 @@ export default function VideoIntakePage() {
   const [newThemeName, setNewThemeName] = useState("");
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [usedModel, setUsedModel] = useState<string | null>(() => projectId ? localStorage.getItem(`draft_model_${projectId}`) : null);
+  const [clips, setClips] = useState<VideoClip[]>([]);
+  const [identifying, setIdentifying] = useState(false);
+  const [sourceVideoUrl, setSourceVideoUrl] = useState<string | null>(null);
 
   const {
     referenceFiles,
