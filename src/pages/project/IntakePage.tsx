@@ -985,7 +985,20 @@ Each reference text provided will come with explicit instructions and context. Y
 
               {/* File Uploader */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Add Files</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Add Files</h3>
+                  {goal === "video_to_youtube_short" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDrivePicker(true)}
+                    >
+                      <FileVideo className="mr-2 h-4 w-4" />
+                      Select from Google Drive
+                    </Button>
+                  )}
+                </div>
                 <ReferenceUploader projectId={projectId!} onUploadComplete={invalidateJobs} />
               </div>
 
