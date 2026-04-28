@@ -808,6 +808,7 @@ Each reference text provided will come with explicit instructions and context. Y
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background ml-14">
       <PageNavigationBanner
         title="Bring ideas and create first draft"
