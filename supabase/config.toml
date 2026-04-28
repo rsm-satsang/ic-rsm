@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.intake-process-job]
 verify_jwt = false
+
+[functions.gdrive-list-videos]
+verify_jwt = true
+
+[functions.gdrive-import-file]
+verify_jwt = true
