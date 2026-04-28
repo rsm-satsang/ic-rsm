@@ -1274,5 +1274,12 @@ Each reference text provided will come with explicit instructions and context. Y
         </div>
       </div>
     </div>
+    <GoogleDrivePickerDialog
+      open={showDrivePicker}
+      onOpenChange={setShowDrivePicker}
+      projectId={projectId!}
+      onImported={invalidateJobs}
+    />
+    </>
   );
 }
