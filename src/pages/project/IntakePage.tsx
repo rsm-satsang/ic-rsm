@@ -76,6 +76,7 @@ export default function IntakePage() {
   const [themes, setThemes] = useState<Array<{ id: string; name: string }>>([]);
   const [showAddTheme, setShowAddTheme] = useState(false);
   const [newThemeName, setNewThemeName] = useState("");
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [usedModel, setUsedModel] = useState<string | null>(() => {
     if (projectId) {
       return localStorage.getItem(`draft_model_${projectId}`);
