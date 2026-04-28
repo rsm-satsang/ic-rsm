@@ -471,47 +471,22 @@ export default function VideoIntakePage() {
 
             {totalJobs > 0 && (
               <div className="mt-8 pt-6 border-t">
-                <Button onClick={handleExtractAndShowDraft} disabled={generating || !allJobsComplete} size="lg" className="w-full">
-                  {generating ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing input for AI...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Prepare consolidated input to AI</>)}
+                <Button onClick={handleIdentifyClips} disabled={identifying || referenceFiles.length === 0} size="lg" className="w-full">
+                  {identifying ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Asking Gemini to watch your video and pick clips (this can take 1-2 minutes)...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Identify clips and create short</>)}
                 </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Gemini will watch the first uploaded video and suggest up to 4 short clips that hook viewers.
+                </p>
               </div>
             )}
 
-            {showExtractedDraft && (
+            {clips.length > 0 && sourceVideoUrl && (
               <div className="mt-8 pt-6 border-t">
-                <h2 className="text-xl font-semibold mb-3">Consolidated input to AI (editable)</h2>
-                <Textarea value={extractedDraft} onChange={(e) => setExtractedDraft(e.target.value)} rows={20} className="font-mono text-sm" />
-                <div className="mt-4 flex gap-3">
-                  <Button onClick={handleGenerateVersions} disabled={generating} size="lg" className="flex-1">
-                    {generating ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Generating Draft...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Ask AI to generate script</>)}
-                  </Button>
-                  <Button onClick={() => setShowExtractedDraft(false)} variant="outline" size="lg">Hide Draft</Button>
-                </div>
-              </div>
-            )}
-
-            {draftGenerated && (
-              <div className="mt-8 pt-6 border-t">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold">Generated YouTube Short Script</h2>
-                    {usedModel && <p className="text-sm text-muted-foreground mt-1">Generated using: <span className="font-medium">{usedModel}</span></p>}
-                  </div>
-                  <div className="flex items-center bg-muted rounded-lg p-1">
-                    <Button variant={showPreview ? "secondary" : "ghost"} size="sm" onClick={() => setShowPreview(true)} className="gap-1"><Eye className="h-4 w-4" />Preview</Button>
-                    <Button variant={!showPreview ? "secondary" : "ghost"} size="sm" onClick={() => setShowPreview(false)} className="gap-1"><Code className="h-4 w-4" />Raw</Button>
-                  </div>
-                </div>
-                {showPreview ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none border rounded-md p-6 bg-card min-h-[400px] overflow-auto mb-4">
-                    <ReactMarkdown>{generatedDraft}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <Textarea value={generatedDraft} onChange={(e) => setGeneratedDraft(e.target.value)} rows={25} className="font-mono text-sm mb-4" />
-                )}
-                <Button onClick={handleSaveVersion} disabled={saving} size="lg" className="w-full">
-                  {saving ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Saving...</>) : ("Save & Go to Workspace")}
-                </Button>
+                <h2 className="text-xl font-semibold mb-1">Suggested clips</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Review each clip below. Tick the ones you want to keep, then stitch them into a single short.
+                </p>
+                <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} />
               </div>
             )}
           </div>
