@@ -462,6 +462,7 @@ Each reference text provided will come with explicit instructions and context. Y
         "You are a professional proofreader and editor. Please carefully review the below reference text and correct any spelling errors, grammatical mistakes, punctuation issues, and formatting inconsistencies. Maintain the original meaning and tone while improving clarity and readability. Each reference article has instructions and context around the file.",
       translation:
         "You are a professional translator. Please translate the below reference text accurately while preserving the original meaning, tone, and style. Ensure cultural appropriateness and natural phrasing in the target language. Each reference article has instructions and context around the file.",
+      video_to_youtube_short: "You are an expert short-form video scriptwriter. Based on the provided video reference(s), create a punchy, engaging YouTube Shorts script (under 60 seconds, ~150 words max). Include: a strong 3-second hook, a tight narrative or insight from the source video, on-screen text suggestions in [brackets], suggested b-roll/cut points, and a clear CTA at the end. Keep language simple, energetic, and optimized for vertical video. Each reference article has instructions and context around the file.",
       other: customGoalText
         ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.`
         : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
@@ -902,6 +903,7 @@ Each reference text provided will come with explicit instructions and context. Y
                     <SelectItem value="story_adults">Story for adults</SelectItem>
                     <SelectItem value="proofreading">Proofreading</SelectItem>
                     <SelectItem value="translation">Translation</SelectItem>
+                    <SelectItem value="video_to_youtube_short">Video to YouTube Short</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
