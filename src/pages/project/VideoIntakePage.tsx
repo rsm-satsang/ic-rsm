@@ -218,6 +218,36 @@ export default function VideoIntakePage() {
     return `${VIDEO_PROMPT}\n\n**CRITICAL REQUIREMENT**: The entire content MUST be written in ${langName}.`;
   };
 
+  const handleIdentifyClips = async () => {
+    const firstVideo = referenceFiles.find((f) => f.file_type === "video" && f.storage_path);
+    if (!firstVideo) { toast.error("Please add at least one video reference from Google Drive"); return; }
+    setIdentifying(true);
+    setClips([]);
+    setSourceVideoUrl(null);
+    try {
+      // Create signed URL so the browser can preview/stitch the video
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("project-references").createSignedUrl(firstVideo.storage_path!, 60 * 60 * 4);
+      if (signErr || !signed?.signedUrl) throw new Error(signErr?.message || "Failed to sign video URL");
+      setSourceVideoUrl(signed.signedUrl);
+
+      const { data, error } = await supabase.functions.invoke("identify-video-clips", {
+        body: { reference_file_id: firstVideo.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const returned: VideoClip[] = (data?.clips || []).map((c: any) => ({ ...c, accepted: true }));
+      if (returned.length === 0) { toast.error("Gemini couldn't pick any clips from this video"); return; }
+      setClips(returned);
+      toast.success(`Gemini suggested ${returned.length} clip(s). Review and stitch below.`);
+    } catch (e) {
+      console.error("Identify clips failed:", e);
+      toast.error(e instanceof Error ? e.message : "Failed to identify clips");
+    } finally {
+      setIdentifying(false);
+    }
+  };
+
   const handleExtractAndShowDraft = async () => {
     if (totalJobs === 0) { toast.error("Please add at least one video reference from Google Drive"); return; }
     if (!allJobsComplete) { toast.error("Please wait for all extractions to complete"); return; }
