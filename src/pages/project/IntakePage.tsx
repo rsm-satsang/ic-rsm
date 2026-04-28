@@ -24,11 +24,13 @@ import {
   Link as LinkIcon,
   Sparkles,
   FileText,
+  FileVideo,
   Trash2,
   Eye,
   Code,
   Plus,
 } from "lucide-react";
+import { GoogleDrivePickerDialog } from "@/components/upload/GoogleDrivePickerDialog";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
