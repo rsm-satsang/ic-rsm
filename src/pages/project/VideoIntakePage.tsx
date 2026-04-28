@@ -23,6 +23,7 @@ import {
   Plus,
 } from "lucide-react";
 import { GoogleDrivePickerDialog } from "@/components/upload/GoogleDrivePickerDialog";
+import { VideoClipsList, type VideoClip } from "@/components/video/VideoClipsList";
 
 const VIDEO_PROMPT = `You are an expert short-form video scriptwriter. Based on the provided video reference(s), create a punchy, engaging YouTube Shorts script (under 60 seconds, ~150 words max). Include: a strong 3-second hook, a tight narrative or insight from the source video, on-screen text suggestions in [brackets], suggested b-roll/cut points, and a clear CTA at the end. Keep language simple, energetic, and optimized for vertical video.`;
 
@@ -53,6 +54,9 @@ export default function VideoIntakePage() {
   const [newThemeName, setNewThemeName] = useState("");
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [usedModel, setUsedModel] = useState<string | null>(() => projectId ? localStorage.getItem(`draft_model_${projectId}`) : null);
+  const [clips, setClips] = useState<VideoClip[]>([]);
+  const [identifying, setIdentifying] = useState(false);
+  const [sourceVideoUrl, setSourceVideoUrl] = useState<string | null>(null);
 
   const {
     referenceFiles,
@@ -212,6 +216,36 @@ export default function VideoIntakePage() {
     const languageNames: Record<string, string> = { english: "English", hindi: "Hindi", tamil: "Tamil", german: "German" };
     const langName = languageNames[language] || "English";
     return `${VIDEO_PROMPT}\n\n**CRITICAL REQUIREMENT**: The entire content MUST be written in ${langName}.`;
+  };
+
+  const handleIdentifyClips = async () => {
+    const firstVideo = referenceFiles.find((f) => f.file_type === "video" && f.storage_path);
+    if (!firstVideo) { toast.error("Please add at least one video reference from Google Drive"); return; }
+    setIdentifying(true);
+    setClips([]);
+    setSourceVideoUrl(null);
+    try {
+      // Create signed URL so the browser can preview/stitch the video
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("project-references").createSignedUrl(firstVideo.storage_path!, 60 * 60 * 4);
+      if (signErr || !signed?.signedUrl) throw new Error(signErr?.message || "Failed to sign video URL");
+      setSourceVideoUrl(signed.signedUrl);
+
+      const { data, error } = await supabase.functions.invoke("identify-video-clips", {
+        body: { reference_file_id: firstVideo.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const returned: VideoClip[] = (data?.clips || []).map((c: any) => ({ ...c, accepted: true }));
+      if (returned.length === 0) { toast.error("Gemini couldn't pick any clips from this video"); return; }
+      setClips(returned);
+      toast.success(`Gemini suggested ${returned.length} clip(s). Review and stitch below.`);
+    } catch (e) {
+      console.error("Identify clips failed:", e);
+      toast.error(e instanceof Error ? e.message : "Failed to identify clips");
+    } finally {
+      setIdentifying(false);
+    }
   };
 
   const handleExtractAndShowDraft = async () => {
@@ -470,47 +504,22 @@ export default function VideoIntakePage() {
 
             {totalJobs > 0 && (
               <div className="mt-8 pt-6 border-t">
-                <Button onClick={handleExtractAndShowDraft} disabled={generating || !allJobsComplete} size="lg" className="w-full">
-                  {generating ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Preparing input for AI...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Prepare consolidated input to AI</>)}
+                <Button onClick={handleIdentifyClips} disabled={identifying || referenceFiles.length === 0} size="lg" className="w-full">
+                  {identifying ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Asking Gemini to watch your video and pick clips (this can take 1-2 minutes)...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Identify clips and create short</>)}
                 </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Gemini will watch the first uploaded video and suggest up to 4 short clips that hook viewers.
+                </p>
               </div>
             )}
 
-            {showExtractedDraft && (
+            {clips.length > 0 && sourceVideoUrl && (
               <div className="mt-8 pt-6 border-t">
-                <h2 className="text-xl font-semibold mb-3">Consolidated input to AI (editable)</h2>
-                <Textarea value={extractedDraft} onChange={(e) => setExtractedDraft(e.target.value)} rows={20} className="font-mono text-sm" />
-                <div className="mt-4 flex gap-3">
-                  <Button onClick={handleGenerateVersions} disabled={generating} size="lg" className="flex-1">
-                    {generating ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Generating Draft...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Ask AI to generate script</>)}
-                  </Button>
-                  <Button onClick={() => setShowExtractedDraft(false)} variant="outline" size="lg">Hide Draft</Button>
-                </div>
-              </div>
-            )}
-
-            {draftGenerated && (
-              <div className="mt-8 pt-6 border-t">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold">Generated YouTube Short Script</h2>
-                    {usedModel && <p className="text-sm text-muted-foreground mt-1">Generated using: <span className="font-medium">{usedModel}</span></p>}
-                  </div>
-                  <div className="flex items-center bg-muted rounded-lg p-1">
-                    <Button variant={showPreview ? "secondary" : "ghost"} size="sm" onClick={() => setShowPreview(true)} className="gap-1"><Eye className="h-4 w-4" />Preview</Button>
-                    <Button variant={!showPreview ? "secondary" : "ghost"} size="sm" onClick={() => setShowPreview(false)} className="gap-1"><Code className="h-4 w-4" />Raw</Button>
-                  </div>
-                </div>
-                {showPreview ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none border rounded-md p-6 bg-card min-h-[400px] overflow-auto mb-4">
-                    <ReactMarkdown>{generatedDraft}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <Textarea value={generatedDraft} onChange={(e) => setGeneratedDraft(e.target.value)} rows={25} className="font-mono text-sm mb-4" />
-                )}
-                <Button onClick={handleSaveVersion} disabled={saving} size="lg" className="w-full">
-                  {saving ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Saving...</>) : ("Save & Go to Workspace")}
-                </Button>
+                <h2 className="text-xl font-semibold mb-1">Suggested clips</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Review each clip below. Tick the ones you want to keep, then stitch them into a single short.
+                </p>
+                <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} />
               </div>
             )}
           </div>
