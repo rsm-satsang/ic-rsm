@@ -7,6 +7,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Workspace from "./pages/Workspace";
 import IntakePage from "./pages/project/IntakePage";
+import VideoIntakePage from "./pages/project/VideoIntakePage";
 import PublishPreview from "./pages/PublishPreview";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/project/:projectId/intake" element={<IntakePage />} />
+          <Route path="/project/:projectId/video-intake" element={<VideoIntakePage />} />
           <Route path="/workspace/:projectId" element={<Workspace />} />
           <Route path="/publish/:projectId" element={<PublishPreview />} />
           <Route path="/settings" element={<Settings />} />
