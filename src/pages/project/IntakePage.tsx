@@ -903,6 +903,7 @@ Each reference text provided will come with explicit instructions and context. Y
                     <SelectItem value="story_adults">Story for adults</SelectItem>
                     <SelectItem value="proofreading">Proofreading</SelectItem>
                     <SelectItem value="translation">Translation</SelectItem>
+                    <SelectItem value="video_to_youtube_short">Video to YouTube Short</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
