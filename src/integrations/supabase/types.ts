@@ -1047,7 +1047,7 @@ export type Database = {
         | "review"
         | "approved"
         | "published"
-      project_type: "document" | "note" | "article" | "email"
+      project_type: "document" | "note" | "article" | "email" | "video"
       prompt_scope: "user" | "project" | "org"
       task_status: "pending" | "in_progress" | "completed"
       vocab_visibility: "project" | "org" | "public"
@@ -1199,7 +1199,7 @@ export const Constants = {
         "approved",
         "published",
       ],
-      project_type: ["document", "note", "article", "email"],
+      project_type: ["document", "note", "article", "email", "video"],
       prompt_scope: ["user", "project", "org"],
       task_status: ["pending", "in_progress", "completed"],
       vocab_visibility: ["project", "org", "public"],
