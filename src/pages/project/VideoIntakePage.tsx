@@ -145,6 +145,24 @@ export default function VideoIntakePage() {
         setExtractedDraft(metadata.extracted_draft);
         setShowExtractedDraft(true);
       }
+      // Restore clips + source video signed URL
+      if (metadata?.video_clips?.source_file_id && Array.isArray(metadata?.video_clips?.clips)) {
+        const srcId = metadata.video_clips.source_file_id as string;
+        setSourceVideoFileId(srcId);
+        setClips(metadata.video_clips.clips as VideoClip[]);
+        // Sign URL for source video
+        const { data: refRow } = await supabase.from("reference_files").select("storage_path").eq("id", srcId).maybeSingle();
+        if (refRow?.storage_path) {
+          const { data: signed } = await supabase.storage.from("project-references").createSignedUrl(refRow.storage_path, 60 * 60 * 4);
+          if (signed?.signedUrl) setSourceVideoUrl(signed.signedUrl);
+        }
+      }
+      // Restore stitched video
+      if (metadata?.video_clips?.stitched_path) {
+        const { data: signed } = await supabase.storage.from("project-references").createSignedUrl(metadata.video_clips.stitched_path, 60 * 60 * 4);
+        if (signed?.signedUrl) setStitchedVideoUrl(signed.signedUrl);
+      }
+      clipsHydratedRef.current = true;
 
       const { data: versions } = await supabase
         .from("versions").select("*").eq("project_id", projectId)
