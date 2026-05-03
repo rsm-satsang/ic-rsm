@@ -221,7 +221,14 @@ export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialS
 
   return (
     <div className="space-y-4">
-      <video ref={sourceVideoRef} src={videoUrl} crossOrigin="anonymous" preload="auto" playsInline className="hidden" />
+      <video
+        ref={sourceVideoRef}
+        src={videoUrl}
+        crossOrigin="anonymous"
+        preload="auto"
+        playsInline
+        style={{ position: "fixed", left: -99999, top: 0, width: 2, height: 2, opacity: 0, pointerEvents: "none" }}
+      />
 
       <div className="space-y-3">
         {clips.map((clip, idx) => (
