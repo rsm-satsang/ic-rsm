@@ -109,7 +109,8 @@ export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialS
 
     try {
       const video = sourceVideoRef.current;
-      video.muted = false;
+      // Keep element muted so autoplay/play() is always allowed; captureStream still includes audio track
+      video.muted = true;
       video.volume = 1.0;
 
       if (video.readyState < 1) {
