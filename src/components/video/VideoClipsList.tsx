@@ -2,8 +2,10 @@ import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Loader2, Scissors, Download, Play } from "lucide-react";
 import { toast } from "sonner";
+import logoUrl from "@/assets/logo_rsm_lotus.png";
 
 export interface VideoClip {
   id: string;
@@ -15,38 +17,101 @@ export interface VideoClip {
 }
 
 interface Props {
-  videoUrl: string; // signed URL of the source video
+  videoUrl: string;
   clips: VideoClip[];
   onChange: (clips: VideoClip[]) => void;
+  onStitched?: (blob: Blob) => void;
+  initialStitchedUrl?: string | null;
 }
 
-export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
+const TITLE_CARD_DURATION_MS = 2000;
+
+export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialStitchedUrl }: Props) {
   const [stitching, setStitching] = useState(false);
   const [stitchProgress, setStitchProgress] = useState("");
-  const [stitchedUrl, setStitchedUrl] = useState<string | null>(null);
+  const [stitchedUrl, setStitchedUrl] = useState<string | null>(initialStitchedUrl || null);
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
+  const logoImgRef = useRef<HTMLImageElement | null>(null);
 
+  useEffect(() => { setStitchedUrl(initialStitchedUrl || null); }, [initialStitchedUrl]);
+
+  // Preload logo
   useEffect(() => {
-    return () => { if (stitchedUrl) URL.revokeObjectURL(stitchedUrl); };
-  }, [stitchedUrl]);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = logoUrl;
+    img.onload = () => { logoImgRef.current = img; };
+  }, []);
 
   const toggle = (id: string, accepted: boolean) => {
     onChange(clips.map((c) => (c.id === id ? { ...c, accepted } : c)));
   };
+  const updateTitle = (id: string, title: string) => {
+    onChange(clips.map((c) => (c.id === id ? { ...c, title } : c)));
+  };
 
   const accepted = clips.filter((c) => c.accepted);
+
+  const drawTitleCard = (ctx: CanvasRenderingContext2D, w: number, h: number, title: string) => {
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, "#0b1d3a");
+    grad.addColorStop(1, "#1e3a8a");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Logo on the left
+    const logo = logoImgRef.current;
+    const pad = Math.round(Math.min(w, h) * 0.06);
+    const logoSize = Math.round(Math.min(w, h) * 0.35);
+    if (logo && logo.complete) {
+      const lx = pad;
+      const ly = (h - logoSize) / 2;
+      ctx.drawImage(logo, lx, ly, logoSize, logoSize);
+    }
+
+    // Title on the right
+    const textX = pad * 2 + logoSize;
+    const textW = w - textX - pad;
+    ctx.fillStyle = "#ffffff";
+    const fontSize = Math.max(28, Math.round(h * 0.07));
+    ctx.font = `bold ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    ctx.textBaseline = "middle";
+
+    // Word-wrap
+    const words = (title || "").split(/\s+/);
+    const lines: string[] = [];
+    let line = "";
+    for (const word of words) {
+      const test = line ? line + " " + word : word;
+      if (ctx.measureText(test).width > textW && line) {
+        lines.push(line);
+        line = word;
+      } else line = test;
+    }
+    if (line) lines.push(line);
+
+    const lineHeight = fontSize * 1.2;
+    const totalH = lines.length * lineHeight;
+    let y = h / 2 - totalH / 2 + lineHeight / 2;
+    for (const l of lines) {
+      ctx.fillText(l, textX, y);
+      y += lineHeight;
+    }
+  };
 
   const stitch = async () => {
     if (accepted.length === 0) { toast.error("Accept at least one clip first"); return; }
     if (!sourceVideoRef.current) return;
     setStitching(true);
+    if (stitchedUrl && stitchedUrl.startsWith("blob:")) URL.revokeObjectURL(stitchedUrl);
     setStitchedUrl(null);
+
     try {
       const video = sourceVideoRef.current;
       video.muted = false;
       video.volume = 1.0;
 
-      // Wait for metadata
       if (video.readyState < 1) {
         await new Promise<void>((res, rej) => {
           video.onloadedmetadata = () => res();
@@ -54,10 +119,24 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
         });
       }
 
-      // captureStream gives us both video + audio tracks from the playing element
+      const W = video.videoWidth || 1280;
+      const H = video.videoHeight || 720;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d")!;
+
+      // Get audio track from source video (if any)
       // @ts-ignore
-      const stream: MediaStream = video.captureStream ? video.captureStream() : (video as any).mozCaptureStream();
-      if (!stream) throw new Error("captureStream not supported in this browser");
+      const sourceStream: MediaStream | null = video.captureStream
+        ? video.captureStream()
+        : (video as any).mozCaptureStream?.();
+      // @ts-ignore
+      const canvasStream: MediaStream = canvas.captureStream(30);
+      if (sourceStream) {
+        for (const t of sourceStream.getAudioTracks()) canvasStream.addTrack(t);
+      }
 
       const mimeCandidates = [
         "video/webm;codecs=vp9,opus",
@@ -65,25 +144,46 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
         "video/webm",
       ];
       const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
-      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+      const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 4_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
       const stopped = new Promise<void>((res) => { recorder.onstop = () => res(); });
 
       recorder.start(250);
 
+      let drawing = true;
+      const drawVideoLoop = () => {
+        if (!drawing) return;
+        try { ctx.drawImage(video, 0, 0, W, H); } catch {}
+        requestAnimationFrame(drawVideoLoop);
+      };
+
       for (let i = 0; i < accepted.length; i++) {
         const clip = accepted[i];
-        setStitchProgress(`Recording clip ${i + 1} of ${accepted.length}: ${clip.title}`);
-        // Seek
+        setStitchProgress(`Clip ${i + 1}/${accepted.length}: title card`);
+
+        // Pause video so audio is silent during title card
         video.pause();
+
+        // Render title card frames for the duration
+        drawing = false;
+        const titleStart = performance.now();
+        while (performance.now() - titleStart < TITLE_CARD_DURATION_MS) {
+          drawTitleCard(ctx, W, H, clip.title || `Clip ${i + 1}`);
+          await new Promise((r) => setTimeout(r, 50));
+        }
+
+        setStitchProgress(`Clip ${i + 1}/${accepted.length}: recording video`);
+        // Seek
         video.currentTime = clip.start_seconds;
         await new Promise<void>((res) => {
           const onSeeked = () => { video.removeEventListener("seeked", onSeeked); res(); };
           video.addEventListener("seeked", onSeeked);
         });
+
+        drawing = true;
+        requestAnimationFrame(drawVideoLoop);
         await video.play();
-        // Wait for the clip duration (real time playback)
         await new Promise<void>((res) => {
           const target = clip.end_seconds;
           const tick = () => {
@@ -91,16 +191,18 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
           };
           video.addEventListener("timeupdate", tick);
         });
+        drawing = false;
         video.pause();
       }
 
-      setStitchProgress("Finalizing video...");
+      setStitchProgress("Finalizing...");
       recorder.stop();
       await stopped;
 
       const blob = new Blob(chunks, { type: mimeType });
       const url = URL.createObjectURL(blob);
       setStitchedUrl(url);
+      onStitched?.(blob);
       toast.success("Short stitched! Preview and download below.");
     } catch (e) {
       console.error("Stitch failed:", e);
@@ -119,7 +221,6 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Hidden source video used for stitching */}
       <video ref={sourceVideoRef} src={videoUrl} crossOrigin="anonymous" preload="auto" playsInline className="hidden" />
 
       <div className="space-y-3">
@@ -135,16 +236,18 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold">
-                      {idx + 1}. {clip.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {fmt(clip.start_seconds)} → {fmt(clip.end_seconds)} ({(clip.end_seconds - clip.start_seconds).toFixed(1)}s)
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-muted-foreground">{idx + 1}.</span>
+                  <Input
+                    value={clip.title}
+                    onChange={(e) => updateTitle(clip.id, e.target.value)}
+                    className="font-semibold text-base flex-1"
+                    placeholder="Clip title"
+                  />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {fmt(clip.start_seconds)} → {fmt(clip.end_seconds)} ({(clip.end_seconds - clip.start_seconds).toFixed(1)}s)
+                </p>
                 <p className="text-sm mt-2 text-muted-foreground">{clip.reason}</p>
                 <label className="flex items-center gap-2 mt-3 text-sm cursor-pointer select-none">
                   <Checkbox
@@ -162,7 +265,7 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
       <div className="pt-4 border-t">
         <p className="text-sm text-muted-foreground mb-3">
           {accepted.length} of {clips.length} clip(s) accepted.
-          {accepted.length > 0 && ` Total length: ${accepted.reduce((s, c) => s + (c.end_seconds - c.start_seconds), 0).toFixed(1)}s`}
+          {accepted.length > 0 && ` Total length: ${(accepted.reduce((s, c) => s + (c.end_seconds - c.start_seconds), 0) + accepted.length * 2).toFixed(1)}s (incl. 2s title card per clip)`}
         </p>
         <Button onClick={stitch} disabled={stitching || accepted.length === 0} size="lg" className="w-full">
           {stitching ? (
@@ -172,7 +275,7 @@ export function VideoClipsList({ videoUrl, clips, onChange }: Props) {
           )}
         </Button>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Stitching plays each clip in real time in your browser — please don't close this tab while it's working.
+          Each clip starts with a 2-second title card (Srijan logo + clip title). Please don't close this tab while it's working.
         </p>
       </div>
 
