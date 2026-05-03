@@ -295,6 +295,7 @@ export default function VideoIntakePage() {
         .from("project-references").createSignedUrl(firstVideo.storage_path!, 60 * 60 * 4);
       if (signErr || !signed?.signedUrl) throw new Error(signErr?.message || "Failed to sign video URL");
       setSourceVideoUrl(signed.signedUrl);
+      setSourceVideoFileId(firstVideo.id);
 
       const { data, error } = await supabase.functions.invoke("identify-video-clips", {
         body: { reference_file_id: firstVideo.id },
