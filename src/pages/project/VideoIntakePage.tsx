@@ -57,6 +57,9 @@ export default function VideoIntakePage() {
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [identifying, setIdentifying] = useState(false);
   const [sourceVideoUrl, setSourceVideoUrl] = useState<string | null>(null);
+  const [stitchedVideoUrl, setStitchedVideoUrl] = useState<string | null>(null);
+  const [sourceVideoFileId, setSourceVideoFileId] = useState<string | null>(null);
+  const clipsHydratedRef = useRef(false);
 
   const {
     referenceFiles,
@@ -79,6 +82,50 @@ export default function VideoIntakePage() {
   useEffect(() => {
     if (projectId && usedModel) localStorage.setItem(`draft_model_${projectId}`, usedModel);
   }, [projectId, usedModel]);
+
+  // Autosave clips + source file id to project metadata
+  useEffect(() => {
+    if (!projectId || !clipsHydratedRef.current) return;
+    if (clips.length === 0 && !sourceVideoFileId) return;
+    const t = setTimeout(async () => {
+      try {
+        const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+        const meta = (cur?.metadata as any) || {};
+        const existing = meta.video_clips || {};
+        await supabase.from("projects").update({
+          metadata: {
+            ...meta,
+            video_clips: { ...existing, source_file_id: sourceVideoFileId, clips },
+          },
+          updated_at: new Date().toISOString(),
+        }).eq("id", projectId);
+      } catch (e) { console.error("autosave clips failed:", e); }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [clips, sourceVideoFileId, projectId]);
+
+  const handleStitched = async (blob: Blob) => {
+    if (!projectId) return;
+    try {
+      const path = `${projectId}/stitched/short_${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage.from("project-references").upload(path, blob, {
+        contentType: blob.type || "video/webm",
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+      const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+      const meta = (cur?.metadata as any) || {};
+      const existing = meta.video_clips || {};
+      await supabase.from("projects").update({
+        metadata: { ...meta, video_clips: { ...existing, stitched_path: path } },
+        updated_at: new Date().toISOString(),
+      }).eq("id", projectId);
+      toast.success("Stitched video saved to project");
+    } catch (e) {
+      console.error("Failed to save stitched video:", e);
+      toast.error("Stitched video saved locally but couldn't sync to project");
+    }
+  };
 
   const fetchThemes = async () => {
     try {
@@ -142,6 +189,24 @@ export default function VideoIntakePage() {
         setExtractedDraft(metadata.extracted_draft);
         setShowExtractedDraft(true);
       }
+      // Restore clips + source video signed URL
+      if (metadata?.video_clips?.source_file_id && Array.isArray(metadata?.video_clips?.clips)) {
+        const srcId = metadata.video_clips.source_file_id as string;
+        setSourceVideoFileId(srcId);
+        setClips(metadata.video_clips.clips as VideoClip[]);
+        // Sign URL for source video
+        const { data: refRow } = await supabase.from("reference_files").select("storage_path").eq("id", srcId).maybeSingle();
+        if (refRow?.storage_path) {
+          const { data: signed } = await supabase.storage.from("project-references").createSignedUrl(refRow.storage_path, 60 * 60 * 4);
+          if (signed?.signedUrl) setSourceVideoUrl(signed.signedUrl);
+        }
+      }
+      // Restore stitched video
+      if (metadata?.video_clips?.stitched_path) {
+        const { data: signed } = await supabase.storage.from("project-references").createSignedUrl(metadata.video_clips.stitched_path, 60 * 60 * 4);
+        if (signed?.signedUrl) setStitchedVideoUrl(signed.signedUrl);
+      }
+      clipsHydratedRef.current = true;
 
       const { data: versions } = await supabase
         .from("versions").select("*").eq("project_id", projectId)
@@ -230,6 +295,7 @@ export default function VideoIntakePage() {
         .from("project-references").createSignedUrl(firstVideo.storage_path!, 60 * 60 * 4);
       if (signErr || !signed?.signedUrl) throw new Error(signErr?.message || "Failed to sign video URL");
       setSourceVideoUrl(signed.signedUrl);
+      setSourceVideoFileId(firstVideo.id);
 
       const { data, error } = await supabase.functions.invoke("identify-video-clips", {
         body: { reference_file_id: firstVideo.id },
@@ -519,7 +585,7 @@ export default function VideoIntakePage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Review each clip below. Tick the ones you want to keep, then stitch them into a single short.
                 </p>
-                <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} />
+                <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} onStitched={handleStitched} initialStitchedUrl={stitchedVideoUrl} />
               </div>
             )}
           </div>
