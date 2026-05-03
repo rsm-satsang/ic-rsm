@@ -83,6 +83,50 @@ export default function VideoIntakePage() {
     if (projectId && usedModel) localStorage.setItem(`draft_model_${projectId}`, usedModel);
   }, [projectId, usedModel]);
 
+  // Autosave clips + source file id to project metadata
+  useEffect(() => {
+    if (!projectId || !clipsHydratedRef.current) return;
+    if (clips.length === 0 && !sourceVideoFileId) return;
+    const t = setTimeout(async () => {
+      try {
+        const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+        const meta = (cur?.metadata as any) || {};
+        const existing = meta.video_clips || {};
+        await supabase.from("projects").update({
+          metadata: {
+            ...meta,
+            video_clips: { ...existing, source_file_id: sourceVideoFileId, clips },
+          },
+          updated_at: new Date().toISOString(),
+        }).eq("id", projectId);
+      } catch (e) { console.error("autosave clips failed:", e); }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [clips, sourceVideoFileId, projectId]);
+
+  const handleStitched = async (blob: Blob) => {
+    if (!projectId) return;
+    try {
+      const path = `${projectId}/stitched/short_${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage.from("project-references").upload(path, blob, {
+        contentType: blob.type || "video/webm",
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+      const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+      const meta = (cur?.metadata as any) || {};
+      const existing = meta.video_clips || {};
+      await supabase.from("projects").update({
+        metadata: { ...meta, video_clips: { ...existing, stitched_path: path } },
+        updated_at: new Date().toISOString(),
+      }).eq("id", projectId);
+      toast.success("Stitched video saved to project");
+    } catch (e) {
+      console.error("Failed to save stitched video:", e);
+      toast.error("Stitched video saved locally but couldn't sync to project");
+    }
+  };
+
   const fetchThemes = async () => {
     try {
       const { data, error } = await supabase.from("themes").select("id, name").order("name", { ascending: true });
