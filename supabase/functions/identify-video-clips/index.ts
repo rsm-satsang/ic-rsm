@@ -155,7 +155,26 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: 0.4,
             responseMimeType: "application/json",
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                clips: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      start_seconds: { type: "NUMBER" },
+                      end_seconds: { type: "NUMBER" },
+                      title: { type: "STRING" },
+                      reason: { type: "STRING" },
+                    },
+                    required: ["start_seconds", "end_seconds", "title", "reason"],
+                  },
+                },
+              },
+              required: ["clips"],
+            },
           },
         }),
       },
