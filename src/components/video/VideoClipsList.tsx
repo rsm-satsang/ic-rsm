@@ -109,34 +109,51 @@ export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialS
 
     try {
       const video = sourceVideoRef.current;
-      video.muted = false;
+      // Keep element muted so autoplay/play() is always allowed; captureStream still includes audio track
+      video.muted = true;
       video.volume = 1.0;
 
-      if (video.readyState < 1) {
+      // Make sure metadata + first frame are available
+      if (video.readyState < 2) {
         await new Promise<void>((res, rej) => {
-          video.onloadedmetadata = () => res();
-          video.onerror = () => rej(new Error("Failed to load source video"));
+          const ok = () => { cleanup(); res(); };
+          const err = () => { cleanup(); rej(new Error("Failed to load source video")); };
+          const cleanup = () => {
+            video.removeEventListener("loadeddata", ok);
+            video.removeEventListener("error", err);
+          };
+          video.addEventListener("loadeddata", ok);
+          video.addEventListener("error", err);
+          try { video.load(); } catch {}
         });
       }
 
       const W = video.videoWidth || 1280;
       const H = video.videoHeight || 720;
+      console.log("[stitch] source ready", { W, H, duration: video.duration, accepted: accepted.length });
 
       const canvas = document.createElement("canvas");
       canvas.width = W;
       canvas.height = H;
       const ctx = canvas.getContext("2d")!;
 
+      // Draw an initial frame so canvas.captureStream has content immediately
+      drawTitleCard(ctx, W, H, accepted[0].title || "Clip 1");
+
       // Get audio track from source video (if any)
       const v: any = video;
-      const sourceStream: MediaStream | null = v.captureStream
-        ? v.captureStream()
-        : v.mozCaptureStream?.();
+      let sourceStream: MediaStream | null = null;
+      try {
+        sourceStream = v.captureStream ? v.captureStream() : v.mozCaptureStream?.();
+      } catch (e) { console.warn("[stitch] captureStream failed", e); }
       // @ts-ignore
       const canvasStream: MediaStream = canvas.captureStream(30);
       if (sourceStream) {
-        for (const t of sourceStream.getAudioTracks()) canvasStream.addTrack(t);
+        for (const t of sourceStream.getAudioTracks()) {
+          try { canvasStream.addTrack(t); } catch (e) { console.warn("[stitch] addTrack audio failed", e); }
+        }
       }
+      console.log("[stitch] tracks", canvasStream.getTracks().map(t => t.kind));
 
       const mimeCandidates = [
         "video/webm;codecs=vp9,opus",
@@ -151,48 +168,72 @@ export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialS
 
       recorder.start(250);
 
-      let drawing = true;
+      let drawing = false;
       const drawVideoLoop = () => {
         if (!drawing) return;
-        try { ctx.drawImage(video, 0, 0, W, H); } catch {}
+        try { ctx.drawImage(video, 0, 0, W, H); } catch (e) { /* ignore */ }
         requestAnimationFrame(drawVideoLoop);
       };
 
       for (let i = 0; i < accepted.length; i++) {
         const clip = accepted[i];
         setStitchProgress(`Clip ${i + 1}/${accepted.length}: title card`);
+        console.log(`[stitch] clip ${i + 1}`, clip);
 
-        // Pause video so audio is silent during title card
-        video.pause();
+        try { video.pause(); } catch {}
 
-        // Render title card frames for the duration
+        // Title card frames
         drawing = false;
         const titleStart = performance.now();
         while (performance.now() - titleStart < TITLE_CARD_DURATION_MS) {
           drawTitleCard(ctx, W, H, clip.title || `Clip ${i + 1}`);
-          await new Promise((r) => setTimeout(r, 50));
+          await new Promise((r) => setTimeout(r, 40));
         }
 
         setStitchProgress(`Clip ${i + 1}/${accepted.length}: recording video`);
-        // Seek
-        video.currentTime = clip.start_seconds;
+
+        // Seek to start
         await new Promise<void>((res) => {
           const onSeeked = () => { video.removeEventListener("seeked", onSeeked); res(); };
           video.addEventListener("seeked", onSeeked);
+          try { video.currentTime = Math.max(0, clip.start_seconds); }
+          catch (e) { console.warn("[stitch] seek failed", e); video.removeEventListener("seeked", onSeeked); res(); }
         });
 
+        // Start drawing video frames
         drawing = true;
         requestAnimationFrame(drawVideoLoop);
-        await video.play();
+
+        try {
+          await video.play();
+        } catch (e) {
+          console.error("[stitch] video.play() rejected:", e);
+          toast.error("Browser blocked video playback. Click the video preview once, then retry.");
+          throw e;
+        }
+
+        // Wait until we reach end_seconds (with hard timeout fallback)
+        const target = clip.end_seconds;
+        const maxMs = Math.max(2000, (clip.end_seconds - clip.start_seconds + 2) * 1000);
         await new Promise<void>((res) => {
-          const target = clip.end_seconds;
+          const startedAt = performance.now();
           const tick = () => {
-            if (video.currentTime >= target || video.ended) { video.removeEventListener("timeupdate", tick); res(); }
+            if (video.currentTime >= target || video.ended || performance.now() - startedAt > maxMs) {
+              video.removeEventListener("timeupdate", tick);
+              res();
+            }
           };
           video.addEventListener("timeupdate", tick);
+          // Also poll in case timeupdate is sparse
+          const poll = setInterval(() => {
+            if (video.currentTime >= target || video.ended || performance.now() - startedAt > maxMs) {
+              clearInterval(poll); video.removeEventListener("timeupdate", tick); res();
+            }
+          }, 100);
         });
+
         drawing = false;
-        video.pause();
+        try { video.pause(); } catch {}
       }
 
       setStitchProgress("Finalizing...");
@@ -221,7 +262,14 @@ export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialS
 
   return (
     <div className="space-y-4">
-      <video ref={sourceVideoRef} src={videoUrl} crossOrigin="anonymous" preload="auto" playsInline className="hidden" />
+      <video
+        ref={sourceVideoRef}
+        src={videoUrl}
+        crossOrigin="anonymous"
+        preload="auto"
+        playsInline
+        style={{ position: "fixed", left: -99999, top: 0, width: 2, height: 2, opacity: 0, pointerEvents: "none" }}
+      />
 
       <div className="space-y-3">
         {clips.map((clip, idx) => (
