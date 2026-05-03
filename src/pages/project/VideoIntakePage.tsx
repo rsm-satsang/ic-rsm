@@ -585,7 +585,7 @@ export default function VideoIntakePage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Review each clip below. Tick the ones you want to keep, then stitch them into a single short.
                 </p>
-                <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} />
+                <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} onStitched={handleStitched} initialStitchedUrl={stitchedVideoUrl} />
               </div>
             )}
           </div>
