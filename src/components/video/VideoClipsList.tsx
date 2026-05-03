@@ -128,10 +128,10 @@ export function VideoClipsList({ videoUrl, clips, onChange, onStitched, initialS
       const ctx = canvas.getContext("2d")!;
 
       // Get audio track from source video (if any)
-      // @ts-ignore
-      const sourceStream: MediaStream | null = video.captureStream
-        ? video.captureStream()
-        : (video as any).mozCaptureStream?.();
+      const v: any = video;
+      const sourceStream: MediaStream | null = v.captureStream
+        ? v.captureStream()
+        : v.mozCaptureStream?.();
       // @ts-ignore
       const canvasStream: MediaStream = canvas.captureStream(30);
       if (sourceStream) {
