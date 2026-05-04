@@ -265,7 +265,7 @@ const Dashboard = () => {
                   <BookOpen className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle>New Hindi Sahitya Project</CardTitle>
+                  <CardTitle>(Not ready for usage) New Hindi Sahitya Project</CardTitle>
                   <CardDescription>Translate Hindi Sahitya & identify newsletter topics</CardDescription>
                 </div>
               </div>
@@ -291,7 +291,7 @@ const Dashboard = () => {
                   <Video className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle>New Video Project</CardTitle>
+                  <CardTitle>(Not ready for usage) New Video Project</CardTitle>
                   <CardDescription>Generate a YouTube Short script from Google Drive videos</CardDescription>
                 </div>
               </div>
