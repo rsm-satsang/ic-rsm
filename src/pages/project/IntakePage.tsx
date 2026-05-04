@@ -1081,8 +1081,11 @@ Each reference text provided will come with explicit instructions and context. Y
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
 
+        {draftMode === "generate" && (<>
         {/* Progress Summary */}
         {totalJobs > 0 && (
           <Card className="p-4 mb-6 bg-muted/50">
