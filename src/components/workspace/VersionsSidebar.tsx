@@ -215,22 +215,47 @@ const VersionsSidebar = ({ projectId, onVersionSelect }: VersionsSidebarProps) =
   const handleEditVersion = async () => {
     if (!editingVersion || !editedTitle.trim()) return;
 
+    const previousName = editingVersion.title || `Version ${editingVersion.version_number}`;
+    const newName = editedTitle.trim();
+
     try {
       const { error } = await supabase
         .from("versions")
-        .update({ title: editedTitle.trim() })
+        .update({ title: newName })
         .eq("id", editingVersion.id);
 
       if (error) throw error;
 
       // Update local state immediately for instant UI update
-      setVersions(prevVersions => 
-        prevVersions.map(v => 
-          v.id === editingVersion.id 
-            ? { ...v, title: editedTitle.trim() } 
+      setVersions(prevVersions =>
+        prevVersions.map(v =>
+          v.id === editingVersion.id
+            ? { ...v, title: newName }
             : v
         )
       );
+
+      // Log to timeline
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+          await supabase.from("timeline").insert({
+            project_id: projectId,
+            event_type: "edited",
+            event_details: {
+              action: "version_renamed",
+              version: editingVersion.version_number,
+              versionName: newName,
+              previousName,
+            },
+            user_id: user.id,
+            user_name: userData?.name || "Unknown User",
+          });
+        }
+      } catch (e) {
+        console.error("Failed to log rename to timeline", e);
+      }
 
       toast.success("Version name updated successfully!");
       setEditingVersion(null);

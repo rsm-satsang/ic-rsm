@@ -119,18 +119,36 @@ const TimelineFeed = ({ projectId }: TimelineFeedProps) => {
 
   const formatEventMessage = (event: TimelineEvent) => {
     const details = event.event_details || {};
-    
+    const versionLabel = details.versionName
+      ? `"${details.versionName}"${details.version ? ` (v${details.version})` : ""}`
+      : details.version
+        ? `v${details.version}`
+        : "";
+
     switch (event.event_type) {
       case "created":
         return `created the project "${details.title || "Untitled"}"`;
       case "edited":
-        return "made edits to the content";
+        switch (details.action) {
+          case "ai_version_created":
+            return `created new version ${versionLabel}${details.aiFeature ? ` via ${details.aiFeature}` : ""}`;
+          case "version_updated":
+            return `edited version ${versionLabel}`;
+          case "saved":
+            return `saved new version ${versionLabel}`;
+          case "version_renamed":
+            return `renamed version v${details.version || ""} to "${details.versionName || ""}"${details.previousName ? ` (was "${details.previousName}")` : ""}`;
+          case "exported_to_publish":
+            return "exported content for publishing";
+          default:
+            return versionLabel ? `edited version ${versionLabel}` : "made edits to the content";
+        }
       case "ai_action":
         return `ran ${details.action || "an AI action"}`;
       case "comment":
         return "added a comment";
       case "version_created":
-        return `created version ${details.version || ""}`;
+        return `created version ${versionLabel || details.version || ""}`;
       case "status_change":
         return `changed status from ${details.from || ""} to ${details.to || ""}`;
       case "collaborator_added":
