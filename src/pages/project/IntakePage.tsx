@@ -1315,7 +1315,8 @@ Each reference text provided will come with explicit instructions and context. Y
               </div>
             </div>
           )}
-        </>)}
+        </>
+        )}
       </div>
     </div>
     <GoogleDrivePickerDialog
