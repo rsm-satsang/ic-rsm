@@ -419,6 +419,16 @@ const Workspace = () => {
 
       if (versionError) throw versionError;
 
+      // Also persist project title
+      if (projectTitle && projectTitle !== project.title) {
+        const { error: titleError } = await supabase
+          .from("projects")
+          .update({ title: projectTitle, updated_at: new Date().toISOString() })
+          .eq("id", project.id);
+        if (titleError) throw titleError;
+        setProject({ ...project, title: projectTitle });
+      }
+
       // Add timeline entry
       const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
