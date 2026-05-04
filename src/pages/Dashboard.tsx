@@ -54,6 +54,8 @@ const Dashboard = () => {
       }
 
       setUser(currentUser);
+      const { data: userRow } = await supabase.from("users").select("role").eq("id", currentUser.id).maybeSingle();
+      setIsAdmin(userRow?.role === "admin");
       await fetchProjects(currentUser.id);
       await fetchPendingInvites(currentUser.id);
     } catch (error) {
