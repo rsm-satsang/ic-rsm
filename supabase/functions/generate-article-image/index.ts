@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
+    const apiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!apiKey) throw new Error('LOVABLE_API_KEY not configured');
 
     const { prompt, count = 3 } = await req.json();
     if (!prompt || typeof prompt !== 'string') {
@@ -22,39 +22,39 @@ serve(async (req) => {
       });
     }
 
-    const model = 'gemini-2.5-flash-image';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
-    const calls = Array.from({ length: count }, () =>
-      fetch(url, {
+    const callOnce = async () => {
+      const r = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: [{ role: 'user', content: prompt }],
+          modalities: ['image', 'text'],
         }),
-      }).then(async (r) => {
-        if (!r.ok) {
-          const t = await r.text();
-          console.error('Gemini error:', t);
-          return null;
-        }
-        const data = await r.json();
-        const parts = data?.candidates?.[0]?.content?.parts || [];
-        for (const p of parts) {
-          if (p.inlineData?.data) {
-            return `data:${p.inlineData.mimeType || 'image/png'};base64,${p.inlineData.data}`;
-          }
-        }
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        console.error('Gateway error:', r.status, t);
         return null;
-      }).catch((e) => { console.error(e); return null; })
-    );
+      }
+      const data = await r.json();
+      const images = data?.choices?.[0]?.message?.images;
+      const url0 = images?.[0]?.image_url?.url;
+      if (typeof url0 === 'string' && url0.startsWith('data:')) return url0;
+      return null;
+    };
 
-    const results = await Promise.all(calls);
+    const results = await Promise.all(Array.from({ length: count }, callOnce));
     const images = results.filter(Boolean) as string[];
 
     if (images.length === 0) {
-      return new Response(JSON.stringify({ error: 'No images generated' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ error: 'No images generated. Try again or refine your prompt.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
