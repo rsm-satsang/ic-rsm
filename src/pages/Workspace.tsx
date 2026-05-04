@@ -786,24 +786,6 @@ const Workspace = () => {
               className="font-semibold text-lg max-w-xs border-transparent hover:border-input focus-visible:border-input bg-transparent"
             />
 
-            <div className="flex items-center gap-2">
-              <Input
-                value={newVersionName}
-                onChange={(e) => setNewVersionName(e.target.value)}
-                placeholder="Version name"
-                className="w-44"
-              />
-              <Button
-                onClick={() => handleSaveAsNewVersion(newVersionName)}
-                disabled={saving || !newVersionName.trim()}
-                variant="outline"
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                Save Version
-              </Button>
-            </div>
-
             <div className="flex items-center gap-3">
               <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
                 <Save className="h-4 w-4" />
