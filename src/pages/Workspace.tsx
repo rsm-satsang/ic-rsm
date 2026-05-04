@@ -56,6 +56,7 @@ const Workspace = () => {
   const [user, setUser] = useState<User | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [projectTitle, setProjectTitle] = useState("");
+  const [newVersionName, setNewVersionName] = useState("");
   const [currentStatus, setCurrentStatus] = useState<"draft" | "in_progress" | "review" | "approved" | "published">(
     "draft",
   );
