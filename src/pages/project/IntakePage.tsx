@@ -962,6 +962,46 @@ Each reference text provided will come with explicit instructions and context. Y
 
           <Separator className="my-8" />
 
+          {/* Draft Mode Choice */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-3">How do you want to start?</h2>
+            <RadioGroup
+              value={draftMode}
+              onValueChange={(v) => setDraftMode(v as "generate" | "ready")}
+              className="space-y-2"
+            >
+              <div className="flex items-start gap-2 p-3 border rounded-md">
+                <RadioGroupItem value="generate" id="dm-generate" className="mt-1" />
+                <Label htmlFor="dm-generate" className="cursor-pointer font-normal">
+                  <span className="font-semibold">I wish to generate the first draft</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Add references and let AI generate a draft for you.
+                  </span>
+                </Label>
+              </div>
+              <div className="flex items-start gap-2 p-3 border rounded-md">
+                <RadioGroupItem value="ready" id="dm-ready" className="mt-1" />
+                <Label htmlFor="dm-ready" className="cursor-pointer font-normal">
+                  <span className="font-semibold">I have a draft ready</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Skip references and paste your draft directly in Edit and Refine.
+                  </span>
+                </Label>
+              </div>
+            </RadioGroup>
+
+            {draftMode === "ready" && (
+              <div className="mt-4">
+                <Button onClick={() => navigate(`/workspace/${projectId}`)} className="gap-2">
+                  Go to Edit and Refine
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {draftMode === "generate" && (
+          <>
           {/* Add References Section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-2">Add References</h2>
