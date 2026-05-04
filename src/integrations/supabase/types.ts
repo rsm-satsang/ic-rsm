@@ -412,6 +412,36 @@ export type Database = {
           },
         ]
       }
+      project_images: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          image_url: string
+          project_id: string
+          prompt: string | null
+          storage_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          image_url: string
+          project_id: string
+          prompt?: string | null
+          storage_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          image_url?: string
+          project_id?: string
+          prompt?: string | null
+          storage_path?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           created_at: string
