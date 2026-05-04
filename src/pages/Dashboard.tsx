@@ -10,6 +10,7 @@ import {
   Settings,
   Bell,
   Video,
+  BookOpen,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
 import feedbackIcon from "@/assets/feedback-icon.jpg";
@@ -149,6 +150,30 @@ const Dashboard = () => {
     }
   };
 
+  const createNewSahityaProject = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          title: `Hindi Sahitya - ${new Date().toLocaleDateString()}`,
+          type: "document",
+          owner_id: user.id,
+          status: "in_progress",
+          language: "hindi",
+          metadata: { goal: "translation", project_kind: "hindi_sahitya" },
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Hindi Sahitya project created!");
+      navigate(`/project/${data.id}/sahitya-intake`);
+    } catch (error: any) {
+      toast.error("Failed to create Hindi Sahitya project");
+      console.error(error);
+    }
+  };
+
   const createNewVideoProject = async () => {
     if (!user) return;
 
@@ -232,7 +257,20 @@ const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewSahityaProject}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-accent rounded-xl">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle>New Hindi Sahitya Project</CardTitle>
+                  <CardDescription>Translate Hindi Sahitya & identify newsletter topics</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
           <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewProject}>
             <CardHeader>
               <div className="flex items-center gap-3">
