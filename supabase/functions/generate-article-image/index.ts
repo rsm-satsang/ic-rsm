@@ -23,33 +23,41 @@ serve(async (req) => {
     }
 
     const imageCount = Math.min(Math.max(Number(count) || 3, 1), 3);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+    const models = [
+      'gemini-2.5-flash-image-preview',
+      'gemini-2.5-flash-image',
+      'gemini-2.0-flash-preview-image-generation',
+    ];
 
     const callOnce = async () => {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseModalities: ['TEXT', 'IMAGE'],
+      for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      });
-      if (!r.ok) {
-        const t = await r.text();
-        console.error('Gemini error:', r.status, t);
-        return null;
-      }
-      const data = await r.json();
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      const imagePart = parts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
-      const inlineData = imagePart?.inlineData || imagePart?.inline_data;
-      if (inlineData?.data) {
-        const mimeType = inlineData.mimeType || inlineData.mime_type || 'image/png';
-        return `data:${mimeType};base64,${inlineData.data}`;
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseModalities: ['TEXT', 'IMAGE'],
+            },
+          }),
+        });
+        if (!r.ok) {
+          const t = await r.text();
+          console.error('Gemini error:', model, r.status, t);
+          continue;
+        }
+        const data = await r.json();
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const imagePart = parts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
+        const inlineData = imagePart?.inlineData || imagePart?.inline_data;
+        if (inlineData?.data) {
+          const mimeType = inlineData.mimeType || inlineData.mime_type || 'image/png';
+          return `data:${mimeType};base64,${inlineData.data}`;
+        }
+        console.error('Gemini returned no inline image:', model, JSON.stringify(data).slice(0, 1000));
       }
       return null;
     };
