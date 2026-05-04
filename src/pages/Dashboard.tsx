@@ -14,6 +14,7 @@ import {
 import logoImg from "@/assets/logo_rsm_lotus.png";
 import feedbackIcon from "@/assets/feedback-icon.jpg";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
+import MyAssignedTasksSection from "@/components/dashboard/MyAssignedTasksSection";
 import type { User } from "@supabase/supabase-js";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
@@ -272,6 +273,9 @@ const Dashboard = () => {
             </CardHeader>
           </Card>
         </div>
+
+        {/* My Assigned Tasks */}
+        {user && <MyAssignedTasksSection userId={user.id} />}
 
         {/* Projects */}
         <div className="space-y-6">
