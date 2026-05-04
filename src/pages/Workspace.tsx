@@ -805,18 +805,6 @@ const Workspace = () => {
                 {saving ? "Saving..." : "Save Project"}
               </Button>
 
-              <Button
-                onClick={async () => {
-                  const name = window.prompt("Name for the new version:", `Version ${new Date().toLocaleString()}`);
-                  if (name && name.trim()) await handleSaveAsNewVersion(name.trim());
-                }}
-                disabled={saving}
-                variant="outline"
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                Save in new version
-              </Button>
 
               <Popover>
                 <PopoverTrigger asChild>
