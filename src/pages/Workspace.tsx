@@ -419,6 +419,16 @@ const Workspace = () => {
 
       if (versionError) throw versionError;
 
+      // Also persist project title
+      if (projectTitle && projectTitle !== project.title) {
+        const { error: titleError } = await supabase
+          .from("projects")
+          .update({ title: projectTitle, updated_at: new Date().toISOString() })
+          .eq("id", project.id);
+        if (titleError) throw titleError;
+        setProject({ ...project, title: projectTitle });
+      }
+
       // Add timeline entry
       const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
 
@@ -785,24 +795,6 @@ const Workspace = () => {
               placeholder="Project title"
               className="font-semibold text-lg max-w-xs border-transparent hover:border-input focus-visible:border-input bg-transparent"
             />
-
-            <div className="flex items-center gap-2">
-              <Input
-                value={newVersionName}
-                onChange={(e) => setNewVersionName(e.target.value)}
-                placeholder="Version name"
-                className="w-44"
-              />
-              <Button
-                onClick={() => handleSaveAsNewVersion(newVersionName)}
-                disabled={saving || !newVersionName.trim()}
-                variant="outline"
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                Save Version
-              </Button>
-            </div>
 
             <div className="flex items-center gap-3">
               <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
