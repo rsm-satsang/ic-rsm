@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +54,8 @@ const Dashboard = () => {
       }
 
       setUser(currentUser);
+      const { data: userRow } = await supabase.from("users").select("role").eq("id", currentUser.id).maybeSingle();
+      setIsAdmin(userRow?.role === "admin");
       await fetchProjects(currentUser.id);
       await fetchPendingInvites(currentUser.id);
     } catch (error) {
@@ -258,19 +261,21 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewSahityaProject}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-accent rounded-xl">
-                  <BookOpen className="h-6 w-6 text-white" />
+          {isAdmin && (
+            <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewSahityaProject}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-gradient-accent rounded-xl">
+                    <BookOpen className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle>(Not ready for usage) New Hindi Sahitya Project</CardTitle>
+                    <CardDescription>Translate Hindi Sahitya & identify newsletter topics</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>(Not ready for usage) New Hindi Sahitya Project</CardTitle>
-                  <CardDescription>Translate Hindi Sahitya & identify newsletter topics</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
+              </CardHeader>
+            </Card>
+          )}
           <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewProject}>
             <CardHeader>
               <div className="flex items-center gap-3">
