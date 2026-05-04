@@ -34,6 +34,7 @@ import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
+import ProjectImagesSection from "@/components/workspace/ProjectImagesSection";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
 import InviteDialog from "@/components/workspace/InviteDialog";
@@ -857,9 +858,10 @@ const Workspace = () => {
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Versions */}
-        <div className="w-56 lg:w-64 flex-shrink-0 border-r bg-card overflow-y-auto hidden md:flex">
+        {/* Left Sidebar - Versions + Images */}
+        <div className="w-56 lg:w-64 flex-shrink-0 border-r bg-card overflow-y-auto hidden md:flex flex-col">
           <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
+          <ProjectImagesSection projectId={project.id} />
         </div>
 
         {/* Center - Editor/Preview */}
