@@ -1001,8 +1001,6 @@ Each reference text provided will come with explicit instructions and context. Y
           </div>
 
           {draftMode === "generate" && (
-          <>
-          {/* Add References Section */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-2">Add References</h2>
             <p className="text-sm text-muted-foreground mb-6">
