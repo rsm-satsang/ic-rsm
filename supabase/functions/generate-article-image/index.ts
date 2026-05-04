@@ -23,11 +23,44 @@ serve(async (req) => {
     }
 
     const imageCount = Math.min(Math.max(Number(count) || 3, 1), 3);
+    const providerErrors: string[] = [];
     const models = [
       'gemini-2.5-flash-image-preview',
       'gemini-2.5-flash-image',
       'gemini-2.0-flash-preview-image-generation',
     ];
+
+    const generateWithOpenAI = async () => {
+      const openAiKey = Deno.env.get('OPENAI_API_KEY');
+      if (!openAiKey) return [];
+
+      const r = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-image-1',
+          prompt,
+          n: imageCount,
+          size: '1024x1024',
+          quality: 'medium',
+        }),
+      });
+
+      if (!r.ok) {
+        const t = await r.text();
+        console.error('OpenAI image error:', r.status, t);
+        providerErrors.push(`OpenAI image generation failed (${r.status})`);
+        return [];
+      }
+
+      const data = await r.json();
+      return (data?.data || [])
+        .map((item: any) => item?.b64_json ? `data:image/png;base64,${item.b64_json}` : null)
+        .filter(Boolean) as string[];
+    };
 
     const callOnce = async () => {
       for (const model of models) {
@@ -47,6 +80,7 @@ serve(async (req) => {
         if (!r.ok) {
           const t = await r.text();
           console.error('Gemini error:', model, r.status, t);
+          if (r.status === 429) providerErrors.push('Gemini image quota is exhausted');
           continue;
         }
         const data = await r.json();
@@ -63,10 +97,13 @@ serve(async (req) => {
     };
 
     const results = await Promise.all(Array.from({ length: imageCount }, callOnce));
-    const images = results.filter(Boolean) as string[];
+    let images = results.filter(Boolean) as string[];
+    if (images.length === 0) {
+      images = await generateWithOpenAI();
+    }
 
     if (images.length === 0) {
-      return new Response(JSON.stringify({ error: 'No images generated. Try again or refine your prompt.' }), {
+      return new Response(JSON.stringify({ error: providerErrors[0] || 'No images generated. Try again or refine your prompt.' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
