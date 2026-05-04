@@ -29,7 +29,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon } from "lucide-react";
+import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
@@ -70,6 +71,7 @@ const Workspace = () => {
   const [selectedVersionForView, setSelectedVersionForView] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -869,7 +871,25 @@ const Workspace = () => {
               <Eye className="h-4 w-4" />
               Preview
             </Button>
+            <Button
+              variant="gradient"
+              size="sm"
+              onClick={() => setShowImageDialog(true)}
+              className="gap-2 ml-2"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Generate an image for the article
+            </Button>
           </div>
+          {project && user && (
+            <GenerateImageDialog
+              open={showImageDialog}
+              onOpenChange={setShowImageDialog}
+              projectId={project.id}
+              userId={user.id}
+              defaultPrompt={projectTitle ? `Editorial illustration for an article titled "${projectTitle}"` : ""}
+            />
+          )}
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
