@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!apiKey) throw new Error('LOVABLE_API_KEY not configured');
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
 
     const { prompt, count = 3 } = await req.json();
     if (!prompt || typeof prompt !== 'string') {
@@ -22,34 +22,39 @@ serve(async (req) => {
       });
     }
 
-    const url = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+    const imageCount = Math.min(Math.max(Number(count) || 3, 1), 3);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
 
     const callOnce = async () => {
       const r = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [{ role: 'user', content: prompt }],
-          modalities: ['image', 'text'],
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE'],
+          },
         }),
       });
       if (!r.ok) {
         const t = await r.text();
-        console.error('Gateway error:', r.status, t);
+        console.error('Gemini error:', r.status, t);
         return null;
       }
       const data = await r.json();
-      const images = data?.choices?.[0]?.message?.images;
-      const url0 = images?.[0]?.image_url?.url;
-      if (typeof url0 === 'string' && url0.startsWith('data:')) return url0;
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const imagePart = parts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
+      const inlineData = imagePart?.inlineData || imagePart?.inline_data;
+      if (inlineData?.data) {
+        const mimeType = inlineData.mimeType || inlineData.mime_type || 'image/png';
+        return `data:${mimeType};base64,${inlineData.data}`;
+      }
       return null;
     };
 
-    const results = await Promise.all(Array.from({ length: count }, callOnce));
+    const results = await Promise.all(Array.from({ length: imageCount }, callOnce));
     const images = results.filter(Boolean) as string[];
 
     if (images.length === 0) {
