@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +30,10 @@ export default function GenerateImageDialog({ open, onOpenChange, projectId, use
   const [selected, setSelected] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (open) setPrompt(defaultPrompt);
+  }, [defaultPrompt, open]);
+
   const reset = () => { setImages([]); setSelected(null); setPrompt(defaultPrompt); };
 
   const handleGenerate = async () => {
@@ -41,7 +45,15 @@ export default function GenerateImageDialog({ open, onOpenChange, projectId, use
       const { data, error } = await supabase.functions.invoke("generate-article-image", {
         body: { prompt, count: 3 },
       });
-      if (error) throw error;
+      if (error) {
+        let message = error.message;
+        const context = (error as any).context;
+        if (context instanceof Response) {
+          const detail = await context.clone().json().catch(() => null);
+          message = detail?.error || message;
+        }
+        throw new Error(message);
+      }
       if (!data?.images?.length) throw new Error("No images returned");
       setImages(data.images);
     } catch (e: any) {

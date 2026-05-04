@@ -900,7 +900,7 @@ const Workspace = () => {
               onOpenChange={setShowImageDialog}
               projectId={project.id}
               userId={user.id}
-              defaultPrompt="generate cover image which can go with this article in the substack newsletter"
+              defaultPrompt={`generate cover image which can go with this article in the substack newsletter\n\nArticle text:\n${markdownContent}`}
             />
           )}
 
