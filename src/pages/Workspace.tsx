@@ -778,7 +778,12 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-semibold text-lg truncate max-w-md">{projectTitle}</span>
+            <Input
+              value={projectTitle}
+              onChange={(e) => setProjectTitle(e.target.value)}
+              placeholder="Project title"
+              className="font-semibold text-lg max-w-md border-transparent hover:border-input focus-visible:border-input bg-transparent"
+            />
 
             <div className="flex items-center gap-3">
               <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
