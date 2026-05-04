@@ -340,6 +340,37 @@ export default function IntakePage() {
     }, 800);
   };
 
+  const handleGoToEditWithEmptyDraft = async () => {
+    if (!projectId) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in");
+        return;
+      }
+      const { data: maxV } = await supabase
+        .from("versions")
+        .select("version_number")
+        .eq("project_id", projectId)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextNumber = (maxV?.version_number || 0) + 1;
+      const { error } = await supabase.from("versions").insert({
+        project_id: projectId,
+        version_number: nextNumber,
+        title: "Initial Draft",
+        content: "",
+        created_by: user.id,
+      });
+      if (error) throw error;
+      navigate(`/workspace/${projectId}`);
+    } catch (err: any) {
+      console.error("Failed to create initial draft version:", err);
+      toast.error("Failed to create initial draft");
+    }
+  };
+
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
@@ -992,7 +1023,7 @@ Each reference text provided will come with explicit instructions and context. Y
 
             {draftMode === "ready" && (
               <div className="mt-4">
-                <Button onClick={() => navigate(`/workspace/${projectId}`)} className="gap-2">
+                <Button onClick={handleGoToEditWithEmptyDraft} className="gap-2">
                   Go to Edit and Refine
                   <ArrowRight className="h-4 w-4" />
                 </Button>
