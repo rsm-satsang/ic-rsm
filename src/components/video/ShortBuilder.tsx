@@ -50,6 +50,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     img.crossOrigin = "anonymous";
     img.src = logoUrl;
     img.onload = () => { logoImgRef.current = img; };
+    img.onerror = () => {
+      // fallback without CORS
+      const img2 = new Image();
+      img2.src = logoUrl;
+      img2.onload = () => { logoImgRef.current = img2; };
+    };
   }, []);
 
   // ---------- helpers ----------
