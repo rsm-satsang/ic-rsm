@@ -90,6 +90,26 @@ export default function VideoIntakePage() {
     if (projectId && usedModel) localStorage.setItem(`draft_model_${projectId}`, usedModel);
   }, [projectId, usedModel]);
 
+  useEffect(() => {
+    if (projectId && shortMode) localStorage.setItem(`short_mode_${projectId}`, shortMode);
+  }, [projectId, shortMode]);
+
+  const handleAddYoutube = async () => {
+    if (!youtubeUrl.trim() || !projectId) return;
+    setAddingYoutube(true);
+    try {
+      await intakeAPI.addYouTubeLink({ project_id: projectId, youtube_url: youtubeUrl.trim() });
+      toast.success("YouTube video added");
+      setYoutubeUrl("");
+      invalidateJobs();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to add YouTube link");
+    } finally {
+      setAddingYoutube(false);
+    }
+  };
+
   // Autosave clips + source file id to project metadata
   useEffect(() => {
     if (!projectId || !clipsHydratedRef.current) return;
