@@ -541,26 +541,64 @@ export default function VideoIntakePage() {
 
             <Separator className="my-8" />
 
-            {/* Add References */}
+            {/* Choose short creation mode */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-2">Add References</h2>
-              <p className="text-sm text-muted-foreground mb-6">Select video files from the connected Google Drive to use as source material.</p>
-
-              <div className="pl-4 space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold">Add Files</h3>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setShowDrivePicker(true)}>
-                      <FileVideo className="mr-2 h-4 w-4" />
-                      Select from Google Drive
-                    </Button>
-                  </div>
-                  <Card className="p-6 border-dashed text-center text-sm text-muted-foreground">
-                    Click "Select from Google Drive" above to choose video files.
-                  </Card>
-                </div>
+              <h2 className="text-2xl font-bold mb-2">How do you want to create the short?</h2>
+              <p className="text-sm text-muted-foreground mb-6">Pick one option to continue.</p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card
+                  onClick={() => setShortMode("identify")}
+                  className={`p-5 cursor-pointer transition-all hover:border-primary ${shortMode === "identify" ? "border-primary ring-2 ring-primary/30" : ""}`}
+                >
+                  <h3 className="font-semibold mb-2">Identify candidate clips from a longer video</h3>
+                  <p className="text-sm text-muted-foreground">Upload a long video and let Gemini suggest short, hook-worthy clips.</p>
+                </Card>
+                <Card
+                  onClick={() => setShortMode("have_clip")}
+                  className={`p-5 cursor-pointer transition-all hover:border-primary ${shortMode === "have_clip" ? "border-primary ring-2 ring-primary/30" : ""}`}
+                >
+                  <h3 className="font-semibold mb-2">I already have the clip for the short</h3>
+                  <p className="text-sm text-muted-foreground">Upload your ready-to-use short clip directly.</p>
+                </Card>
               </div>
             </div>
+
+            {/* Upload sources (after mode selected) */}
+            {shortMode && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-2">
+                  {shortMode === "identify" ? "Upload your long video" : "Upload your short clip"}
+                </h2>
+                <p className="text-sm text-muted-foreground mb-6">Pick a source from Google Drive or paste a YouTube link.</p>
+
+                <div className="pl-4 space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold">Google Drive</h3>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowDrivePicker(true)}>
+                        <FileVideo className="mr-2 h-4 w-4" />
+                        Select from Google Drive
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">YouTube link</h3>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                        placeholder="https://youtube.com/watch?v=..."
+                        className="flex-1"
+                      />
+                      <Button onClick={handleAddYoutube} disabled={addingYoutube || !youtubeUrl.trim()}>
+                        {addingYoutube ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {totalJobs > 0 && (
