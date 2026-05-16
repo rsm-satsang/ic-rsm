@@ -227,18 +227,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       recorder.start(250);
 
-      // Title card phase - ensure logo loaded
-      setProgress("Rendering title card...");
       try { video.pause(); } catch {}
-      const logoWaitStart = performance.now();
-      while (!logoImgRef.current && performance.now() - logoWaitStart < 3000) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
-      const titleStart = performance.now();
-      while (performance.now() - titleStart < TITLE_CARD_DURATION_MS) {
-        drawTitleCard(ctx);
-        await new Promise((r) => setTimeout(r, 40));
-      }
+
 
       // Video phase
       setProgress("Recording video with captions...");
