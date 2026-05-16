@@ -166,7 +166,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
     // Top and bottom banners (same as video frames)
     drawTopBanner(ctx);
-    drawBottomBanner(ctx, "");
+    drawBottomBanner(ctx);
 
     // Middle area between banners
     const midY = TOP_BAND_H;
