@@ -338,8 +338,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-sm font-medium mb-1 block">Title (top banner & title card)</label>
+          <label className="text-sm font-medium mb-1 block">Title (top banner)</label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. SATSANG" />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Short name (title card & file name)</label>
+          <Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="Name of this YouTube Short" />
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">Subtitle</label>
