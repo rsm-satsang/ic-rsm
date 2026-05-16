@@ -633,7 +633,7 @@ export default function VideoIntakePage() {
               </div>
             )}
 
-            {totalJobs > 0 && (
+            {totalJobs > 0 && shortMode === "identify" && (
               <div className="mt-8 pt-6 border-t">
                 <Button onClick={handleIdentifyClips} disabled={identifying || referenceFiles.length === 0} size="lg" className="w-full">
                   {identifying ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Asking Gemini to watch your video and pick clips (this can take 1-2 minutes)...</>) : (<><Sparkles className="mr-2 h-5 w-5" />Identify clips and create short</>)}
