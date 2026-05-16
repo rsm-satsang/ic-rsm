@@ -29,7 +29,8 @@ const BOTTOM_BAND_H = 360;  // bottom banner (captions + presenter)
 const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
-  const [title, setTitle] = useState(defaultTitle || "SATSANG");
+  const [title, setTitle] = useState("SATSANG");
+  const [shortName, setShortName] = useState(defaultTitle || "");
   const [subtitle, setSubtitle] = useState("A Unique Guided Meditation Practice");
   const [presenter, setPresenter] = useState("Ramashram Satsang Mathura");
   const [presenterNote, setPresenterNote] = useState("Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
@@ -41,6 +42,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   const logoImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => setStitchedUrl(initialStitchedUrl || null), [initialStitchedUrl]);
+  useEffect(() => { if (defaultTitle) setShortName((prev) => prev || defaultTitle); }, [defaultTitle]);
 
   useEffect(() => {
     const img = new Image();
@@ -172,7 +174,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     ctx.textAlign = "center";
     const fs = 84;
     ctx.font = `bold ${fs}px Georgia, "Times New Roman", serif`;
-    const lines = wrapLines(ctx, title || "Your Short", textW);
+    const lines = wrapLines(ctx, shortName || title || "Your Short", textW);
     const lh = fs * 1.2;
     const totalH = lines.length * lh + (subtitle ? 60 : 0);
     let y = textTop + Math.max(0, (textAreaH - totalH) / 2);
@@ -336,8 +338,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-sm font-medium mb-1 block">Title (top banner & title card)</label>
+          <label className="text-sm font-medium mb-1 block">Title (top banner)</label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. SATSANG" />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Short name (title card & file name)</label>
+          <Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="Name of this YouTube Short" />
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">Subtitle</label>
@@ -367,7 +373,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           <div className="flex justify-center bg-black rounded-md">
             <video src={stitchedUrl} controls className="rounded-md max-h-[600px]" style={{ aspectRatio: "9/16" }} />
           </div>
-          <a href={stitchedUrl} download="youtube-short.webm" className="inline-block mt-3">
+          <a href={stitchedUrl} download={`${(shortName || "youtube-short").replace(/[^\w\-]+/g, "_")}.webm`} className="inline-block mt-3">
             <Button variant="outline"><Download className="mr-2 h-4 w-4" />Download (.webm)</Button>
           </a>
         </Card>
