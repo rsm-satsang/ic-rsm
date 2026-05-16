@@ -98,6 +98,60 @@ export default function VideoIntakePage() {
     if (projectId && shortMode) localStorage.setItem(`short_mode_${projectId}`, shortMode);
   }, [projectId, shortMode]);
 
+  // For "have_clip" mode: sign the first uploaded video reference for the ShortBuilder
+  useEffect(() => {
+    if (shortMode !== "have_clip") { setShortClipUrl(null); setShortClipFileId(null); return; }
+    const firstVideo = referenceFiles.find((f) => f.file_type === "video" && f.storage_path);
+    if (!firstVideo || !firstVideo.storage_path) { setShortClipUrl(null); setShortClipFileId(null); return; }
+    if (firstVideo.id === shortClipFileId && shortClipUrl) return;
+    let cancelled = false;
+    (async () => {
+      const { data: signed } = await supabase.storage
+        .from("project-references").createSignedUrl(firstVideo.storage_path!, 60 * 60 * 4);
+      if (cancelled) return;
+      if (signed?.signedUrl) {
+        setShortClipUrl(signed.signedUrl);
+        setShortClipFileId(firstVideo.id);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [shortMode, referenceFiles, shortClipFileId, shortClipUrl]);
+
+  // Restore previously saved short (have_clip mode) from project metadata
+  useEffect(() => {
+    if (shortMode !== "have_clip" || !project) return;
+    const path = (project.metadata as any)?.short_clip?.stitched_path;
+    if (!path) return;
+    let cancelled = false;
+    (async () => {
+      const { data: signed } = await supabase.storage
+        .from("project-references").createSignedUrl(path, 60 * 60 * 4);
+      if (!cancelled && signed?.signedUrl) setShortStitchedUrl(signed.signedUrl);
+    })();
+    return () => { cancelled = true; };
+  }, [shortMode, project]);
+
+  const handleShortStitched = async (blob: Blob) => {
+    if (!projectId) return;
+    try {
+      const path = `${projectId}/short/short_${Date.now()}.webm`;
+      const { error: upErr } = await supabase.storage.from("project-references").upload(path, blob, {
+        contentType: blob.type || "video/webm", upsert: true,
+      });
+      if (upErr) throw upErr;
+      const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+      const meta = (cur?.metadata as any) || {};
+      await supabase.from("projects").update({
+        metadata: { ...meta, short_clip: { ...(meta.short_clip || {}), stitched_path: path } },
+        updated_at: new Date().toISOString(),
+      }).eq("id", projectId);
+      toast.success("Short saved to project");
+    } catch (e) {
+      console.error("Failed to save short:", e);
+      toast.error("Short saved locally but couldn't sync to project");
+    }
+  };
+
   const handleAddYoutube = async () => {
     if (!youtubeUrl.trim() || !projectId) return;
     setAddingYoutube(true);
