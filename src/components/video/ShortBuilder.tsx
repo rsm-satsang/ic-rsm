@@ -25,7 +25,8 @@ interface Props {
 const OUT_W = 1080;
 const OUT_H = 1920;
 const TOP_BAND_H = 240;     // top banner height
-const BOTTOM_BAND_H = 360;  // bottom banner (captions + presenter)
+const BOTTOM_BAND_H = 280;  // bottom banner (presenter only)
+const CAPTION_AREA_H = 240; // white strip above bottom banner for captions
 const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
