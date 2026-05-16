@@ -42,6 +42,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   const logoImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => setStitchedUrl(initialStitchedUrl || null), [initialStitchedUrl]);
+  useEffect(() => { if (defaultTitle) setShortName((prev) => prev || defaultTitle); }, [defaultTitle]);
 
   useEffect(() => {
     const img = new Image();
