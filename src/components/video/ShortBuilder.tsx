@@ -202,7 +202,10 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       canvas.height = OUT_H;
       const ctx = canvas.getContext("2d")!;
 
-      drawTitleCard(ctx);
+      drawTopBanner(ctx);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, TOP_BAND_H, OUT_W, OUT_H - TOP_BAND_H - BOTTOM_BAND_H);
+      drawBottomBanner(ctx);
 
       const v: any = video;
       let sourceStream: MediaStream | null = null;
