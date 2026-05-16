@@ -711,6 +711,22 @@ export default function VideoIntakePage() {
                 <VideoClipsList videoUrl={sourceVideoUrl} clips={clips} onChange={setClips} onStitched={handleStitched} initialStitchedUrl={stitchedVideoUrl} />
               </div>
             )}
+
+            {shortMode === "have_clip" && shortClipUrl && shortClipFileId && (
+              <div className="mt-8 pt-6 border-t">
+                <h2 className="text-xl font-semibold mb-1">Create your YouTube Short</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  We'll add a branded title image at the start and burn in captions throughout your clip.
+                </p>
+                <ShortBuilder
+                  referenceFileId={shortClipFileId}
+                  videoUrl={shortClipUrl}
+                  defaultTitle={projectTitle}
+                  onStitched={handleShortStitched}
+                  initialStitchedUrl={shortStitchedUrl}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
