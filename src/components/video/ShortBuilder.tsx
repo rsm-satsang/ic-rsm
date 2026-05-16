@@ -297,7 +297,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           drawVideoFrame(ctx, video);
           const t = video.currentTime;
           const seg = segs.find((s) => t >= s.start_seconds && t <= s.end_seconds);
-          drawBottomBanner(ctx, seg?.text || "");
+          drawCaption(ctx, seg?.text || "");
+          drawBottomBanner(ctx);
         } catch {}
         requestAnimationFrame(loop);
       };
