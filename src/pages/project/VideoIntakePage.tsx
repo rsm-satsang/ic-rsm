@@ -53,6 +53,13 @@ export default function VideoIntakePage() {
   const [showAddTheme, setShowAddTheme] = useState(false);
   const [newThemeName, setNewThemeName] = useState("");
   const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [shortMode, setShortMode] = useState<"identify" | "have_clip" | null>(() => {
+    if (!projectId) return null;
+    const v = localStorage.getItem(`short_mode_${projectId}`);
+    return v === "identify" || v === "have_clip" ? v : null;
+  });
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [addingYoutube, setAddingYoutube] = useState(false);
   const [usedModel, setUsedModel] = useState<string | null>(() => projectId ? localStorage.getItem(`draft_model_${projectId}`) : null);
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [identifying, setIdentifying] = useState(false);
