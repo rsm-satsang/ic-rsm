@@ -97,12 +97,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     ctx.textBaseline = "alphabetic";
 
     // Caption area (upper part of bottom band) - styled like top banner text
-    const capFont = 58;
+    const capFont = 72;
     ctx.font = `bold ${capFont}px Georgia, "Times New Roman", serif`;
     const cleanCaption = (captionText || "").replace(/\s+/g, " ").trim();
-    const lines = cleanCaption ? wrapLines(ctx, cleanCaption, OUT_W * 0.9) : [];
+    const lines = cleanCaption ? wrapLines(ctx, cleanCaption, OUT_W * 0.92) : [];
     ctx.fillStyle = "#0b3b6f";
-    const capStartY = y0 + 80;
+    const capStartY = y0 + 95;
     lines.slice(0, 3).forEach((l, i) => ctx.fillText(l.trim(), OUT_W / 2, capStartY + i * (capFont * 1.2)));
 
     // Presenter block (bottom of bottom band)
