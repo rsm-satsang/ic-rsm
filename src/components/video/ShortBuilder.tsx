@@ -129,12 +129,11 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
     const vW = video.videoWidth || 1280;
     const vH = video.videoHeight || 720;
-    // cover: fill entire middle area, cropping overflow
-    const scale = Math.max(OUT_W / vW, midH / vH);
-    const drawW = vW * scale;
-    const drawH = vH * scale;
-    const dx = (OUT_W - drawW) / 2;
-    const dy = TOP_BAND_H + (midH - drawH) / 2;
+    // stretch to fill middle area completely (no cropping, no black bars)
+    const dx = 0;
+    const dy = TOP_BAND_H;
+    const drawW = OUT_W;
+    const drawH = midH;
     try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
   };
 
