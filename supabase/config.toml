@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.identify-video-clips]
 verify_jwt = true
+
+[functions.transcribe-video-captions]
+verify_jwt = true
