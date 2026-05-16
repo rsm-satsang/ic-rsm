@@ -129,8 +129,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
     const vW = video.videoWidth || 1280;
     const vH = video.videoHeight || 720;
-    // contain
-    const scale = Math.min(OUT_W / vW, midH / vH);
+    // cover: fill entire middle area, cropping overflow
+    const scale = Math.max(OUT_W / vW, midH / vH);
     const drawW = vW * scale;
     const drawH = vH * scale;
     const dx = (OUT_W - drawW) / 2;
