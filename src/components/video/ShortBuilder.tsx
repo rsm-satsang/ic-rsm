@@ -21,10 +21,18 @@ interface Props {
   initialStitchedUrl?: string | null;
 }
 
-const TITLE_CARD_DURATION_MS = 2000;
+// 9:16 portrait canvas (YouTube Shorts standard)
+const OUT_W = 1080;
+const OUT_H = 1920;
+const TOP_BAND_H = 240;     // top banner height
+const BOTTOM_BAND_H = 360;  // bottom banner (captions + presenter)
+const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
   const [title, setTitle] = useState(defaultTitle);
+  const [subtitle, setSubtitle] = useState("A Unique Guided Meditation Practice");
+  const [presenter, setPresenter] = useState("Ramashram Satsang Mathura");
+  const [presenterNote, setPresenterNote] = useState("Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [segments, setSegments] = useState<CaptionSegment[] | null>(null);
@@ -41,87 +49,133 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     img.onload = () => { logoImgRef.current = img; };
   }, []);
 
-  const drawTitleCard = (ctx: CanvasRenderingContext2D, w: number, h: number, t: string) => {
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, "#0b1d3a");
-    grad.addColorStop(1, "#1e3a8a");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    const logo = logoImgRef.current;
-    const pad = Math.round(Math.min(w, h) * 0.06);
-    const logoSize = Math.round(Math.min(w, h) * 0.35);
-    if (logo && logo.complete) {
-      ctx.drawImage(logo, pad, (h - logoSize) / 2, logoSize, logoSize);
-    }
-
-    const textX = pad * 2 + logoSize;
-    const textW = w - textX - pad;
-    ctx.fillStyle = "#ffffff";
-    const fontSize = Math.max(28, Math.round(h * 0.07));
-    ctx.font = `bold ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-    ctx.textBaseline = "middle";
-
-    const words = (t || "").split(/\s+/);
+  // ---------- helpers ----------
+  const wrapLines = (ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] => {
+    const words = (text || "").split(/\s+/).filter(Boolean);
     const lines: string[] = [];
     let line = "";
-    for (const word of words) {
-      const test = line ? line + " " + word : word;
-      if (ctx.measureText(test).width > textW && line) { lines.push(line); line = word; }
-      else line = test;
+    for (const w of words) {
+      const t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+      else line = t;
     }
     if (line) lines.push(line);
-
-    const lineHeight = fontSize * 1.2;
-    const totalH = lines.length * lineHeight;
-    let y = h / 2 - totalH / 2 + lineHeight / 2;
-    for (const l of lines) { ctx.fillText(l, textX, y); y += lineHeight; }
+    return lines;
   };
 
-  const drawCaption = (ctx: CanvasRenderingContext2D, w: number, h: number, text: string) => {
-    if (!text) return;
-    const fontSize = Math.max(22, Math.round(h * 0.045));
-    ctx.font = `bold ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
-    ctx.textBaseline = "alphabetic";
+  const drawBandBackground = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => {
+    const g = ctx.createLinearGradient(x, y, x + w, y);
+    g.addColorStop(0, "#b8dff0");
+    g.addColorStop(0.5, "#d9ecf6");
+    g.addColorStop(1, "#b8dff0");
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+  };
+
+  const drawTopBanner = (ctx: CanvasRenderingContext2D) => {
+    drawBandBackground(ctx, 0, 0, OUT_W, TOP_BAND_H);
     ctx.textAlign = "center";
-
-    // Word-wrap to ~80% width
-    const maxW = w * 0.8;
-    const words = text.split(/\s+/);
-    const lines: string[] = [];
-    let line = "";
-    for (const word of words) {
-      const test = line ? line + " " + word : word;
-      if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = word; }
-      else line = test;
+    ctx.textBaseline = "alphabetic";
+    // Title
+    ctx.fillStyle = "#0b3b6f";
+    ctx.font = `bold 96px Georgia, "Times New Roman", serif`;
+    const titleText = (title || "").toUpperCase();
+    ctx.fillText(titleText, OUT_W / 2, 110);
+    // Subtitle
+    if (subtitle) {
+      ctx.fillStyle = "#0d2a4a";
+      ctx.font = `42px Georgia, "Times New Roman", serif`;
+      ctx.fillText(subtitle, OUT_W / 2, 180);
     }
-    if (line) lines.push(line);
-
-    const lineHeight = fontSize * 1.25;
-    const padX = Math.round(fontSize * 0.6);
-    const padY = Math.round(fontSize * 0.35);
-    const totalH = lines.length * lineHeight;
-    const bottomMargin = Math.round(h * 0.08);
-    const blockTop = h - bottomMargin - totalH - padY;
-
-    // Background bar(s)
-    ctx.fillStyle = "rgba(0,0,0,0.65)";
-    lines.forEach((l, i) => {
-      const tw = ctx.measureText(l).width;
-      const bx = (w - tw) / 2 - padX;
-      const by = blockTop + i * lineHeight - padY / 2;
-      ctx.fillRect(bx, by, tw + padX * 2, lineHeight + padY);
-    });
-
-    // Text
-    ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "rgba(0,0,0,0.9)";
-    ctx.shadowBlur = 6;
-    lines.forEach((l, i) => {
-      ctx.fillText(l, w / 2, blockTop + i * lineHeight + fontSize);
-    });
-    ctx.shadowBlur = 0;
     ctx.textAlign = "left";
+  };
+
+  const drawBottomBanner = (ctx: CanvasRenderingContext2D, captionText: string) => {
+    const y0 = OUT_H - BOTTOM_BAND_H;
+    drawBandBackground(ctx, 0, y0, OUT_W, BOTTOM_BAND_H);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+
+    // Caption area (upper part of bottom band) - styled like top banner text
+    const capFont = 46;
+    ctx.font = `bold ${capFont}px Georgia, "Times New Roman", serif`;
+    const lines = captionText ? wrapLines(ctx, captionText, OUT_W * 0.9) : [];
+    ctx.fillStyle = "#0b3b6f";
+    const capStartY = y0 + 70;
+    lines.slice(0, 3).forEach((l, i) => ctx.fillText(l, OUT_W / 2, capStartY + i * (capFont * 1.2)));
+
+    // Presenter block (bottom of bottom band)
+    if (presenter) {
+      ctx.fillStyle = "#1a1a1a";
+      ctx.font = `36px Georgia, "Times New Roman", serif`;
+      ctx.fillText("Presented By", OUT_W / 2, y0 + BOTTOM_BAND_H - 130);
+      ctx.fillStyle = "#0b3b6f";
+      ctx.font = `bold 52px Georgia, "Times New Roman", serif`;
+      ctx.fillText(presenter, OUT_W / 2, y0 + BOTTOM_BAND_H - 75);
+    }
+    if (presenterNote) {
+      ctx.fillStyle = "#1a1a1a";
+      ctx.font = `28px Georgia, "Times New Roman", serif`;
+      ctx.fillText(presenterNote, OUT_W / 2, y0 + BOTTOM_BAND_H - 25);
+    }
+    ctx.textAlign = "left";
+  };
+
+  const drawVideoFrame = (ctx: CanvasRenderingContext2D, video: HTMLVideoElement) => {
+    // Black background for middle area
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, TOP_BAND_H, OUT_W, OUT_H - TOP_BAND_H - BOTTOM_BAND_H);
+
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    const vW = video.videoWidth || 1280;
+    const vH = video.videoHeight || 720;
+    // contain
+    const scale = Math.min(OUT_W / vW, midH / vH);
+    const drawW = vW * scale;
+    const drawH = vH * scale;
+    const dx = (OUT_W - drawW) / 2;
+    const dy = TOP_BAND_H + (midH - drawH) / 2;
+    try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
+  };
+
+  const drawTitleCard = (ctx: CanvasRenderingContext2D) => {
+    // Full-screen gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, OUT_H);
+    grad.addColorStop(0, "#d9ecf6");
+    grad.addColorStop(1, "#b8dff0");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, OUT_W, OUT_H);
+
+    const centerY = OUT_H / 2;
+    const logo = logoImgRef.current;
+    const logoSize = 380;
+    const gap = 60;
+
+    // Logo on LEFT
+    const logoX = 80;
+    const logoY = centerY - logoSize / 2;
+    if (logo && logo.complete) {
+      ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+    }
+
+    // Title on RIGHT
+    const textX = logoX + logoSize + gap;
+    const textW = OUT_W - textX - 60;
+    ctx.fillStyle = "#0b3b6f";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    const fs = 72;
+    ctx.font = `bold ${fs}px Georgia, "Times New Roman", serif`;
+    const lines = wrapLines(ctx, title || "Your Short", textW);
+    const lh = fs * 1.2;
+    let y = centerY - (lines.length * lh) / 2 + lh / 2;
+    for (const l of lines) { ctx.fillText(l, textX, y); y += lh; }
+
+    if (subtitle) {
+      ctx.fillStyle = "#0d2a4a";
+      ctx.font = `36px Georgia, "Times New Roman", serif`;
+      ctx.fillText(subtitle, textX, y + 10);
+    }
   };
 
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
@@ -149,7 +203,6 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       const video = sourceVideoRef.current;
       video.muted = true;
-      video.volume = 1.0;
 
       if (video.readyState < 2) {
         await new Promise<void>((res, rej) => {
@@ -162,15 +215,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
         });
       }
 
-      const W = video.videoWidth || 1280;
-      const H = video.videoHeight || 720;
       const canvas = document.createElement("canvas");
-      canvas.width = W;
-      canvas.height = H;
+      canvas.width = OUT_W;
+      canvas.height = OUT_H;
       const ctx = canvas.getContext("2d")!;
 
-      // Initial frame so captureStream has content
-      drawTitleCard(ctx, W, H, title || "Your Short");
+      drawTitleCard(ctx);
 
       const v: any = video;
       let sourceStream: MediaStream | null = null;
@@ -185,7 +235,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       const mimeCandidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
       const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
-      const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 4_000_000 });
+      const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 6_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
       const stopped = new Promise<void>((res) => { recorder.onstop = () => res(); });
@@ -197,11 +247,11 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       try { video.pause(); } catch {}
       const titleStart = performance.now();
       while (performance.now() - titleStart < TITLE_CARD_DURATION_MS) {
-        drawTitleCard(ctx, W, H, title || "Your Short");
+        drawTitleCard(ctx);
         await new Promise((r) => setTimeout(r, 40));
       }
 
-      // Video phase with captions
+      // Video phase
       setProgress("Recording video with captions...");
       await new Promise<void>((res) => {
         const onSeeked = () => { video.removeEventListener("seeked", onSeeked); res(); };
@@ -213,10 +263,11 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       const loop = () => {
         if (!drawing) return;
         try {
-          ctx.drawImage(video, 0, 0, W, H);
+          drawTopBanner(ctx);
+          drawVideoFrame(ctx, video);
           const t = video.currentTime;
           const seg = segs.find((s) => t >= s.start_seconds && t <= s.end_seconds);
-          if (seg) drawCaption(ctx, W, H, seg.text);
+          drawBottomBanner(ctx, seg?.text || "");
         } catch {}
         requestAnimationFrame(loop);
       };
@@ -274,23 +325,39 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
         style={{ position: "fixed", left: -99999, top: 0, width: 2, height: 2, opacity: 0, pointerEvents: "none" }}
       />
 
-      <div>
-        <label className="text-sm font-medium mb-1 block">Title shown on the opening card</label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title for your Short" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm font-medium mb-1 block">Title (top banner & title card)</label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. SATSANG" />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Subtitle</label>
+          <Input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="A Unique Guided Meditation Practice" />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Presenter (bottom banner)</label>
+          <Input value={presenter} onChange={(e) => setPresenter(e.target.value)} placeholder="Ramashram Satsang Mathura" />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Presenter note</label>
+          <Input value={presenterNote} onChange={(e) => setPresenterNote(e.target.value)} placeholder="Founded in 1930 by ..." />
+        </div>
       </div>
 
       <Button onClick={buildShort} disabled={busy} size="lg" className="w-full">
         {busy ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />{progress || "Working..."}</>)
-              : (<><Sparkles className="mr-2 h-5 w-5" />Create YouTube Short (title + captions)</>)}
+              : (<><Sparkles className="mr-2 h-5 w-5" />Create YouTube Short (9:16 with banners + captions)</>)}
       </Button>
       <p className="text-xs text-muted-foreground text-center">
-        Adds a 2-second branded title card and burns in spoken captions throughout the clip. Please don't close this tab while it's working.
+        Output is 1080x1920 (9:16) with a branded title card, top title banner, and bottom caption + presenter banner on every frame.
       </p>
 
       {stitchedUrl && (
         <Card className="p-4 mt-4 border-primary">
-          <h3 className="font-semibold mb-3 flex items-center gap-2"><Play className="h-4 w-4" />Your YouTube Short</h3>
-          <video src={stitchedUrl} controls className="w-full rounded-md border bg-black max-h-[500px]" />
+          <h3 className="font-semibold mb-3 flex items-center gap-2"><Play className="h-4 w-4" />Your YouTube Short (9:16)</h3>
+          <div className="flex justify-center bg-black rounded-md">
+            <video src={stitchedUrl} controls className="rounded-md max-h-[600px]" style={{ aspectRatio: "9/16" }} />
+          </div>
           <a href={stitchedUrl} download="youtube-short.webm" className="inline-block mt-3">
             <Button variant="outline"><Download className="mr-2 h-4 w-4" />Download (.webm)</Button>
           </a>
