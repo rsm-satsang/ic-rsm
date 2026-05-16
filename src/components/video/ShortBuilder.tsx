@@ -29,7 +29,8 @@ const BOTTOM_BAND_H = 360;  // bottom banner (captions + presenter)
 const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
-  const [title, setTitle] = useState(defaultTitle || "SATSANG");
+  const [title, setTitle] = useState("SATSANG");
+  const [shortName, setShortName] = useState(defaultTitle || "");
   const [subtitle, setSubtitle] = useState("A Unique Guided Meditation Practice");
   const [presenter, setPresenter] = useState("Ramashram Satsang Mathura");
   const [presenterNote, setPresenterNote] = useState("Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
