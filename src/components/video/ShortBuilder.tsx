@@ -97,12 +97,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     ctx.textBaseline = "alphabetic";
 
     // Caption area (upper part of bottom band) - styled like top banner text
-    const capFont = 58;
+    const capFont = 72;
     ctx.font = `bold ${capFont}px Georgia, "Times New Roman", serif`;
     const cleanCaption = (captionText || "").replace(/\s+/g, " ").trim();
-    const lines = cleanCaption ? wrapLines(ctx, cleanCaption, OUT_W * 0.9) : [];
+    const lines = cleanCaption ? wrapLines(ctx, cleanCaption, OUT_W * 0.92) : [];
     ctx.fillStyle = "#0b3b6f";
-    const capStartY = y0 + 80;
+    const capStartY = y0 + 95;
     lines.slice(0, 3).forEach((l, i) => ctx.fillText(l.trim(), OUT_W / 2, capStartY + i * (capFont * 1.2)));
 
     // Presenter block (bottom of bottom band)
@@ -139,43 +139,52 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   };
 
   const drawTitleCard = (ctx: CanvasRenderingContext2D) => {
-    // Full-screen gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, OUT_H);
-    grad.addColorStop(0, "#d9ecf6");
-    grad.addColorStop(1, "#b8dff0");
-    ctx.fillStyle = grad;
+    // White background for middle area
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, OUT_W, OUT_H);
 
-    const centerY = OUT_H / 2;
-    const logo = logoImgRef.current;
-    const logoSize = 380;
-    const gap = 60;
+    // Top and bottom banners (same as video frames)
+    drawTopBanner(ctx);
+    drawBottomBanner(ctx, "");
 
-    // Logo on LEFT
-    const logoX = 80;
-    const logoY = centerY - logoSize / 2;
+    // Middle area between banners
+    const midY = TOP_BAND_H;
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+
+    const logo = logoImgRef.current;
+    const logoSize = Math.min(560, midH * 0.55);
+    const logoX = (OUT_W - logoSize) / 2;
+    const logoY = midY + midH * 0.08;
+
+    // Logo on UPPER side
     if (logo && logo.complete) {
       ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
     }
 
-    // Title on RIGHT
-    const textX = logoX + logoSize + gap;
-    const textW = OUT_W - textX - 60;
+    // Title on LOWER side
+    const textTop = logoY + logoSize + 40;
+    const textBottomLimit = midY + midH - 40;
+    const textAreaH = textBottomLimit - textTop;
+    const textW = OUT_W - 120;
+
     ctx.fillStyle = "#0b3b6f";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "left";
-    const fs = 72;
+    ctx.textBaseline = "top";
+    ctx.textAlign = "center";
+    const fs = 84;
     ctx.font = `bold ${fs}px Georgia, "Times New Roman", serif`;
     const lines = wrapLines(ctx, title || "Your Short", textW);
     const lh = fs * 1.2;
-    let y = centerY - (lines.length * lh) / 2 + lh / 2;
-    for (const l of lines) { ctx.fillText(l, textX, y); y += lh; }
+    const totalH = lines.length * lh + (subtitle ? 60 : 0);
+    let y = textTop + Math.max(0, (textAreaH - totalH) / 2);
+    for (const l of lines) { ctx.fillText(l, OUT_W / 2, y); y += lh; }
 
     if (subtitle) {
       ctx.fillStyle = "#0d2a4a";
-      ctx.font = `36px Georgia, "Times New Roman", serif`;
-      ctx.fillText(subtitle, textX, y + 10);
+      ctx.font = `40px Georgia, "Times New Roman", serif`;
+      ctx.fillText(subtitle, OUT_W / 2, y + 10);
     }
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
   };
 
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
