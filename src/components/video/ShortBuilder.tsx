@@ -174,7 +174,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     ctx.textAlign = "center";
     const fs = 84;
     ctx.font = `bold ${fs}px Georgia, "Times New Roman", serif`;
-    const lines = wrapLines(ctx, title || "Your Short", textW);
+    const lines = wrapLines(ctx, shortName || title || "Your Short", textW);
     const lh = fs * 1.2;
     const totalH = lines.length * lh + (subtitle ? 60 : 0);
     let y = textTop + Math.max(0, (textAreaH - totalH) / 2);
