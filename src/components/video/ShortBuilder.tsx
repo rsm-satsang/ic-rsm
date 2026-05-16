@@ -159,54 +159,6 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
   };
 
-  const drawTitleCard = (ctx: CanvasRenderingContext2D) => {
-    // White background for middle area
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, OUT_W, OUT_H);
-
-    // Top and bottom banners (same as video frames)
-    drawTopBanner(ctx);
-    drawBottomBanner(ctx);
-
-    // Middle area between banners
-    const midY = TOP_BAND_H;
-    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
-
-    const logo = logoImgRef.current;
-    const logoSize = Math.min(560, midH * 0.55);
-    const logoX = (OUT_W - logoSize) / 2;
-    const logoY = midY + midH * 0.08;
-
-    // Logo on UPPER side
-    if (logo && logo.complete) {
-      ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-    }
-
-    // Title on LOWER side
-    const textTop = logoY + logoSize + 40;
-    const textBottomLimit = midY + midH - 40;
-    const textAreaH = textBottomLimit - textTop;
-    const textW = OUT_W - 120;
-
-    ctx.fillStyle = "#0b3b6f";
-    ctx.textBaseline = "top";
-    ctx.textAlign = "center";
-    const fs = 84;
-    ctx.font = `bold ${fs}px Georgia, "Times New Roman", serif`;
-    const lines = wrapLines(ctx, shortName || title || "Your Short", textW);
-    const lh = fs * 1.2;
-    const totalH = lines.length * lh + (subtitle ? 60 : 0);
-    let y = textTop + Math.max(0, (textAreaH - totalH) / 2);
-    for (const l of lines) { ctx.fillText(l, OUT_W / 2, y); y += lh; }
-
-    if (subtitle) {
-      ctx.fillStyle = "#0d2a4a";
-      ctx.font = `40px Georgia, "Times New Roman", serif`;
-      ctx.fillText(subtitle, OUT_W / 2, y + 10);
-    }
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-  };
 
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
     if (segments) return segments;
@@ -250,7 +202,10 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       canvas.height = OUT_H;
       const ctx = canvas.getContext("2d")!;
 
-      drawTitleCard(ctx);
+      drawTopBanner(ctx);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, TOP_BAND_H, OUT_W, OUT_H - TOP_BAND_H - BOTTOM_BAND_H);
+      drawBottomBanner(ctx);
 
       const v: any = video;
       let sourceStream: MediaStream | null = null;
@@ -272,18 +227,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       recorder.start(250);
 
-      // Title card phase - ensure logo loaded
-      setProgress("Rendering title card...");
       try { video.pause(); } catch {}
-      const logoWaitStart = performance.now();
-      while (!logoImgRef.current && performance.now() - logoWaitStart < 3000) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
-      const titleStart = performance.now();
-      while (performance.now() - titleStart < TITLE_CARD_DURATION_MS) {
-        drawTitleCard(ctx);
-        await new Promise((r) => setTimeout(r, 40));
-      }
+
 
       // Video phase
       setProgress("Recording video with captions...");
