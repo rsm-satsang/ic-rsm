@@ -68,6 +68,9 @@ export default function VideoIntakePage() {
   const [stitchedVideoUrl, setStitchedVideoUrl] = useState<string | null>(null);
   const [sourceVideoFileId, setSourceVideoFileId] = useState<string | null>(null);
   const clipsHydratedRef = useRef(false);
+  const [shortClipUrl, setShortClipUrl] = useState<string | null>(null);
+  const [shortClipFileId, setShortClipFileId] = useState<string | null>(null);
+  const [shortStitchedUrl, setShortStitchedUrl] = useState<string | null>(null);
 
   const {
     referenceFiles,
