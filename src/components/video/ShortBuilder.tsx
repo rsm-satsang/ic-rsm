@@ -25,7 +25,8 @@ interface Props {
 const OUT_W = 1080;
 const OUT_H = 1920;
 const TOP_BAND_H = 240;     // top banner height
-const BOTTOM_BAND_H = 360;  // bottom banner (captions + presenter)
+const BOTTOM_BAND_H = 280;  // bottom banner (presenter only)
+const CAPTION_AREA_H = 240; // white strip above bottom banner for captions
 const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
@@ -49,6 +50,12 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     img.crossOrigin = "anonymous";
     img.src = logoUrl;
     img.onload = () => { logoImgRef.current = img; };
+    img.onerror = () => {
+      // fallback without CORS
+      const img2 = new Image();
+      img2.src = logoUrl;
+      img2.onload = () => { logoImgRef.current = img2; };
+    };
   }, []);
 
   // ---------- helpers ----------
@@ -92,51 +99,63 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     ctx.textAlign = "left";
   };
 
-  const drawBottomBanner = (ctx: CanvasRenderingContext2D, captionText: string) => {
+  const drawBottomBanner = (ctx: CanvasRenderingContext2D) => {
     const y0 = OUT_H - BOTTOM_BAND_H;
     drawBandBackground(ctx, 0, y0, OUT_W, BOTTOM_BAND_H);
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
 
-    // Caption area (upper part of bottom band) - styled like top banner text
-    const capFont = 72;
-    ctx.font = `bold ${capFont}px Georgia, "Times New Roman", serif`;
-    const cleanCaption = (captionText || "").replace(/\s+/g, " ").trim();
-    const lines = cleanCaption ? wrapLines(ctx, cleanCaption, OUT_W * 0.92) : [];
-    ctx.fillStyle = "#0b3b6f";
-    const capStartY = y0 + 95;
-    lines.slice(0, 3).forEach((l, i) => ctx.fillText(l.trim(), OUT_W / 2, capStartY + i * (capFont * 1.2)));
-
-    // Presenter block (bottom of bottom band)
     if (presenter) {
       ctx.fillStyle = "#1a1a1a";
       ctx.font = `36px Georgia, "Times New Roman", serif`;
-      ctx.fillText("Presented By", OUT_W / 2, y0 + BOTTOM_BAND_H - 130);
+      ctx.fillText("Presented By", OUT_W / 2, y0 + 70);
       ctx.fillStyle = "#0b3b6f";
-      ctx.font = `bold 52px Georgia, "Times New Roman", serif`;
-      ctx.fillText(presenter, OUT_W / 2, y0 + BOTTOM_BAND_H - 75);
+      ctx.font = `bold 56px Georgia, "Times New Roman", serif`;
+      ctx.fillText(presenter, OUT_W / 2, y0 + 140);
     }
     if (presenterNote) {
       ctx.fillStyle = "#1a1a1a";
-      ctx.font = `28px Georgia, "Times New Roman", serif`;
-      ctx.fillText(presenterNote, OUT_W / 2, y0 + BOTTOM_BAND_H - 25);
+      ctx.font = `30px Georgia, "Times New Roman", serif`;
+      ctx.fillText(presenterNote, OUT_W / 2, y0 + BOTTOM_BAND_H - 40);
     }
     ctx.textAlign = "left";
   };
 
+  const drawCaption = (ctx: CanvasRenderingContext2D, captionText: string) => {
+    // White strip just above the bottom banner
+    const y0 = OUT_H - BOTTOM_BAND_H - CAPTION_AREA_H;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, y0, OUT_W, CAPTION_AREA_H);
+
+    const cleanCaption = (captionText || "").replace(/\s+/g, " ").trim();
+    if (!cleanCaption) return;
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    const capFont = 68;
+    ctx.font = `bold ${capFont}px Georgia, "Times New Roman", serif`;
+    const lines = wrapLines(ctx, cleanCaption, OUT_W * 0.92).slice(0, 3);
+    ctx.fillStyle = "#0b3b6f";
+    const lh = capFont * 1.2;
+    const totalH = lines.length * lh;
+    let y = y0 + (CAPTION_AREA_H - totalH) / 2 + capFont;
+    for (const l of lines) { ctx.fillText(l, OUT_W / 2, y); y += lh; }
+    ctx.textAlign = "left";
+  };
+
   const drawVideoFrame = (ctx: CanvasRenderingContext2D, video: HTMLVideoElement) => {
-    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    const midY = TOP_BAND_H;
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H - CAPTION_AREA_H;
     // White background for middle area (fills any letterbox space)
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, TOP_BAND_H, OUT_W, midH);
+    ctx.fillRect(0, midY, OUT_W, midH);
 
     const vW = video.videoWidth || 1280;
     const vH = video.videoHeight || 720;
-    // Fit to full width, preserve aspect ratio, center vertically; extra space stays white
     const drawW = OUT_W;
     const drawH = vH * (OUT_W / vW);
     const dx = 0;
-    const dy = TOP_BAND_H + Math.max(0, (midH - drawH) / 2);
+    const dy = midY + Math.max(0, (midH - drawH) / 2);
     try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
   };
 
@@ -147,7 +166,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
     // Top and bottom banners (same as video frames)
     drawTopBanner(ctx);
-    drawBottomBanner(ctx, "");
+    drawBottomBanner(ctx);
 
     // Middle area between banners
     const midY = TOP_BAND_H;
@@ -253,9 +272,13 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       recorder.start(250);
 
-      // Title card phase
+      // Title card phase - ensure logo loaded
       setProgress("Rendering title card...");
       try { video.pause(); } catch {}
+      const logoWaitStart = performance.now();
+      while (!logoImgRef.current && performance.now() - logoWaitStart < 3000) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const titleStart = performance.now();
       while (performance.now() - titleStart < TITLE_CARD_DURATION_MS) {
         drawTitleCard(ctx);
@@ -278,7 +301,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           drawVideoFrame(ctx, video);
           const t = video.currentTime;
           const seg = segs.find((s) => t >= s.start_seconds && t <= s.end_seconds);
-          drawBottomBanner(ctx, seg?.text || "");
+          drawCaption(ctx, seg?.text || "");
+          drawBottomBanner(ctx);
         } catch {}
         requestAnimationFrame(loop);
       };
