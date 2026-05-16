@@ -29,7 +29,7 @@ const BOTTOM_BAND_H = 360;  // bottom banner (captions + presenter)
 const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
-  const [title, setTitle] = useState(defaultTitle);
+  const [title, setTitle] = useState(defaultTitle || "SATSANG");
   const [subtitle, setSubtitle] = useState("A Unique Guided Meditation Practice");
   const [presenter, setPresenter] = useState("Ramashram Satsang Mathura");
   const [presenterNote, setPresenterNote] = useState("Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
@@ -97,12 +97,13 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     ctx.textBaseline = "alphabetic";
 
     // Caption area (upper part of bottom band) - styled like top banner text
-    const capFont = 46;
+    const capFont = 58;
     ctx.font = `bold ${capFont}px Georgia, "Times New Roman", serif`;
-    const lines = captionText ? wrapLines(ctx, captionText, OUT_W * 0.9) : [];
+    const cleanCaption = (captionText || "").replace(/\s+/g, " ").trim();
+    const lines = cleanCaption ? wrapLines(ctx, cleanCaption, OUT_W * 0.9) : [];
     ctx.fillStyle = "#0b3b6f";
-    const capStartY = y0 + 70;
-    lines.slice(0, 3).forEach((l, i) => ctx.fillText(l, OUT_W / 2, capStartY + i * (capFont * 1.2)));
+    const capStartY = y0 + 80;
+    lines.slice(0, 3).forEach((l, i) => ctx.fillText(l.trim(), OUT_W / 2, capStartY + i * (capFont * 1.2)));
 
     // Presenter block (bottom of bottom band)
     if (presenter) {
@@ -122,18 +123,18 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   };
 
   const drawVideoFrame = (ctx: CanvasRenderingContext2D, video: HTMLVideoElement) => {
-    // Black background for middle area
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, TOP_BAND_H, OUT_W, OUT_H - TOP_BAND_H - BOTTOM_BAND_H);
-
     const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    // White background for middle area (fills any letterbox space)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, TOP_BAND_H, OUT_W, midH);
+
     const vW = video.videoWidth || 1280;
     const vH = video.videoHeight || 720;
-    // stretch to fill middle area completely (no cropping, no black bars)
-    const dx = 0;
-    const dy = TOP_BAND_H;
+    // Fit to full width, preserve aspect ratio, center vertically; extra space stays white
     const drawW = OUT_W;
-    const drawH = midH;
+    const drawH = vH * (OUT_W / vW);
+    const dx = 0;
+    const dy = TOP_BAND_H + Math.max(0, (midH - drawH) / 2);
     try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
   };
 
