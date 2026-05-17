@@ -442,11 +442,19 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       drawing = false;
       try { video.pause(); } catch {}
 
-      // End card phase: exactly 1 second, muted
+      // End card phase: exactly 1 second, muted. Keep redrawing so the
+      // canvas captureStream produces new frames for the recorder.
       setProgress("Rendering end card...");
       if (gainNode) gainNode.gain.value = 0;
-      drawEndCard(ctx);
+      let endDrawing = true;
+      const endLoop = () => {
+        if (!endDrawing) return;
+        drawEndCard(ctx);
+        requestAnimationFrame(endLoop);
+      };
+      requestAnimationFrame(endLoop);
       await new Promise((res) => setTimeout(res, 1000));
+      endDrawing = false;
 
       setProgress("Finalizing...");
       recorder.stop();
