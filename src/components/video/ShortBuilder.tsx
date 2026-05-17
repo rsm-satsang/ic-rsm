@@ -216,6 +216,57 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   };
 
 
+  const drawEndCard = (ctx: CanvasRenderingContext2D) => {
+    // White full background, with banners on top/bottom for consistency
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, OUT_W, OUT_H);
+    drawTopBanner(ctx);
+    drawBottomBanner(ctx);
+
+    const midY = TOP_BAND_H;
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    const logo = logoImgRef.current;
+
+    // Logo (upper portion)
+    if (logo && logo.width > 0) {
+      const maxW = OUT_W * 0.55;
+      const maxH = midH * 0.38;
+      const ratio = Math.min(maxW / logo.width, maxH / logo.height);
+      const lw = logo.width * ratio;
+      const lh = logo.height * ratio;
+      const lx = (OUT_W - lw) / 2;
+      const ly = midY + midH * 0.04;
+      try { ctx.drawImage(logo, lx, ly, lw, lh); } catch {}
+    }
+
+    // Text block (lower portion)
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#0b3b6f";
+
+    const labelFont = 40;
+    const urlFont = 34;
+    const blockTop = midY + midH * 0.48;
+    let y = blockTop;
+
+    const drawLabelUrl = (label: string, url: string) => {
+      ctx.font = `bold ${labelFont}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = "#0b3b6f";
+      const labelLines = wrapLines(ctx, label, OUT_W * 0.9);
+      for (const l of labelLines) { ctx.fillText(l, OUT_W / 2, y); y += labelFont * 1.2; }
+      ctx.font = `${urlFont}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = "#1a4a8a";
+      const urlLines = wrapLines(ctx, url, OUT_W * 0.92);
+      for (const l of urlLines) { ctx.fillText(l, OUT_W / 2, y); y += urlFont * 1.25; }
+      y += 24;
+    };
+
+    drawLabelUrl("Online meditation sessions:", "https://ramashram.org/an-orientation-");
+    drawLabelUrl("In-person Meditation Sessions:", "https://ramashram.org/satsang-calender/");
+
+    ctx.textAlign = "left";
+  };
+
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
     if (segments) return segments;
     setProgress("Transcribing captions with Gemini (this can take 1-2 minutes)...");
@@ -225,7 +276,9 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     const segs = (data?.segments || []) as CaptionSegment[];
+    const fillers = (data?.filler_ranges || []) as FillerRange[];
     setSegments(segs);
+    setFillerRanges(fillers);
     return segs;
   };
 
