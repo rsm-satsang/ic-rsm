@@ -759,6 +759,8 @@ export default function VideoIntakePage() {
                   defaultTitle={projectTitle}
                   onStitched={handleShortStitched}
                   initialStitchedUrl={shortStitchedUrl}
+                  initialBranding={shortBranding}
+                  onBrandingChange={handleBrandingChange}
                 />
               </div>
             )}
