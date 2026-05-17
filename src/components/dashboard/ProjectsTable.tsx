@@ -233,7 +233,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   };
 
   const handleOpenProject = (project: Project) => {
-    navigate(`/workspace/${project.id}`);
+    if ((project as any).type === "video") {
+      navigate(`/project/${project.id}/video-intake`);
+    } else {
+      navigate(`/workspace/${project.id}`);
+    }
   };
 
   const handleDeleteProject = async () => {

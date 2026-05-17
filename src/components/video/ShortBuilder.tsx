@@ -39,6 +39,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   const [progress, setProgress] = useState("");
   const [segments, setSegments] = useState<CaptionSegment[] | null>(null);
   const [stitchedUrl, setStitchedUrl] = useState<string | null>(initialStitchedUrl || null);
+  const [stitchedExt, setStitchedExt] = useState<"mp4" | "webm">("webm");
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const logoImgRef = useRef<HTMLImageElement | null>(null);
 
@@ -159,6 +160,48 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
   };
 
+  const drawTitleCard = (ctx: CanvasRenderingContext2D) => {
+    // White full background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, OUT_W, OUT_H);
+    drawTopBanner(ctx);
+    drawBottomBanner(ctx);
+
+    const midY = TOP_BAND_H;
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    const logo = logoImgRef.current;
+
+    // Draw Srijan logo (upper portion of middle area)
+    if (logo && logo.width > 0) {
+      const maxW = OUT_W * 0.7;
+      const maxH = midH * 0.55;
+      const ratio = Math.min(maxW / logo.width, maxH / logo.height);
+      const lw = logo.width * ratio;
+      const lh = logo.height * ratio;
+      const lx = (OUT_W - lw) / 2;
+      const ly = midY + midH * 0.08;
+      try { ctx.drawImage(logo, lx, ly, lw, lh); } catch {}
+    }
+
+    // Short name (lower portion of middle area, bold)
+    const name = (shortName || title || "").trim();
+    if (name) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      const fontSize = 78;
+      ctx.font = `bold ${fontSize}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = "#0b3b6f";
+      const lines = wrapLines(ctx, name, OUT_W * 0.88).slice(0, 3);
+      const lh = fontSize * 1.2;
+      const blockH = lines.length * lh;
+      const areaTop = midY + midH * 0.68;
+      const areaH = midH * 0.3;
+      let y = areaTop + (areaH - blockH) / 2 + fontSize;
+      for (const l of lines) { ctx.fillText(l, OUT_W / 2, y); y += lh; }
+      ctx.textAlign = "left";
+    }
+  };
+
 
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
     if (segments) return segments;
@@ -218,8 +261,16 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
         }
       }
 
-      const mimeCandidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+      const mimeCandidates = [
+        "video/mp4;codecs=h264,aac",
+        "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+        "video/mp4",
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ];
       const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
+      const isMp4 = mimeType.startsWith("video/mp4");
       const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 6_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
@@ -229,6 +280,10 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       try { video.pause(); } catch {}
 
+      // Title card phase (1s)
+      setProgress("Rendering title card...");
+      drawTitleCard(ctx);
+      await new Promise((res) => setTimeout(res, 1000));
 
       // Video phase
       setProgress("Recording video with captions...");
@@ -281,6 +336,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       await stopped;
 
       const blob = new Blob(chunks, { type: mimeType });
+      setStitchedExt(isMp4 ? "mp4" : "webm");
       const url = URL.createObjectURL(blob);
       setStitchedUrl(url);
       onStitched?.(blob);
@@ -342,8 +398,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           <div className="flex justify-center bg-black rounded-md">
             <video src={stitchedUrl} controls className="rounded-md max-h-[600px]" style={{ aspectRatio: "9/16" }} />
           </div>
-          <a href={stitchedUrl} download={`${(shortName || "youtube-short").replace(/[^\w\-]+/g, "_")}.webm`} className="inline-block mt-3">
-            <Button variant="outline"><Download className="mr-2 h-4 w-4" />Download (.webm)</Button>
+          <a href={stitchedUrl} download={`${(shortName || "youtube-short").replace(/[^\w\-]+/g, "_")}.${stitchedExt}`} className="inline-block mt-3">
+            <Button variant="outline"><Download className="mr-2 h-4 w-4" />Download (.{stitchedExt})</Button>
           </a>
         </Card>
       )}
