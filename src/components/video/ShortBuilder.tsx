@@ -31,12 +31,12 @@ const BOTTOM_BAND_H = 280;  // bottom banner (presenter only)
 const CAPTION_AREA_H = 240; // white strip above bottom banner for captions
 const TITLE_CARD_DURATION_MS = 2500;
 
-export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl }: Props) {
-  const [title, setTitle] = useState("SATSANG");
-  const [shortName, setShortName] = useState(defaultTitle || "");
-  const [subtitle, setSubtitle] = useState("A Unique Guided Meditation Practice");
-  const [presenter, setPresenter] = useState("Ramashram Satsang Mathura");
-  const [presenterNote, setPresenterNote] = useState("Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
+export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl, initialBranding, onBrandingChange }: Props) {
+  const [title, setTitle] = useState(initialBranding?.title ?? "SATSANG");
+  const [shortName, setShortName] = useState(initialBranding?.shortName ?? (defaultTitle || ""));
+  const [subtitle, setSubtitle] = useState(initialBranding?.subtitle ?? "A Unique Guided Meditation Practice");
+  const [presenter, setPresenter] = useState(initialBranding?.presenter ?? "Ramashram Satsang Mathura");
+  const [presenterNote, setPresenterNote] = useState(initialBranding?.presenterNote ?? "Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [segments, setSegments] = useState<CaptionSegment[] | null>(null);
