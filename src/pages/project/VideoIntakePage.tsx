@@ -71,6 +71,8 @@ export default function VideoIntakePage() {
   const [shortClipUrl, setShortClipUrl] = useState<string | null>(null);
   const [shortClipFileId, setShortClipFileId] = useState<string | null>(null);
   const [shortStitchedUrl, setShortStitchedUrl] = useState<string | null>(null);
+  const [shortBranding, setShortBranding] = useState<Record<string, string> | null>(null);
+  const brandingSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     referenceFiles,
