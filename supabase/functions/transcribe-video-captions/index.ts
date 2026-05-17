@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
             responseSchema: {
               type: "OBJECT",
               properties: {
-                segments: {
+              segments: {
                   type: "ARRAY",
                   items: {
                     type: "OBJECT",
@@ -136,6 +136,17 @@ Deno.serve(async (req) => {
                       text: { type: "STRING" },
                     },
                     required: ["start_seconds", "end_seconds", "text"],
+                  },
+                },
+                filler_ranges: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      start_seconds: { type: "NUMBER" },
+                      end_seconds: { type: "NUMBER" },
+                    },
+                    required: ["start_seconds", "end_seconds"],
                   },
                 },
               },
@@ -157,9 +168,14 @@ Deno.serve(async (req) => {
       .filter((s: any) => typeof s?.start_seconds === "number" && typeof s?.end_seconds === "number" && s.end_seconds > s.start_seconds && typeof s.text === "string")
       .map((s: any) => ({ start_seconds: Number(s.start_seconds), end_seconds: Number(s.end_seconds), text: String(s.text).trim() }));
 
+    const filler_ranges = (Array.isArray(parsed?.filler_ranges) ? parsed.filler_ranges : [])
+      .filter((r: any) => typeof r?.start_seconds === "number" && typeof r?.end_seconds === "number" && r.end_seconds > r.start_seconds)
+      .map((r: any) => ({ start_seconds: Number(r.start_seconds), end_seconds: Number(r.end_seconds) }))
+      .sort((a: any, b: any) => a.start_seconds - b.start_seconds);
+
     fetch(`${GEMINI_FILES_BASE}/${fileName.replace("files/", "")}?key=${GEMINI_API_KEY}`, { method: "DELETE" }).catch(() => {});
 
-    return new Response(JSON.stringify({ success: true, segments }), {
+    return new Response(JSON.stringify({ success: true, segments, filler_ranges }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
