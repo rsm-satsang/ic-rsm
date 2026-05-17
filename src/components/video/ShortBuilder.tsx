@@ -49,6 +49,11 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   useEffect(() => { if (defaultTitle) setShortName((prev) => prev || defaultTitle); }, [defaultTitle]);
 
   useEffect(() => {
+    onBrandingChange?.({ title, shortName, subtitle, presenter, presenterNote });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, shortName, subtitle, presenter, presenterNote]);
+
+  useEffect(() => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = logoUrl;
