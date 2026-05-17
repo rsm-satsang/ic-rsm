@@ -22,6 +22,8 @@ Rules:
 - Each segment should be 1-4 seconds long and contain at most ~7 words.
 - Cover the full duration of the video; segments must be in order and not overlap.
 - Use the original spoken language. Do not translate.
+- IMPORTANT: Remove all conversational filler sounds and disfluencies such as "uh", "uhh", "um", "umm", "ah", "ahh", "er", "erm", "hmm", "huh", "mm", "mmm", "uh-huh", "uh-uhh", "you know", "like" (when used as filler), and any repeated stuttered words. Output only clean, readable speech.
+- If a segment would be empty after removing fillers, skip it entirely.
 - If no speech is present, return { "segments": [] }.`;
 
 async function pollFileUntilActive(fileName: string, apiKey: string, maxWaitMs = 120_000) {
