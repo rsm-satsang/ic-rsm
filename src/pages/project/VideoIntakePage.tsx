@@ -97,8 +97,37 @@ export default function VideoIntakePage() {
   }, [projectId, usedModel]);
 
   useEffect(() => {
-    if (projectId && shortMode) localStorage.setItem(`short_mode_${projectId}`, shortMode);
+    if (!projectId || !shortMode) return;
+    localStorage.setItem(`short_mode_${projectId}`, shortMode);
+    // Persist to DB so it survives across browsers
+    (async () => {
+      try {
+        const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+        const meta = (cur?.metadata as any) || {};
+        if (meta.short_mode === shortMode) return;
+        await supabase.from("projects").update({
+          metadata: { ...meta, short_mode: shortMode },
+          updated_at: new Date().toISOString(),
+        }).eq("id", projectId);
+      } catch (e) { console.error("save short_mode failed:", e); }
+    })();
   }, [projectId, shortMode]);
+
+  const handleBrandingChange = useCallback((branding: Record<string, string>) => {
+    setShortBranding(branding);
+    if (!projectId) return;
+    if (brandingSaveTimerRef.current) clearTimeout(brandingSaveTimerRef.current);
+    brandingSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const { data: cur } = await supabase.from("projects").select("metadata").eq("id", projectId).single();
+        const meta = (cur?.metadata as any) || {};
+        await supabase.from("projects").update({
+          metadata: { ...meta, short_clip: { ...(meta.short_clip || {}), branding } },
+          updated_at: new Date().toISOString(),
+        }).eq("id", projectId);
+      } catch (e) { console.error("save short branding failed:", e); }
+    }, 700);
+  }, [projectId]);
 
   // For "have_clip" mode: sign the first uploaded video reference for the ShortBuilder
   useEffect(() => {
