@@ -39,6 +39,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   const [progress, setProgress] = useState("");
   const [segments, setSegments] = useState<CaptionSegment[] | null>(null);
   const [stitchedUrl, setStitchedUrl] = useState<string | null>(initialStitchedUrl || null);
+  const [stitchedExt, setStitchedExt] = useState<"mp4" | "webm">("webm");
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const logoImgRef = useRef<HTMLImageElement | null>(null);
 
@@ -396,8 +397,8 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           <div className="flex justify-center bg-black rounded-md">
             <video src={stitchedUrl} controls className="rounded-md max-h-[600px]" style={{ aspectRatio: "9/16" }} />
           </div>
-          <a href={stitchedUrl} download={`${(shortName || "youtube-short").replace(/[^\w\-]+/g, "_")}.webm`} className="inline-block mt-3">
-            <Button variant="outline"><Download className="mr-2 h-4 w-4" />Download (.webm)</Button>
+          <a href={stitchedUrl} download={`${(shortName || "youtube-short").replace(/[^\w\-]+/g, "_")}.${stitchedExt}`} className="inline-block mt-3">
+            <Button variant="outline"><Download className="mr-2 h-4 w-4" />Download (.{stitchedExt})</Button>
           </a>
         </Card>
       )}
