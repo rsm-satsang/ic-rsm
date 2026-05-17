@@ -164,7 +164,25 @@ Deno.serve(async (req) => {
     if (!text) throw new Error("Gemini returned no content");
 
     let parsed: any;
-    try { parsed = JSON.parse(text); } catch { throw new Error(`Invalid JSON: ${text}`); }
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // Salvage from possibly-truncated JSON: extract valid segment objects via regex
+      const segRe = /\{\s*"start_seconds"\s*:\s*([\d.]+)\s*,\s*"end_seconds"\s*:\s*([\d.]+)\s*,\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+      const segs: any[] = [];
+      let m: RegExpExecArray | null;
+      while ((m = segRe.exec(text)) !== null) {
+        segs.push({ start_seconds: Number(m[1]), end_seconds: Number(m[2]), text: m[3] });
+      }
+      const fillRe = /\{\s*"start_seconds"\s*:\s*([\d.]+)\s*,\s*"end_seconds"\s*:\s*([\d.]+)\s*\}/g;
+      const fills: any[] = [];
+      while ((m = fillRe.exec(text)) !== null) {
+        fills.push({ start_seconds: Number(m[1]), end_seconds: Number(m[2]) });
+      }
+      const titleMatch = text.match(/"suggested_title"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      if (segs.length === 0) throw new Error(`Invalid JSON: ${text.slice(0, 500)}`);
+      parsed = { segments: segs, filler_ranges: fills, suggested_title: titleMatch?.[1] || "" };
+    }
 
     const segments = (Array.isArray(parsed?.segments) ? parsed.segments : [])
       .filter((s: any) => typeof s?.start_seconds === "number" && typeof s?.end_seconds === "number" && s.end_seconds > s.start_seconds && typeof s.text === "string")
@@ -175,9 +193,11 @@ Deno.serve(async (req) => {
       .map((r: any) => ({ start_seconds: Number(r.start_seconds), end_seconds: Number(r.end_seconds) }))
       .sort((a: any, b: any) => a.start_seconds - b.start_seconds);
 
+    const suggested_title = typeof parsed?.suggested_title === "string" ? parsed.suggested_title.trim() : "";
+
     fetch(`${GEMINI_FILES_BASE}/${fileName.replace("files/", "")}?key=${GEMINI_API_KEY}`, { method: "DELETE" }).catch(() => {});
 
-    return new Response(JSON.stringify({ success: true, segments, filler_ranges }), {
+    return new Response(JSON.stringify({ success: true, segments, filler_ranges, suggested_title }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
