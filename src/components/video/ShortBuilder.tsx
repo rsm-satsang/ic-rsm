@@ -159,6 +159,48 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     try { ctx.drawImage(video, dx, dy, drawW, drawH); } catch {}
   };
 
+  const drawTitleCard = (ctx: CanvasRenderingContext2D) => {
+    // White full background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, OUT_W, OUT_H);
+    drawTopBanner(ctx);
+    drawBottomBanner(ctx);
+
+    const midY = TOP_BAND_H;
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    const logo = logoImgRef.current;
+
+    // Draw Srijan logo (upper portion of middle area)
+    if (logo && logo.width > 0) {
+      const maxW = OUT_W * 0.7;
+      const maxH = midH * 0.55;
+      const ratio = Math.min(maxW / logo.width, maxH / logo.height);
+      const lw = logo.width * ratio;
+      const lh = logo.height * ratio;
+      const lx = (OUT_W - lw) / 2;
+      const ly = midY + midH * 0.08;
+      try { ctx.drawImage(logo, lx, ly, lw, lh); } catch {}
+    }
+
+    // Short name (lower portion of middle area, bold)
+    const name = (shortName || title || "").trim();
+    if (name) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      const fontSize = 78;
+      ctx.font = `bold ${fontSize}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = "#0b3b6f";
+      const lines = wrapLines(ctx, name, OUT_W * 0.88).slice(0, 3);
+      const lh = fontSize * 1.2;
+      const blockH = lines.length * lh;
+      const areaTop = midY + midH * 0.68;
+      const areaH = midH * 0.3;
+      let y = areaTop + (areaH - blockH) / 2 + fontSize;
+      for (const l of lines) { ctx.fillText(l, OUT_W / 2, y); y += lh; }
+      ctx.textAlign = "left";
+    }
+  };
+
 
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
     if (segments) return segments;
