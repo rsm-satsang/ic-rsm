@@ -9,10 +9,11 @@ const GEMINI_UPLOAD_BASE = "https://generativelanguage.googleapis.com/upload/v1b
 const GEMINI_FILES_BASE = "https://generativelanguage.googleapis.com/v1beta/files";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const PROMPT = `Transcribe the spoken audio in this video into short caption segments suitable for burned-in subtitles on a YouTube Short, AND identify every conversational filler sound with precise timestamps so they can be muted from the audio.
+const PROMPT = `Transcribe the spoken audio in this video into short caption segments suitable for burned-in subtitles on a YouTube Short, identify every conversational filler sound with precise timestamps so they can be muted from the audio, AND propose a punchy short title (max 8 words, Title Case, no quotes, no trailing punctuation) summarizing the core message of the clip — suitable as a YouTube Shorts title.
 
 Return ONLY valid JSON in this exact shape:
 {
+  "suggested_title": "Find Inner Peace Through Satsang",
   "segments": [
     { "start_seconds": 0.0, "end_seconds": 2.4, "text": "Short caption line" }
   ],
