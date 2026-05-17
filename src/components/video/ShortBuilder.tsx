@@ -38,20 +38,21 @@ const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl, initialBranding, onBrandingChange }: Props) {
   const [title, setTitle] = useState(initialBranding?.title ?? "SATSANG");
-  const [shortName, setShortName] = useState(initialBranding?.shortName ?? (defaultTitle || ""));
+  const [shortName, setShortName] = useState(defaultTitle || initialBranding?.shortName || "");
   const [subtitle, setSubtitle] = useState(initialBranding?.subtitle ?? "A Unique Guided Meditation Practice");
   const [presenter, setPresenter] = useState(initialBranding?.presenter ?? "Ramashram Satsang Mathura");
   const [presenterNote, setPresenterNote] = useState(initialBranding?.presenterNote ?? "Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [segments, setSegments] = useState<CaptionSegment[] | null>(null);
+  const [fillerRanges, setFillerRanges] = useState<FillerRange[]>([]);
   const [stitchedUrl, setStitchedUrl] = useState<string | null>(initialStitchedUrl || null);
   const [stitchedExt, setStitchedExt] = useState<"mp4" | "webm">("webm");
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const logoImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => setStitchedUrl(initialStitchedUrl || null), [initialStitchedUrl]);
-  useEffect(() => { if (defaultTitle) setShortName((prev) => prev || defaultTitle); }, [defaultTitle]);
+  useEffect(() => { if (defaultTitle) setShortName(defaultTitle); }, [defaultTitle]);
 
   useEffect(() => {
     onBrandingChange?.({ title, shortName, subtitle, presenter, presenterNote });
