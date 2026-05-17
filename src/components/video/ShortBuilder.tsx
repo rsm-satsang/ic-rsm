@@ -321,9 +321,28 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       try { sourceStream = v.captureStream ? v.captureStream() : v.mozCaptureStream?.(); } catch {}
       // @ts-ignore
       const canvasStream: MediaStream = canvas.captureStream(30);
-      if (sourceStream) {
-        for (const t of sourceStream.getAudioTracks()) {
-          try { canvasStream.addTrack(t); } catch {}
+
+      // Route source audio through a WebAudio GainNode so we can mute
+      // conversational filler ranges in real-time while recording.
+      let audioCtx: AudioContext | null = null;
+      let gainNode: GainNode | null = null;
+      if (sourceStream && sourceStream.getAudioTracks().length > 0) {
+        try {
+          // @ts-ignore
+          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const srcNode = audioCtx.createMediaStreamSource(new MediaStream(sourceStream.getAudioTracks()));
+          gainNode = audioCtx.createGain();
+          gainNode.gain.value = 1;
+          const destNode = audioCtx.createMediaStreamDestination();
+          srcNode.connect(gainNode).connect(destNode);
+          for (const t of destNode.stream.getAudioTracks()) {
+            try { canvasStream.addTrack(t); } catch {}
+          }
+        } catch (e) {
+          console.warn("WebAudio routing failed, falling back to raw audio", e);
+          for (const t of sourceStream.getAudioTracks()) {
+            try { canvasStream.addTrack(t); } catch {}
+          }
         }
       }
 
@@ -354,6 +373,9 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
         } catch { video.removeEventListener("seeked", onSeeked); res(); }
       });
 
+      // Mute audio during title card phase
+      if (gainNode) gainNode.gain.value = 0;
+
       // Draw the title card BEFORE starting the recorder so the very first
       // recorded frame is already the title card.
       drawTitleCard(ctx);
@@ -366,6 +388,15 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       setProgress("Recording video with captions...");
 
+      const fillers = fillerRanges;
+      const isFiller = (t: number) => {
+        for (const r of fillers) {
+          if (t >= r.start_seconds - 0.02 && t <= r.end_seconds + 0.02) return true;
+          if (r.start_seconds > t + 0.5) break;
+        }
+        return false;
+      };
+
       let drawing = true;
       const loop = () => {
         if (!drawing) return;
@@ -373,6 +404,11 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           drawTopBanner(ctx);
           drawVideoFrame(ctx, video);
           const t = video.currentTime;
+          // Real-time mute of filler sounds
+          if (gainNode) {
+            const target = isFiller(t) ? 0 : 1;
+            if (gainNode.gain.value !== target) gainNode.gain.value = target;
+          }
           const seg = segs.find((s) => t >= s.start_seconds && t <= s.end_seconds);
           drawCaption(ctx, seg?.text || "");
           drawBottomBanner(ctx);
@@ -404,9 +440,16 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       drawing = false;
       try { video.pause(); } catch {}
 
+      // End card phase: exactly 1 second, muted
+      setProgress("Rendering end card...");
+      if (gainNode) gainNode.gain.value = 0;
+      drawEndCard(ctx);
+      await new Promise((res) => setTimeout(res, 1000));
+
       setProgress("Finalizing...");
       recorder.stop();
       await stopped;
+      try { await audioCtx?.close(); } catch {}
 
       const blob = new Blob(chunks, { type: mimeType });
       setStitchedExt(isMp4 ? "mp4" : "webm");
