@@ -13,6 +13,11 @@ interface CaptionSegment {
   text: string;
 }
 
+interface FillerRange {
+  start_seconds: number;
+  end_seconds: number;
+}
+
 interface Props {
   referenceFileId: string;
   videoUrl: string;
