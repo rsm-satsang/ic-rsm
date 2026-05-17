@@ -336,6 +336,7 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       await stopped;
 
       const blob = new Blob(chunks, { type: mimeType });
+      setStitchedExt(isMp4 ? "mp4" : "webm");
       const url = URL.createObjectURL(blob);
       setStitchedUrl(url);
       onStitched?.(blob);
