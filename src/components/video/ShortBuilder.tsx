@@ -19,6 +19,8 @@ interface Props {
   defaultTitle: string;
   onStitched?: (blob: Blob) => void;
   initialStitchedUrl?: string | null;
+  initialBranding?: Record<string, string> | null;
+  onBrandingChange?: (branding: Record<string, string>) => void;
 }
 
 // 9:16 portrait canvas (YouTube Shorts standard)
