@@ -9,22 +9,30 @@ const GEMINI_UPLOAD_BASE = "https://generativelanguage.googleapis.com/upload/v1b
 const GEMINI_FILES_BASE = "https://generativelanguage.googleapis.com/v1beta/files";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-const PROMPT = `Transcribe the spoken audio in this video into short caption segments suitable for burned-in subtitles on a YouTube Short.
+const PROMPT = `Transcribe the spoken audio in this video into short caption segments suitable for burned-in subtitles on a YouTube Short, AND identify every conversational filler sound with precise timestamps so they can be muted from the audio.
 
 Return ONLY valid JSON in this exact shape:
 {
   "segments": [
     { "start_seconds": 0.0, "end_seconds": 2.4, "text": "Short caption line" }
+  ],
+  "filler_ranges": [
+    { "start_seconds": 1.23, "end_seconds": 1.55 }
   ]
 }
 
-Rules:
+Rules for "segments":
 - Each segment should be 1-4 seconds long and contain at most ~7 words.
 - Cover the full duration of the video; segments must be in order and not overlap.
 - Use the original spoken language. Do not translate.
 - IMPORTANT: Remove all conversational filler sounds and disfluencies such as "uh", "uhh", "um", "umm", "ah", "ahh", "er", "erm", "hmm", "huh", "mm", "mmm", "uh-huh", "uh-uhh", "you know", "like" (when used as filler), and any repeated stuttered words. Output only clean, readable speech.
 - If a segment would be empty after removing fillers, skip it entirely.
-- If no speech is present, return { "segments": [] }.`;
+- If no speech is present, return { "segments": [] }.
+
+Rules for "filler_ranges":
+- List EVERY occurrence of the above filler sounds/disfluencies in the audio with tight start and end timestamps in seconds (precision ~0.05s).
+- Include only the filler sound itself (and a tiny padding of ~50ms if needed), NOT surrounding clean speech.
+- If none, return "filler_ranges": [].`;
 
 async function pollFileUntilActive(fileName: string, apiKey: string, maxWaitMs = 120_000) {
   const start = Date.now();
