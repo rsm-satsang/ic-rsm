@@ -13,6 +13,11 @@ interface CaptionSegment {
   text: string;
 }
 
+interface FillerRange {
+  start_seconds: number;
+  end_seconds: number;
+}
+
 interface Props {
   referenceFileId: string;
   videoUrl: string;
@@ -33,20 +38,21 @@ const TITLE_CARD_DURATION_MS = 2500;
 
 export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitched, initialStitchedUrl, initialBranding, onBrandingChange }: Props) {
   const [title, setTitle] = useState(initialBranding?.title ?? "SATSANG");
-  const [shortName, setShortName] = useState(initialBranding?.shortName ?? (defaultTitle || ""));
+  const [shortName, setShortName] = useState(defaultTitle || initialBranding?.shortName || "");
   const [subtitle, setSubtitle] = useState(initialBranding?.subtitle ?? "A Unique Guided Meditation Practice");
   const [presenter, setPresenter] = useState(initialBranding?.presenter ?? "Ramashram Satsang Mathura");
   const [presenterNote, setPresenterNote] = useState(initialBranding?.presenterNote ?? "Founded in 1930 by Paramsant Dr. Chaturbhuj Sahay");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [segments, setSegments] = useState<CaptionSegment[] | null>(null);
+  const [fillerRanges, setFillerRanges] = useState<FillerRange[]>([]);
   const [stitchedUrl, setStitchedUrl] = useState<string | null>(initialStitchedUrl || null);
   const [stitchedExt, setStitchedExt] = useState<"mp4" | "webm">("webm");
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const logoImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => setStitchedUrl(initialStitchedUrl || null), [initialStitchedUrl]);
-  useEffect(() => { if (defaultTitle) setShortName((prev) => prev || defaultTitle); }, [defaultTitle]);
+  useEffect(() => { if (defaultTitle) setShortName(defaultTitle); }, [defaultTitle]);
 
   useEffect(() => {
     onBrandingChange?.({ title, shortName, subtitle, presenter, presenterNote });
@@ -210,6 +216,57 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
   };
 
 
+  const drawEndCard = (ctx: CanvasRenderingContext2D) => {
+    // White full background, with banners on top/bottom for consistency
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, OUT_W, OUT_H);
+    drawTopBanner(ctx);
+    drawBottomBanner(ctx);
+
+    const midY = TOP_BAND_H;
+    const midH = OUT_H - TOP_BAND_H - BOTTOM_BAND_H;
+    const logo = logoImgRef.current;
+
+    // Logo (upper portion)
+    if (logo && logo.width > 0) {
+      const maxW = OUT_W * 0.55;
+      const maxH = midH * 0.38;
+      const ratio = Math.min(maxW / logo.width, maxH / logo.height);
+      const lw = logo.width * ratio;
+      const lh = logo.height * ratio;
+      const lx = (OUT_W - lw) / 2;
+      const ly = midY + midH * 0.04;
+      try { ctx.drawImage(logo, lx, ly, lw, lh); } catch {}
+    }
+
+    // Text block (lower portion)
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#0b3b6f";
+
+    const labelFont = 40;
+    const urlFont = 34;
+    const blockTop = midY + midH * 0.48;
+    let y = blockTop;
+
+    const drawLabelUrl = (label: string, url: string) => {
+      ctx.font = `bold ${labelFont}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = "#0b3b6f";
+      const labelLines = wrapLines(ctx, label, OUT_W * 0.9);
+      for (const l of labelLines) { ctx.fillText(l, OUT_W / 2, y); y += labelFont * 1.2; }
+      ctx.font = `${urlFont}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = "#1a4a8a";
+      const urlLines = wrapLines(ctx, url, OUT_W * 0.92);
+      for (const l of urlLines) { ctx.fillText(l, OUT_W / 2, y); y += urlFont * 1.25; }
+      y += 24;
+    };
+
+    drawLabelUrl("Online meditation sessions:", "https://ramashram.org/an-orientation-");
+    drawLabelUrl("In-person Meditation Sessions:", "https://ramashram.org/satsang-calender/");
+
+    ctx.textAlign = "left";
+  };
+
   const ensureSegments = async (): Promise<CaptionSegment[]> => {
     if (segments) return segments;
     setProgress("Transcribing captions with Gemini (this can take 1-2 minutes)...");
@@ -219,7 +276,9 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     const segs = (data?.segments || []) as CaptionSegment[];
+    const fillers = (data?.filler_ranges || []) as FillerRange[];
     setSegments(segs);
+    setFillerRanges(fillers);
     return segs;
   };
 
@@ -262,9 +321,28 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       try { sourceStream = v.captureStream ? v.captureStream() : v.mozCaptureStream?.(); } catch {}
       // @ts-ignore
       const canvasStream: MediaStream = canvas.captureStream(30);
-      if (sourceStream) {
-        for (const t of sourceStream.getAudioTracks()) {
-          try { canvasStream.addTrack(t); } catch {}
+
+      // Route source audio through a WebAudio GainNode so we can mute
+      // conversational filler ranges in real-time while recording.
+      let audioCtx: AudioContext | null = null;
+      let gainNode: GainNode | null = null;
+      if (sourceStream && sourceStream.getAudioTracks().length > 0) {
+        try {
+          // @ts-ignore
+          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const srcNode = audioCtx.createMediaStreamSource(new MediaStream(sourceStream.getAudioTracks()));
+          gainNode = audioCtx.createGain();
+          gainNode.gain.value = 1;
+          const destNode = audioCtx.createMediaStreamDestination();
+          srcNode.connect(gainNode).connect(destNode);
+          for (const t of destNode.stream.getAudioTracks()) {
+            try { canvasStream.addTrack(t); } catch {}
+          }
+        } catch (e) {
+          console.warn("WebAudio routing failed, falling back to raw audio", e);
+          for (const t of sourceStream.getAudioTracks()) {
+            try { canvasStream.addTrack(t); } catch {}
+          }
         }
       }
 
@@ -295,6 +373,9 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
         } catch { video.removeEventListener("seeked", onSeeked); res(); }
       });
 
+      // Mute audio during title card phase
+      if (gainNode) gainNode.gain.value = 0;
+
       // Draw the title card BEFORE starting the recorder so the very first
       // recorded frame is already the title card.
       drawTitleCard(ctx);
@@ -307,6 +388,15 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       setProgress("Recording video with captions...");
 
+      const fillers = fillerRanges;
+      const isFiller = (t: number) => {
+        for (const r of fillers) {
+          if (t >= r.start_seconds - 0.02 && t <= r.end_seconds + 0.02) return true;
+          if (r.start_seconds > t + 0.5) break;
+        }
+        return false;
+      };
+
       let drawing = true;
       const loop = () => {
         if (!drawing) return;
@@ -314,6 +404,11 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
           drawTopBanner(ctx);
           drawVideoFrame(ctx, video);
           const t = video.currentTime;
+          // Real-time mute of filler sounds
+          if (gainNode) {
+            const target = isFiller(t) ? 0 : 1;
+            if (gainNode.gain.value !== target) gainNode.gain.value = target;
+          }
           const seg = segs.find((s) => t >= s.start_seconds && t <= s.end_seconds);
           drawCaption(ctx, seg?.text || "");
           drawBottomBanner(ctx);
@@ -345,9 +440,16 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       drawing = false;
       try { video.pause(); } catch {}
 
+      // End card phase: exactly 1 second, muted
+      setProgress("Rendering end card...");
+      if (gainNode) gainNode.gain.value = 0;
+      drawEndCard(ctx);
+      await new Promise((res) => setTimeout(res, 1000));
+
       setProgress("Finalizing...");
       recorder.stop();
       await stopped;
+      try { await audioCtx?.close(); } catch {}
 
       const blob = new Blob(chunks, { type: mimeType });
       setStitchedExt(isMp4 ? "mp4" : "webm");
