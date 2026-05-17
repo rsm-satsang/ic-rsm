@@ -283,22 +283,29 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
       const stopped = new Promise<void>((res) => { recorder.onstop = () => res(); });
 
-      recorder.start(250);
-
+      // Pre-seek source video to 0 BEFORE recording starts so the title card
+      // duration is exactly 1s (no extra seek latency captured on the title frame).
       try { video.pause(); } catch {}
-
-      // Title card phase (1s)
-      setProgress("Rendering title card...");
-      drawTitleCard(ctx);
-      await new Promise((res) => setTimeout(res, 1000));
-
-      // Video phase
-      setProgress("Recording video with captions...");
       await new Promise<void>((res) => {
         const onSeeked = () => { video.removeEventListener("seeked", onSeeked); res(); };
         video.addEventListener("seeked", onSeeked);
-        try { video.currentTime = 0; } catch { video.removeEventListener("seeked", onSeeked); res(); }
+        try {
+          if (video.currentTime === 0) { video.removeEventListener("seeked", onSeeked); res(); }
+          else { video.currentTime = 0; }
+        } catch { video.removeEventListener("seeked", onSeeked); res(); }
       });
+
+      // Draw the title card BEFORE starting the recorder so the very first
+      // recorded frame is already the title card.
+      drawTitleCard(ctx);
+
+      recorder.start(250);
+
+      // Title card phase: exactly 1 second
+      setProgress("Rendering title card...");
+      await new Promise((res) => setTimeout(res, 1000));
+
+      setProgress("Recording video with captions...");
 
       let drawing = true;
       const loop = () => {
