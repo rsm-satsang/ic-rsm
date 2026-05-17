@@ -277,8 +277,10 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
     if (data?.error) throw new Error(data.error);
     const segs = (data?.segments || []) as CaptionSegment[];
     const fillers = (data?.filler_ranges || []) as FillerRange[];
+    const suggested = (data?.suggested_title || "").toString().trim();
     setSegments(segs);
     setFillerRanges(fillers);
+    if (suggested) setShortName(suggested);
     return segs;
   };
 
