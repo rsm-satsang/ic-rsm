@@ -260,8 +260,16 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
         }
       }
 
-      const mimeCandidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+      const mimeCandidates = [
+        "video/mp4;codecs=h264,aac",
+        "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+        "video/mp4",
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ];
       const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
+      const isMp4 = mimeType.startsWith("video/mp4");
       const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 6_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
@@ -271,6 +279,10 @@ export function ShortBuilder({ referenceFileId, videoUrl, defaultTitle, onStitch
 
       try { video.pause(); } catch {}
 
+      // Title card phase (1s)
+      setProgress("Rendering title card...");
+      drawTitleCard(ctx);
+      await new Promise((res) => setTimeout(res, 1000));
 
       // Video phase
       setProgress("Recording video with captions...");
