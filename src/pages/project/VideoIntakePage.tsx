@@ -317,6 +317,10 @@ export default function VideoIntakePage() {
           if (signed?.signedUrl) setSourceVideoUrl(signed.signedUrl);
         }
       }
+      if (metadata?.short_mode === "identify" || metadata?.short_mode === "have_clip") {
+        setShortMode(metadata.short_mode);
+      }
+      if (metadata?.short_clip?.branding) setShortBranding(metadata.short_clip.branding);
       // Restore stitched video
       if (metadata?.video_clips?.stitched_path) {
         const { data: signed } = await supabase.storage.from("project-references").createSignedUrl(metadata.video_clips.stitched_path, 60 * 60 * 4);
