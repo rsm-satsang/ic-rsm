@@ -84,7 +84,7 @@ export default function AdminUsers() {
     const { error } = await supabase
       .from("users")
       .update({
-        approval_status: status,
+        approval_status: status as any,
         approved_by: me.id,
         approved_at: new Date().toISOString(),
         rejection_notes: notes ?? null,
