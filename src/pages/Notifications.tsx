@@ -105,6 +105,22 @@ const Notifications = () => {
     }
   };
 
+  const loadActivity = async (userId: string) => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setActivity(data || []);
+    // mark unread as read
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .is("read_at", null);
+  };
+
   const handleAccept = async (invitationId: string) => {
     try {
       const { error } = await supabase.rpc("accept_invitation", {
