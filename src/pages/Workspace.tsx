@@ -33,6 +33,7 @@ import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquar
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
+import AssignDialog from "@/components/workspace/AssignDialog";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import ProjectImagesSection from "@/components/workspace/ProjectImagesSection";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
