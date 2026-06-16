@@ -812,6 +812,18 @@ const Workspace = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Comments
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[420px] p-0 h-[550px]" align="end">
+                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
                     <Settings className="h-4 w-4" />
                     Manage
                   </Button>
