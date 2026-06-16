@@ -48,7 +48,7 @@ const Notifications = () => {
       }
 
       setUser(currentUser);
-      await loadInvitations(currentUser.id);
+      await Promise.all([loadInvitations(currentUser.id), loadActivity(currentUser.id)]);
     } catch (error) {
       console.error("Error:", error);
       navigate("/auth");
