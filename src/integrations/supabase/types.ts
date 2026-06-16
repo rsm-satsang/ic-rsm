@@ -124,10 +124,14 @@ export type Database = {
       comments: {
         Row: {
           created_at: string
+          entity_type: string
           id: string
           inline_reference: Json | null
+          mentions: string[]
+          parent_id: string | null
           project_id: string
           resolved: boolean | null
+          resolved_at: string | null
           text: string
           updated_at: string
           user_id: string
@@ -135,10 +139,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          entity_type?: string
           id?: string
           inline_reference?: Json | null
+          mentions?: string[]
+          parent_id?: string | null
           project_id: string
           resolved?: boolean | null
+          resolved_at?: string | null
           text: string
           updated_at?: string
           user_id: string
@@ -146,16 +154,27 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          entity_type?: string
           id?: string
           inline_reference?: Json | null
+          mentions?: string[]
+          parent_id?: string | null
           project_id?: string
           resolved?: boolean | null
+          resolved_at?: string | null
           text?: string
           updated_at?: string
           user_id?: string
           version_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_project_id_fkey"
             columns: ["project_id"]
@@ -408,6 +427,70 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          link: string | null
+          message: string
+          project_id: string | null
+          read_at: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          project_id?: string | null
+          read_at?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          project_id?: string | null
+          read_at?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -713,6 +796,127 @@ export type Database = {
           },
         ]
       }
+      tracker_entries: {
+        Row: {
+          assignee_id: string | null
+          channel: Database["public"]["Enums"]["tracker_channel"]
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          publish_date: string | null
+          source: string
+          source_url: string | null
+          status: Database["public"]["Enums"]["tracker_status"]
+          sub_channel: Database["public"]["Enums"]["tracker_sub_channel"]
+          theme_id: string | null
+          title: string | null
+          updated_at: string
+          week_start_date: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          channel: Database["public"]["Enums"]["tracker_channel"]
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          publish_date?: string | null
+          source?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["tracker_status"]
+          sub_channel?: Database["public"]["Enums"]["tracker_sub_channel"]
+          theme_id?: string | null
+          title?: string | null
+          updated_at?: string
+          week_start_date: string
+        }
+        Update: {
+          assignee_id?: string | null
+          channel?: Database["public"]["Enums"]["tracker_channel"]
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          publish_date?: string | null
+          source?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["tracker_status"]
+          sub_channel?: Database["public"]["Enums"]["tracker_sub_channel"]
+          theme_id?: string | null
+          title?: string | null
+          updated_at?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_entries_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_entries_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_audit_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_tasks: {
         Row: {
           assigned_by: string
@@ -796,36 +1000,56 @@ export type Database = {
       }
       users: {
         Row: {
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           created_at: string
           email: string
           id: string
           name: string
           preferences: Json | null
+          rejection_notes: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
         Insert: {
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           email: string
           id: string
           name: string
           preferences?: Json | null
+          rejection_notes?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Update: {
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string
           id?: string
           name?: string
           preferences?: Json | null
+          rejection_notes?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       version_favorites: {
         Row: {
@@ -1060,6 +1284,12 @@ export type Database = {
     Enums: {
       access_level: "owner" | "editor" | "viewer"
       app_role: "admin" | "user"
+      approval_status:
+        | "pending_email"
+        | "pending_approval"
+        | "approved"
+        | "rejected"
+        | "suspended"
       event_type:
         | "created"
         | "edited"
@@ -1080,6 +1310,14 @@ export type Database = {
       project_type: "document" | "note" | "article" | "email" | "video"
       prompt_scope: "user" | "project" | "org"
       task_status: "pending" | "in_progress" | "completed"
+      tracker_channel: "substack_satsang" | "substack_lifequest" | "youtube"
+      tracker_status:
+        | "published"
+        | "draft"
+        | "not_published"
+        | "tbd"
+        | "not_applicable"
+      tracker_sub_channel: "newsletter" | "long_form" | "shorts"
       vocab_visibility: "project" | "org" | "public"
     }
     CompositeTypes: {
@@ -1210,6 +1448,13 @@ export const Constants = {
     Enums: {
       access_level: ["owner", "editor", "viewer"],
       app_role: ["admin", "user"],
+      approval_status: [
+        "pending_email",
+        "pending_approval",
+        "approved",
+        "rejected",
+        "suspended",
+      ],
       event_type: [
         "created",
         "edited",
@@ -1232,6 +1477,15 @@ export const Constants = {
       project_type: ["document", "note", "article", "email", "video"],
       prompt_scope: ["user", "project", "org"],
       task_status: ["pending", "in_progress", "completed"],
+      tracker_channel: ["substack_satsang", "substack_lifequest", "youtube"],
+      tracker_status: [
+        "published",
+        "draft",
+        "not_published",
+        "tbd",
+        "not_applicable",
+      ],
+      tracker_sub_channel: ["newsletter", "long_form", "shorts"],
       vocab_visibility: ["project", "org", "public"],
     },
   },
