@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +49,47 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+    const caret = e.target.selectionStart ?? val.length;
+    const upto = val.slice(0, caret);
+    const m = upto.match(/@([\w.-]*)$/);
+    setMentionQuery(m ? m[1].toLowerCase() : null);
+  };
+
+  const insertMention = (u: User) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? text.length;
+    const before = text.slice(0, caret).replace(/@([\w.-]*)$/, "");
+    const after = text.slice(caret);
+    const handle = (u.name || u.email.split("@")[0]).replace(/\s+/g, "");
+    const next = `${before}@${handle} ${after}`;
+    setText(next);
+    setMentionQuery(null);
+    setTimeout(() => {
+      el.focus();
+      const pos = (before + "@" + handle + " ").length;
+      el.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
+  const mentionSuggestions = mentionQuery === null
+    ? []
+    : users
+        .filter((u) => {
+          const handle = (u.name || "").toLowerCase().replace(/\s+/g, "");
+          const emailHandle = u.email.toLowerCase().split("@")[0];
+          return mentionQuery === "" ||
+            handle.includes(mentionQuery) ||
+            emailHandle.includes(mentionQuery) ||
+            (u.name || "").toLowerCase().includes(mentionQuery);
+        })
+        .slice(0, 6);
 
   const load = async () => {
     const { data } = await supabase
@@ -215,16 +256,33 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         )}
       </div>
 
-      <div className="border-t p-3 space-y-2">
+      <div className="border-t p-3 space-y-2 relative">
         {replyTo && (
           <div className="text-xs text-muted-foreground flex items-center justify-between">
             Replying to comment <Button size="sm" variant="ghost" onClick={() => setReplyTo(null)}>Cancel</Button>
           </div>
         )}
+        {mentionSuggestions.length > 0 && (
+          <div className="absolute bottom-[110px] left-3 right-3 bg-popover border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+            {mentionSuggestions.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); insertMention(u); }}
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent text-left text-sm"
+              >
+                <Avatar className="h-5 w-5"><AvatarFallback className="text-[10px]">{initials(u.name || "?")}</AvatarFallback></Avatar>
+                <span className="font-medium">{u.name}</span>
+                <span className="text-xs text-muted-foreground truncate">{u.email}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <Textarea
+          ref={textareaRef}
           placeholder="Write a comment… use @name to mention"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
           className="min-h-[60px] resize-none"
         />
         <Button size="sm" className="w-full" onClick={submit} disabled={!text.trim() || submitting}>
