@@ -31,6 +31,7 @@ const Notifications = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
