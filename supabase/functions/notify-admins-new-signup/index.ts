@@ -9,8 +9,9 @@ const corsHeaders = {
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 
-function createRawEmail(to: string, subject: string, html: string): string {
+function createRawEmail(from: string, to: string, subject: string, html: string): string {
   const msg = [
+    `From: ${from}`,
     `To: ${to}`,
     `Subject: ${subject}`,
     'MIME-Version: 1.0',
@@ -18,7 +19,6 @@ function createRawEmail(to: string, subject: string, html: string): string {
     "",
     html,
   ].join("\r\n");
-  // base64url encode (UTF-8 safe)
   const b64 = btoa(unescape(encodeURIComponent(msg)));
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -62,8 +62,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const approveUrl = `${Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", ".lovable.app") || ""}/admin/users`;
-    const subject = `New signup pending approval: ${newUserName || newUserEmail}`;
+    const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
+    const approveUrl = `${APP_URL}/admin/users`;
+    const fromHeader = `"Srijan User SignUp Approval" <rsm.ai.labs@gmail.com>`;
+    const subject = `Srijan User SignUp Approval: ${newUserName || newUserEmail}`;
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
         <h2 style="color:#1e3a8a;">🌸 New User Signup</h2>
@@ -78,6 +80,7 @@ Deno.serve(async (req) => {
             Review &amp; Approve
           </a>
         </p>
+        <p style="color:#888;font-size:12px;margin-top:8px;">If the button doesn't work, copy this link: <br/><span style="font-family:monospace;">${approveUrl}</span></p>
         <p style="color:#888;font-size:12px;margin-top:24px;">— Ram Chandra Mission Content Platform</p>
       </div>`;
 
@@ -85,7 +88,7 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
     for (const admin of admins) {
       if (!admin.email) continue;
-      const raw = createRawEmail(admin.email, subject, html);
+      const raw = createRawEmail(fromHeader, admin.email, subject, html);
       const resp = await fetch(`${GATEWAY_URL}/users/me/messages/send`, {
         method: "POST",
         headers: {
