@@ -806,6 +806,7 @@ const Workspace = () => {
                 {saving ? "Saving..." : "Save Project"}
               </Button>
 
+              <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
               <Popover>
                 <PopoverTrigger asChild>
