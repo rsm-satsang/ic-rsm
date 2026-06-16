@@ -194,6 +194,36 @@ const Notifications = () => {
           </Button>
         </div>
 
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Mentions, replies, assignments and updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No recent activity</p>
+            ) : (
+              <div className="space-y-2">
+                {activity.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex items-start justify-between gap-3 border rounded-md p-3 hover:bg-accent/40 cursor-pointer"
+                    onClick={() => n.link && navigate(n.link)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <Badge variant="outline" className="mr-2">{n.type}</Badge>
+                      <span className="text-sm">{n.message}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(n.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
