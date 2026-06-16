@@ -34,6 +34,7 @@ import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
 import AssignDialog from "@/components/workspace/AssignDialog";
+import CommentsPanel from "@/components/workspace/CommentsPanel";
 import VersionsSidebar from "@/components/workspace/VersionsSidebar";
 import ProjectImagesSection from "@/components/workspace/ProjectImagesSection";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
@@ -807,6 +808,18 @@ const Workspace = () => {
               </Button>
 
               <AssignDialog projectId={project.id} versionId={currentVersionId} />
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Comments
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[420px] p-0 h-[550px]" align="end">
+                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
+                </PopoverContent>
+              </Popover>
 
               <Popover>
                 <PopoverTrigger asChild>

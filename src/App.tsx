@@ -14,6 +14,8 @@ import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import Tracker from "./pages/Tracker";
+import AdminUsers from "./pages/AdminUsers";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
           <Route path="/publish/:projectId" element={<PublishPreview />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/tracker" element={<Tracker />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

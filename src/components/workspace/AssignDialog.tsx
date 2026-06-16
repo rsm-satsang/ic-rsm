@@ -79,6 +79,20 @@ const AssignDialog = ({
         due_date: dueDate || null,
       });
       if (error) throw error;
+
+      // Notify the assignee
+      if (assignee !== currentUserId) {
+        await supabase.from("notifications").insert({
+          user_id: assignee,
+          actor_id: currentUserId,
+          type: "assignment",
+          entity_type: "task",
+          project_id: projectId,
+          message: `You were assigned a task: ${title.trim()}`,
+          link: `/workspace/${projectId}`,
+        });
+      }
+
       toast.success("Task assigned!");
       setTitle("");
       setDescription("");

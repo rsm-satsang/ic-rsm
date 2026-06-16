@@ -31,6 +31,7 @@ const Notifications = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const Notifications = () => {
       }
 
       setUser(currentUser);
-      await loadInvitations(currentUser.id);
+      await Promise.all([loadInvitations(currentUser.id), loadActivity(currentUser.id)]);
     } catch (error) {
       console.error("Error:", error);
       navigate("/auth");
@@ -102,6 +103,22 @@ const Notifications = () => {
       toast.error("Failed to load invitations");
       setInvitations([]);
     }
+  };
+
+  const loadActivity = async (userId: string) => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setActivity(data || []);
+    // mark unread as read
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .is("read_at", null);
   };
 
   const handleAccept = async (invitationId: string) => {
@@ -176,6 +193,36 @@ const Notifications = () => {
             Back to Dashboard
           </Button>
         </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Mentions, replies, assignments and updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No recent activity</p>
+            ) : (
+              <div className="space-y-2">
+                {activity.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex items-start justify-between gap-3 border rounded-md p-3 hover:bg-accent/40 cursor-pointer"
+                    onClick={() => n.link && navigate(n.link)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <Badge variant="outline" className="mr-2">{n.type}</Badge>
+                      <span className="text-sm">{n.message}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(n.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

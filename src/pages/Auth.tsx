@@ -53,12 +53,33 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+
+      // Admin approval gate
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("approval_status")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        const status = (profile as any)?.approval_status || "approved";
+        if (status !== "approved") {
+          await supabase.auth.signOut();
+          const msg: Record<string, string> = {
+            pending_email: "Please verify your email first.",
+            pending_approval: "Your account is pending admin approval. You'll be notified once approved.",
+            rejected: "Your account access has been rejected. Please contact an administrator.",
+            suspended: "Your account has been suspended. Please contact an administrator.",
+          };
+          toast.error(msg[status] || "Account access not allowed.");
+          return;
+        }
+      }
 
       toast.success("Signed in successfully!");
       navigate("/dashboard");
