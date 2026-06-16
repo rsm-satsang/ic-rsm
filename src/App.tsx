@@ -14,6 +14,8 @@ import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import Tracker from "./pages/Tracker";
+import AdminUsers from "./pages/AdminUsers";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
