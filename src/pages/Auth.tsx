@@ -37,9 +37,19 @@ const Auth = () => {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        toast.success("Account created! Please check your email to verify.");
-        // User profile is automatically created by database trigger
-        navigate("/dashboard");
+        toast.success("Account created! Your account is pending admin approval.");
+        // Notify admins via Gmail (fire-and-forget)
+        supabase.functions
+          .invoke("notify-admins-new-signup", {
+            body: {
+              newUserEmail: email,
+              newUserName: name,
+              newUserId: signUpData.user.id,
+            },
+          })
+          .catch((err) => console.warn("admin notify failed", err));
+        await supabase.auth.signOut();
+        navigate("/auth");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to sign up");
