@@ -347,17 +347,18 @@ export default function Tracker() {
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visibleWeeks.map((week) => {
+              {visibleWeeks.map((week, idx) => {
                 const list = entriesByWeek.get(week) || [];
                 const entry = list[0];
                 if (assigneeFilter !== "all" && entry?.assignee_id !== assigneeFilter) return null;
                 if (statusFilter !== "all" && (entry?.status ?? "tbd") !== statusFilter) return null;
                 const status = entry?.status ?? "tbd";
                 const meta = STATUS_META[status];
+                const weekNum = weeks.indexOf(week) + 1;
                 return (
                   <Card key={week} className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-semibold">Week of {fmtWeek(week)}</div>
+                      <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
                       <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
                     </div>
                     {entry?.publish_date && (
