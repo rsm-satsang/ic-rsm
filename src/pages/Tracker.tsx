@@ -445,7 +445,6 @@ export default function Tracker() {
                         ))}
                       </div>
                     )}
-                    )}
                   </Card>
                 );
               })}
