@@ -361,6 +361,11 @@ export default function Tracker() {
                       <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
                       <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
                     </div>
+                    {list.length > 1 && (
+                      <div className="text-[11px] text-muted-foreground bg-blue-50 border border-blue-100 rounded px-2 py-1">
+                        {list.length} posts this week
+                      </div>
+                    )}
                     {entry?.publish_date && (
                       <div className="text-xs text-muted-foreground">
                         📅 Published: {fmtWeek(entry.publish_date)}
@@ -423,11 +428,22 @@ export default function Tracker() {
                         if (v !== (entry?.notes ?? "")) upsert(week, { notes: v || null });
                       }}
                     />
-                    {entry?.source_url && (
-                      <a href={entry.source_url} target="_blank" rel="noreferrer"
-                         className="text-xs text-blue-600 underline truncate block">
-                        {entry.source_url}
-                      </a>
+                    {list.length > 0 && (
+                      <div className="space-y-1 pt-2 border-t">
+                        <div className="text-[11px] font-semibold text-muted-foreground uppercase">All posts</div>
+                        {list.map((it) => (
+                          <a
+                            key={it.id}
+                            href={it.source_url ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block text-xs text-blue-700 hover:underline truncate"
+                            title={it.title ?? ""}
+                          >
+                            • {it.publish_date ? `${fmtWeek(it.publish_date)} — ` : ""}{it.title ?? "(untitled)"}
+                          </a>
+                        ))}
+                      </div>
                     )}
                   </Card>
                 );
