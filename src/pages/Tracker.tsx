@@ -52,11 +52,17 @@ function mondayOf(d: Date): Date {
   return date;
 }
 
+function firstMondayOfYear(year: number): Date {
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const day = jan1.getUTCDay(); // 0 Sun .. 6 Sat
+  const offset = day === 1 ? 0 : (day === 0 ? 1 : 8 - day);
+  jan1.setUTCDate(jan1.getUTCDate() + offset);
+  return jan1;
+}
+
 function weeksOfYear(year: number): string[] {
   const out: string[] = [];
-  // Start from the Monday of the week containing Jan 1 (may fall in previous year)
-  const start = mondayOf(new Date(Date.UTC(year, 0, 1)));
-  // End at the week containing Dec 31
+  const start = firstMondayOfYear(year);
   const end = mondayOf(new Date(Date.UTC(year, 11, 31)));
   const d = new Date(start);
   while (d.getTime() <= end.getTime()) {
