@@ -75,7 +75,10 @@ Deno.serve(async (req) => {
       const pub = new Date(item.pubDate);
       if (Number.isNaN(pub.getTime())) { skipped++; continue; }
       if (pub.getUTCFullYear() !== Number(year)) { skipped++; continue; }
-      const week = mondayOf(pub);
+      const firstMonday = firstMondayOfYear(Number(year));
+      let week = mondayOf(pub);
+      // Bucket posts published before the first full week into week 1
+      if (week < firstMonday) week = firstMonday;
 
       // upsert by (channel, sub_channel, week_start_date, source_url)
       const { error } = await supabase.from("tracker_entries").upsert(
