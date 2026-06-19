@@ -13,6 +13,14 @@ function mondayOf(d: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+function firstMondayOfYear(year: number): string {
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const day = jan1.getUTCDay();
+  const offset = day === 1 ? 0 : (day === 0 ? 1 : 8 - day);
+  jan1.setUTCDate(jan1.getUTCDate() + offset);
+  return jan1.toISOString().slice(0, 10);
+}
+
 function extractItems(xml: string): Array<{ title: string; link: string; pubDate: string }> {
   const items: Array<{ title: string; link: string; pubDate: string }> = [];
   const itemRe = /<item[\s\S]*?<\/item>/g;
