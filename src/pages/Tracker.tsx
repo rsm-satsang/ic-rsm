@@ -356,6 +356,11 @@ export default function Tracker() {
                       <div className="text-sm font-semibold">Week of {fmtWeek(week)}</div>
                       <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
                     </div>
+                    {entry?.publish_date && (
+                      <div className="text-xs text-muted-foreground">
+                        📅 Published: {fmtWeek(entry.publish_date)}
+                      </div>
+                    )}
                     <Input
                       placeholder="Content title"
                       defaultValue={entry?.title ?? ""}
