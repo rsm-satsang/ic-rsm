@@ -13,6 +13,14 @@ function mondayOf(d: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+function firstMondayOfYear(year: number): string {
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const day = jan1.getUTCDay();
+  const offset = day === 1 ? 0 : (day === 0 ? 1 : 8 - day);
+  jan1.setUTCDate(jan1.getUTCDate() + offset);
+  return jan1.toISOString().slice(0, 10);
+}
+
 function extractItems(xml: string): Array<{ title: string; link: string; pubDate: string }> {
   const items: Array<{ title: string; link: string; pubDate: string }> = [];
   const itemRe = /<item[\s\S]*?<\/item>/g;
@@ -67,7 +75,10 @@ Deno.serve(async (req) => {
       const pub = new Date(item.pubDate);
       if (Number.isNaN(pub.getTime())) { skipped++; continue; }
       if (pub.getUTCFullYear() !== Number(year)) { skipped++; continue; }
-      const week = mondayOf(pub);
+      const firstMonday = firstMondayOfYear(Number(year));
+      let week = mondayOf(pub);
+      // Bucket posts published before the first full week into week 1
+      if (week < firstMonday) week = firstMonday;
 
       // upsert by (channel, sub_channel, week_start_date, source_url)
       const { error } = await supabase.from("tracker_entries").upsert(

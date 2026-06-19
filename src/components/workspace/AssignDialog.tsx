@@ -93,7 +93,27 @@ const AssignDialog = ({
         });
       }
 
-      toast.success("Task assigned!");
+      // Email assignee + admins via Gmail connector (fire-and-forget)
+      const { data: project } = await supabase
+        .from("projects")
+        .select("title")
+        .eq("id", projectId)
+        .maybeSingle();
+      supabase.functions
+        .invoke("notify-assignment", {
+          body: {
+            assigneeId: assignee,
+            assignedById: currentUserId,
+            taskTitle: title.trim(),
+            taskDescription: description.trim() || null,
+            projectId,
+            projectTitle: project?.title || null,
+            dueDate: dueDate || null,
+          },
+        })
+        .catch((e) => console.error("notify-assignment failed", e));
+
+      toast.success("Task assigned — emails sent");
       setTitle("");
       setDescription("");
       setAssignee("");
