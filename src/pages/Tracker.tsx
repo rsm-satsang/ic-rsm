@@ -54,16 +54,14 @@ function mondayOf(d: Date): Date {
 
 function weeksOfYear(year: number): string[] {
   const out: string[] = [];
-  const start = mondayOf(new Date(Date.UTC(year, 0, 4))); // ISO week 1 contains Jan 4
-  for (let i = 0; i < 53; i++) {
-    const d = new Date(start);
-    d.setUTCDate(d.getUTCDate() + i * 7);
-    if (d.getUTCFullYear() > year && d.getUTCMonth() > 0) break;
-    if (d.getUTCFullYear() === year || (d.getUTCFullYear() === year - 1 && d.getUTCMonth() === 11)) {
-      out.push(d.toISOString().slice(0, 10));
-    } else if (d.getUTCFullYear() === year + 1 && d.getUTCMonth() === 0 && d.getUTCDate() <= 3) {
-      // include last week if it spills into Jan
-    }
+  // Start from the Monday of the week containing Jan 1 (may fall in previous year)
+  const start = mondayOf(new Date(Date.UTC(year, 0, 1)));
+  // End at the week containing Dec 31
+  const end = mondayOf(new Date(Date.UTC(year, 11, 31)));
+  const d = new Date(start);
+  while (d.getTime() <= end.getTime()) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 7);
   }
   return out;
 }
