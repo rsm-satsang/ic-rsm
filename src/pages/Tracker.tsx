@@ -91,7 +91,7 @@ const SUB_LABEL: Record<SubChannel, string> = {
 
 const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
   substack_satsang: "https://satsang.substack.com",
-  substack_lifequest: "", // user to fill
+  substack_lifequest: "https://mylifequest.substack.com",
 };
 
 const YEAR = 2026;
