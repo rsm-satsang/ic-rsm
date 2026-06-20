@@ -342,6 +342,52 @@ export default function Tracker() {
             )}
           </div>
 
+          {/* Month buttons */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {MONTH_NAMES.map((m, i) => {
+              const isActive = i === selectedMonth;
+              return (
+                <Button
+                  key={m}
+                  size="sm"
+                  variant={isActive ? "default" : "outline"}
+                  onClick={() => setSelectedMonth(i)}
+                  className="min-w-[64px]"
+                >
+                  {m}
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* All published posts for selected month */}
+          <Card className="p-4 mb-6">
+            <div className="text-sm font-bold uppercase tracking-wide mb-3">
+              All Posts · {new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" })} {YEAR}
+            </div>
+            {monthPublishedPosts.length === 0 ? (
+              <div className="text-xs text-muted-foreground">No published posts in this month yet.</div>
+            ) : (
+              <ul className="space-y-1.5">
+                {monthPublishedPosts.map((p) => (
+                  <li key={p.id} className="text-sm flex gap-2">
+                    <span className="text-muted-foreground tabular-nums shrink-0">
+                      {fmtWeek(p.publish_date!)}
+                    </span>
+                    <a
+                      href={p.source_url ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-700 hover:underline truncate"
+                    >
+                      {p.title ?? "(untitled)"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
           {/* Gap panel */}
           {gaps.length > 0 && (
             <Card className="p-4 mb-6 border-red-200 bg-red-50/50">
