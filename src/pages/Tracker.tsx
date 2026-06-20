@@ -293,7 +293,7 @@ export default function Tracker() {
           {/* Analytics */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <Card className="p-4">
-              <div className="text-xs text-muted-foreground">Total Planned</div>
+              <div className="text-xs text-muted-foreground">Weeks YTD</div>
               <div className="text-2xl font-bold">{stats.total}</div>
             </Card>
             <Card className="p-4">
