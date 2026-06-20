@@ -195,19 +195,6 @@ export default function Tracker() {
     return list.sort((a, b) => (a.publish_date! < b.publish_date! ? 1 : -1));
   }, [channelEntries, selectedMonth]);
 
-  const stats = useMemo(() => {
-    let published = 0, draft = 0, missing = 0, na = 0;
-    for (const w of weeks) {
-      const list = entriesByWeek.get(w) || [];
-      if (list.length === 0) { missing++; continue; }
-      const top = list[0];
-      if (top.status === "published") published++;
-      else if (top.status === "draft") draft++;
-      else if (top.status === "not_applicable") na++;
-      else missing++;
-    }
-    return { total: weeks.length, published, draft, missing, na };
-  }, [weeks, entriesByWeek]);
 
   const gaps = useMemo(() => weeks.filter((w) => !(entriesByWeek.get(w) || []).length), [weeks, entriesByWeek]);
 
