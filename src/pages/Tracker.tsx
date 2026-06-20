@@ -99,6 +99,13 @@ const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
 };
 
 const YEAR = 2026;
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function monthBounds(year: number, month: number): { min: string; max: string } {
+  const min = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+  const max = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
+  return { min, max };
+}
 
 export default function Tracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -108,7 +115,9 @@ export default function Tracker() {
   const [syncing, setSyncing] = useState<Channel | null>(null);
   const [activeChannel, setActiveChannel] = useState<Channel>("substack_satsang");
   const [activeSub, setActiveSub] = useState<SubChannel>("newsletter");
-  const [monthFilter, setMonthFilter] = useState<string>("all");
+  const now = new Date();
+  const defaultMonth = now.getUTCFullYear() === YEAR ? now.getUTCMonth() : 0;
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -151,15 +160,21 @@ export default function Tracker() {
   }, [channelEntries]);
 
   const visibleWeeks = useMemo(() => {
-    return weeks.filter((w) => {
-      if (monthFilter !== "all" && monthOf(w) !== Number(monthFilter)) return false;
-      return true;
-    });
-  }, [weeks, monthFilter]);
+    return weeks.filter((w) => monthOf(w) === selectedMonth);
+  }, [weeks, selectedMonth]);
+
+  const ytdMaxMonth = useMemo(() => {
+    const n = new Date();
+    if (n.getUTCFullYear() > YEAR) return 11;
+    if (n.getUTCFullYear() < YEAR) return -1;
+    return n.getUTCMonth();
+  }, []);
 
   const stats = useMemo(() => {
-    let published = 0, draft = 0, missing = 0, na = 0;
+    let published = 0, draft = 0, missing = 0, na = 0, total = 0;
     for (const w of weeks) {
+      if (monthOf(w) > ytdMaxMonth) continue;
+      total++;
       const list = entriesByWeek.get(w) || [];
       if (list.length === 0) { missing++; continue; }
       const top = list[0];
@@ -168,8 +183,18 @@ export default function Tracker() {
       else if (top.status === "not_applicable") na++;
       else missing++;
     }
-    return { total: weeks.length, published, draft, missing, na };
-  }, [weeks, entriesByWeek]);
+    return { total, published, draft, missing, na };
+  }, [weeks, entriesByWeek, ytdMaxMonth]);
+
+  const monthPublishedPosts = useMemo(() => {
+    const list = channelEntries.filter((e) => {
+      if (!e.publish_date) return false;
+      const d = new Date(e.publish_date + "T00:00:00Z");
+      return d.getUTCFullYear() === YEAR && d.getUTCMonth() === selectedMonth;
+    });
+    return list.sort((a, b) => (a.publish_date! < b.publish_date! ? 1 : -1));
+  }, [channelEntries, selectedMonth]);
+
 
   const gaps = useMemo(() => weeks.filter((w) => !(entriesByWeek.get(w) || []).length), [weeks, entriesByWeek]);
 
@@ -268,7 +293,7 @@ export default function Tracker() {
           {/* Analytics */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <Card className="p-4">
-              <div className="text-xs text-muted-foreground">Total Planned</div>
+              <div className="text-xs text-muted-foreground">Weeks YTD</div>
               <div className="text-2xl font-bold">{stats.total}</div>
             </Card>
             <Card className="p-4">
@@ -291,17 +316,7 @@ export default function Tracker() {
 
           {/* Filters + Sync */}
           <div className="flex flex-wrap gap-3 mb-4 items-center">
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Month" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All months</SelectItem>
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <SelectItem key={i} value={String(i)}>
-                    {new Date(YEAR, i, 1).toLocaleString("en-US", { month: "long" })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="text-sm font-medium text-muted-foreground">Filter:</div>
             <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
               <SelectTrigger className="w-48"><SelectValue placeholder="Assignee" /></SelectTrigger>
               <SelectContent>
@@ -326,6 +341,52 @@ export default function Tracker() {
               </Button>
             )}
           </div>
+
+          {/* Month buttons */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {MONTH_NAMES.map((m, i) => {
+              const isActive = i === selectedMonth;
+              return (
+                <Button
+                  key={m}
+                  size="sm"
+                  variant={isActive ? "default" : "outline"}
+                  onClick={() => setSelectedMonth(i)}
+                  className="min-w-[64px]"
+                >
+                  {m}
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* All published posts for selected month */}
+          <Card className="p-4 mb-6">
+            <div className="text-sm font-bold uppercase tracking-wide mb-3">
+              All Posts · {new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" })} {YEAR}
+            </div>
+            {monthPublishedPosts.length === 0 ? (
+              <div className="text-xs text-muted-foreground">No published posts in this month yet.</div>
+            ) : (
+              <ul className="space-y-1.5">
+                {monthPublishedPosts.map((p) => (
+                  <li key={p.id} className="text-sm flex gap-2">
+                    <span className="text-muted-foreground tabular-nums shrink-0">
+                      {fmtWeek(p.publish_date!)}
+                    </span>
+                    <a
+                      href={p.source_url ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-700 hover:underline truncate"
+                    >
+                      {p.title ?? "(untitled)"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
           {/* Gap panel */}
           {gaps.length > 0 && (
@@ -412,6 +473,8 @@ export default function Tracker() {
                       </Select>
                       <Input
                         type="date"
+                        min={monthBounds(YEAR, selectedMonth).min}
+                        max={monthBounds(YEAR, selectedMonth).max}
                         defaultValue={entry?.due_date ?? ""}
                         onBlur={(e) => {
                           const v = e.target.value;
@@ -428,23 +491,6 @@ export default function Tracker() {
                         if (v !== (entry?.notes ?? "")) upsert(week, { notes: v || null });
                       }}
                     />
-                    {list.length > 0 && (
-                      <div className="space-y-1 pt-2 border-t">
-                        <div className="text-[11px] font-semibold text-muted-foreground uppercase">All posts</div>
-                        {list.map((it) => (
-                          <a
-                            key={it.id}
-                            href={it.source_url ?? "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block text-xs text-blue-700 hover:underline truncate"
-                            title={it.title ?? ""}
-                          >
-                            • {it.publish_date ? `${fmtWeek(it.publish_date)} — ` : ""}{it.title ?? "(untitled)"}
-                          </a>
-                        ))}
-                      </div>
-                    )}
                   </Card>
                 );
               })}
