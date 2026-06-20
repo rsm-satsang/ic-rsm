@@ -491,23 +491,6 @@ export default function Tracker() {
                         if (v !== (entry?.notes ?? "")) upsert(week, { notes: v || null });
                       }}
                     />
-                    {list.length > 0 && (
-                      <div className="space-y-1 pt-2 border-t">
-                        <div className="text-[11px] font-semibold text-muted-foreground uppercase">All posts</div>
-                        {list.map((it) => (
-                          <a
-                            key={it.id}
-                            href={it.source_url ?? "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block text-xs text-blue-700 hover:underline truncate"
-                            title={it.title ?? ""}
-                          >
-                            • {it.publish_date ? `${fmtWeek(it.publish_date)} — ` : ""}{it.title ?? "(untitled)"}
-                          </a>
-                        ))}
-                      </div>
-                    )}
                   </Card>
                 );
               })}
