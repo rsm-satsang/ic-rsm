@@ -160,11 +160,40 @@ export default function Tracker() {
   }, [channelEntries]);
 
   const visibleWeeks = useMemo(() => {
-    return weeks.filter((w) => {
-      if (monthFilter !== "all" && monthOf(w) !== Number(monthFilter)) return false;
-      return true;
+    return weeks.filter((w) => monthOf(w) === selectedMonth);
+  }, [weeks, selectedMonth]);
+
+  const ytdMaxMonth = useMemo(() => {
+    const n = new Date();
+    if (n.getUTCFullYear() > YEAR) return 11;
+    if (n.getUTCFullYear() < YEAR) return -1;
+    return n.getUTCMonth();
+  }, []);
+
+  const stats = useMemo(() => {
+    let published = 0, draft = 0, missing = 0, na = 0, total = 0;
+    for (const w of weeks) {
+      if (monthOf(w) > ytdMaxMonth) continue;
+      total++;
+      const list = entriesByWeek.get(w) || [];
+      if (list.length === 0) { missing++; continue; }
+      const top = list[0];
+      if (top.status === "published") published++;
+      else if (top.status === "draft") draft++;
+      else if (top.status === "not_applicable") na++;
+      else missing++;
+    }
+    return { total, published, draft, missing, na };
+  }, [weeks, entriesByWeek, ytdMaxMonth]);
+
+  const monthPublishedPosts = useMemo(() => {
+    const list = channelEntries.filter((e) => {
+      if (!e.publish_date) return false;
+      const d = new Date(e.publish_date + "T00:00:00Z");
+      return d.getUTCFullYear() === YEAR && d.getUTCMonth() === selectedMonth;
     });
-  }, [weeks, monthFilter]);
+    return list.sort((a, b) => (a.publish_date! < b.publish_date! ? 1 : -1));
+  }, [channelEntries, selectedMonth]);
 
   const stats = useMemo(() => {
     let published = 0, draft = 0, missing = 0, na = 0;
