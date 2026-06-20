@@ -99,6 +99,13 @@ const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
 };
 
 const YEAR = 2026;
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function monthBounds(year: number, month: number): { min: string; max: string } {
+  const min = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+  const max = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
+  return { min, max };
+}
 
 export default function Tracker() {
   const [entries, setEntries] = useState<Entry[]>([]);
