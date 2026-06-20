@@ -115,7 +115,9 @@ export default function Tracker() {
   const [syncing, setSyncing] = useState<Channel | null>(null);
   const [activeChannel, setActiveChannel] = useState<Channel>("substack_satsang");
   const [activeSub, setActiveSub] = useState<SubChannel>("newsletter");
-  const [monthFilter, setMonthFilter] = useState<string>("all");
+  const now = new Date();
+  const defaultMonth = now.getUTCFullYear() === YEAR ? now.getUTCMonth() : 0;
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
