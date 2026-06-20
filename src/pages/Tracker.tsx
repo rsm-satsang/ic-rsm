@@ -473,6 +473,8 @@ export default function Tracker() {
                       </Select>
                       <Input
                         type="date"
+                        min={monthBounds(YEAR, selectedMonth).min}
+                        max={monthBounds(YEAR, selectedMonth).max}
                         defaultValue={entry?.due_date ?? ""}
                         onBlur={(e) => {
                           const v = e.target.value;
