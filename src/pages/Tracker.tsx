@@ -316,17 +316,7 @@ export default function Tracker() {
 
           {/* Filters + Sync */}
           <div className="flex flex-wrap gap-3 mb-4 items-center">
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Month" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All months</SelectItem>
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <SelectItem key={i} value={String(i)}>
-                    {new Date(YEAR, i, 1).toLocaleString("en-US", { month: "long" })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="text-sm font-medium text-muted-foreground">Filter:</div>
             <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
               <SelectTrigger className="w-48"><SelectValue placeholder="Assignee" /></SelectTrigger>
               <SelectContent>
