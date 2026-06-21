@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     console.log(`substack sync done channel=${channel} imported=${imported} inserted=${inserted} updated=${updated} skipped=${skipped} total=${items.length}`);
 
     return new Response(
-      JSON.stringify({ ok: true, imported, skipped, totalItems: items.length }),
+      JSON.stringify({ ok: true, imported, inserted, updated, skipped, totalItems: items.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
