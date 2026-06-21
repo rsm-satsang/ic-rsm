@@ -70,6 +70,8 @@ Deno.serve(async (req) => {
     );
 
     let imported = 0;
+    let updated = 0;
+    let inserted = 0;
     let skipped = 0;
     for (const item of items) {
       const pub = new Date(item.pubDate);
@@ -77,44 +79,66 @@ Deno.serve(async (req) => {
       if (pub.getUTCFullYear() !== Number(year)) { skipped++; continue; }
       const firstMonday = firstMondayOfYear(Number(year));
       let week = mondayOf(pub);
-      // Bucket posts published before the first full week into week 1
       if (week < firstMonday) week = firstMonday;
 
-      // upsert by (channel, sub_channel, week_start_date, source_url)
-      const { error } = await supabase.from("tracker_entries").upsert(
-        {
-          channel,
-          sub_channel: "newsletter",
-          week_start_date: week,
-          title: item.title,
-          publish_date: pub.toISOString().slice(0, 10),
-          status: "published",
-          source: "substack",
-          source_url: item.link,
-        },
-        { onConflict: "channel,sub_channel,week_start_date,source_url" }
-      );
-      if (error) {
-        // fallback: try insert; ignore unique violations
-        const ins = await supabase.from("tracker_entries").insert({
-          channel,
-          sub_channel: "newsletter",
-          week_start_date: week,
-          title: item.title,
-          publish_date: pub.toISOString().slice(0, 10),
-          status: "published",
-          source: "substack",
-          source_url: item.link,
-        });
-        if (ins.error && !String(ins.error.message).includes("duplicate")) {
-          console.error("insert error", ins.error);
+      const payload = {
+        channel,
+        sub_channel: "newsletter",
+        week_start_date: week,
+        title: item.title,
+        publish_date: pub.toISOString().slice(0, 10),
+        status: "published",
+        source: "substack",
+        source_url: item.link,
+      };
+
+      // Look up existing row by source_url within the channel (most reliable
+      // identifier — the unique index uses COALESCE(source_url,'') so we can't
+      // rely on PostgREST upsert onConflict here).
+      const { data: existing, error: selErr } = await supabase
+        .from("tracker_entries")
+        .select("id")
+        .eq("channel", channel)
+        .eq("sub_channel", "newsletter")
+        .eq("source_url", item.link)
+        .maybeSingle();
+
+      if (selErr) {
+        console.error("select error", selErr);
+        skipped++;
+        continue;
+      }
+
+      if (existing?.id) {
+        const { error: updErr } = await supabase
+          .from("tracker_entries")
+          .update(payload)
+          .eq("id", existing.id);
+        if (updErr) {
+          console.error("update error", updErr);
+          skipped++;
+          continue;
         }
+        updated++;
+      } else {
+        const { error: insErr } = await supabase
+          .from("tracker_entries")
+          .insert(payload);
+        if (insErr) {
+          if (!String(insErr.message).includes("duplicate")) {
+            console.error("insert error", insErr);
+          }
+          skipped++;
+          continue;
+        }
+        inserted++;
       }
       imported++;
     }
+    console.log(`substack sync done channel=${channel} imported=${imported} inserted=${inserted} updated=${updated} skipped=${skipped} total=${items.length}`);
 
     return new Response(
-      JSON.stringify({ ok: true, imported, skipped, totalItems: items.length }),
+      JSON.stringify({ ok: true, imported, inserted, updated, skipped, totalItems: items.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
