@@ -365,23 +365,8 @@ export default function Tracker() {
             )}
           </div>
 
-          {/* Month buttons */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {MONTH_NAMES.map((m, i) => {
-              const isActive = i === selectedMonth;
-              return (
-                <Button
-                  key={m}
-                  size="sm"
-                  variant={isActive ? "default" : "outline"}
-                  onClick={() => setSelectedMonth(i)}
-                  className="min-w-[64px]"
-                >
-                  {m}
-                </Button>
-              );
-            })}
-          </div>
+          {/* Section divider */}
+          <div className="border-t my-6" />
 
           {/* Month summary: stats + All Posts + Missing weeks */}
           {(() => {
