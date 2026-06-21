@@ -383,48 +383,82 @@ export default function Tracker() {
             })}
           </div>
 
-          {/* All published posts for selected month */}
-          <Card className="p-4 mb-6">
-            <div className="text-sm font-bold uppercase tracking-wide mb-3">
-              All Posts · {new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" })} {YEAR}
-            </div>
-            {monthPublishedPosts.length === 0 ? (
-              <div className="text-xs text-muted-foreground">No published posts in this month yet.</div>
-            ) : (
-              <ul className="space-y-1.5">
-                {monthPublishedPosts.map((p) => (
-                  <li key={p.id} className="text-sm flex gap-2">
-                    <span className="text-muted-foreground tabular-nums shrink-0">
-                      {fmtWeek(p.publish_date!)}
-                    </span>
-                    <a
-                      href={p.source_url ?? "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-700 hover:underline truncate"
-                    >
-                      {p.title ?? "(untitled)"}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+          {/* Month summary: stats + All Posts + Missing weeks */}
+          {(() => {
+            const monthWeeks = visibleWeeks;
+            let mPublished = 0, mDraft = 0, mMissing = 0;
+            const missingWeeks: string[] = [];
+            for (const w of monthWeeks) {
+              const list = entriesByWeek.get(w) || [];
+              const top = list[0];
+              if (top?.status === "published") mPublished++;
+              else if (top?.status === "draft") mDraft++;
+              else { mMissing++; missingWeeks.push(w); }
+            }
+            const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
+            return (
+              <Card className="p-4 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">Weeks in {monthName}</div>
+                    <div className="text-xl font-bold">{monthWeeks.length}</div>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">🟢 Published</div>
+                    <div className="text-xl font-bold text-green-700">{mPublished}</div>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">🟡 Draft</div>
+                    <div className="text-xl font-bold text-yellow-700">{mDraft}</div>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">🔴 Missing</div>
+                    <div className="text-xl font-bold text-red-700">{mMissing}</div>
+                  </div>
+                </div>
 
-          {/* Gap panel */}
-          {gaps.length > 0 && (
-            <Card className="p-4 mb-6 border-red-200 bg-red-50/50">
-              <div className="text-sm font-semibold text-red-800 mb-2">Missing weeks ({gaps.length})</div>
-              <div className="flex flex-wrap gap-1">
-                {gaps.slice(0, 30).map((w) => (
-                  <Badge key={w} variant="outline" className="bg-white border-red-200 text-red-700">
-                    {fmtWeek(w)}
-                  </Badge>
-                ))}
-                {gaps.length > 30 && <span className="text-xs text-red-700">+ {gaps.length - 30} more</span>}
-              </div>
-            </Card>
-          )}
+                <div className="text-sm font-bold uppercase tracking-wide mb-2">
+                  All Posts · {monthName} {YEAR}
+                </div>
+                {monthPublishedPosts.length === 0 ? (
+                  <div className="text-xs text-muted-foreground mb-4">No published posts in this month yet.</div>
+                ) : (
+                  <ul className="space-y-1.5 mb-4">
+                    {monthPublishedPosts.map((p) => (
+                      <li key={p.id} className="text-sm flex gap-2">
+                        <span className="text-muted-foreground tabular-nums shrink-0">
+                          {fmtWeek(p.publish_date!)}
+                        </span>
+                        <a
+                          href={p.source_url ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-700 hover:underline truncate"
+                        >
+                          {p.title ?? "(untitled)"}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {missingWeeks.length > 0 && (
+                  <div className="border-t pt-3">
+                    <div className="text-sm font-semibold text-red-800 mb-2">
+                      Missing weeks in {monthName} ({missingWeeks.length})
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {missingWeeks.map((w) => (
+                        <Badge key={w} variant="outline" className="bg-white border-red-200 text-red-700">
+                          {fmtWeek(w)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })()}
 
           {/* Weekly cards */}
           {loading ? (
