@@ -383,6 +383,17 @@ export default function Tracker() {
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
+                <div className="text-lg font-bold mb-2">Plan/Track by Month</div>
+                <div className="mb-4">
+                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {MONTH_NAMES.map((m, i) => (
+                        <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <div className="rounded-md border p-3">
                     <div className="text-xs text-muted-foreground">Weeks in {monthName}</div>
