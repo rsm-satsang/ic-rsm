@@ -468,6 +468,7 @@ export default function Tracker() {
               {visibleWeeks.map((week, idx) => {
                 const list = entriesByWeek.get(week) || [];
                 const entry = list[0];
+                if (entry?.status === "published") return null;
                 if (assigneeFilter !== "all" && entry?.assignee_id !== assigneeFilter) return null;
                 if (statusFilter !== "all" && (entry?.status ?? "tbd") !== statusFilter) return null;
                 const status = entry?.status ?? "tbd";
