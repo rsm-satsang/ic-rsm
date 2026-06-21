@@ -413,7 +413,7 @@ export default function Tracker() {
                   </div>
                 </div>
 
-                <div className="text-sm font-bold uppercase tracking-wide mb-2 text-green-700">
+                <div className="text-sm font-bold mb-2 text-green-700">
                   Published Posts · {monthName} {YEAR}
                 </div>
                 {monthPublishedPosts.length === 0 ? (
