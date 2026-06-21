@@ -365,25 +365,10 @@ export default function Tracker() {
             )}
           </div>
 
-          {/* Month buttons */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {MONTH_NAMES.map((m, i) => {
-              const isActive = i === selectedMonth;
-              return (
-                <Button
-                  key={m}
-                  size="sm"
-                  variant={isActive ? "default" : "outline"}
-                  onClick={() => setSelectedMonth(i)}
-                  className="min-w-[64px]"
-                >
-                  {m}
-                </Button>
-              );
-            })}
-          </div>
+          {/* Section divider */}
+          <div className="border-t my-6" />
 
-          {/* Month summary: stats + All Posts + Missing weeks */}
+          {/* Month summary: stats + Published Posts + Missing weeks */}
           {(() => {
             const monthWeeks = visibleWeeks;
             let mPublished = 0, mDraft = 0, mMissing = 0;
@@ -398,6 +383,17 @@ export default function Tracker() {
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
+                <div className="text-lg font-bold mb-2">Plan/Track by Month</div>
+                <div className="mb-4">
+                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {MONTH_NAMES.map((m, i) => (
+                        <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <div className="rounded-md border p-3">
                     <div className="text-xs text-muted-foreground">Weeks in {monthName}</div>
@@ -417,8 +413,8 @@ export default function Tracker() {
                   </div>
                 </div>
 
-                <div className="text-sm font-bold uppercase tracking-wide mb-2">
-                  All Posts · {monthName} {YEAR}
+                <div className="text-sm font-bold uppercase tracking-wide mb-2 text-green-700">
+                  Published Posts · {monthName} {YEAR}
                 </div>
                 {monthPublishedPosts.length === 0 ? (
                   <div className="text-xs text-muted-foreground mb-4">No published posts in this month yet.</div>
