@@ -368,7 +368,7 @@ export default function Tracker() {
           {/* Section divider */}
           <div className="border-t my-6" />
 
-          {/* Month summary: stats + All Posts + Missing weeks */}
+          {/* Month summary: stats + Published Posts + Missing weeks */}
           {(() => {
             const monthWeeks = visibleWeeks;
             let mPublished = 0, mDraft = 0, mMissing = 0;
