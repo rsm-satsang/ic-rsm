@@ -251,6 +251,23 @@ export default function Tracker() {
     }
   };
 
+  const syncGDrive = async () => {
+    setSyncing("gdrive" as any);
+    try {
+      const { data, error } = await supabase.functions.invoke("tracker-sync-gdrive", {
+        body: { channel: activeChannel, year: YEAR },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Imported ${data?.imported ?? 0} posts from Google Drive`);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Google Drive sync failed");
+    } finally {
+      setSyncing(null);
+    }
+  };
+
   const currentTab = CHANNEL_TABS.find((c) => c.key === activeChannel)!;
 
   return (
@@ -335,10 +352,16 @@ export default function Tracker() {
             </Select>
 
             {(activeChannel === "substack_satsang" || activeChannel === "substack_lifequest") && (
-              <Button onClick={syncSubstack} disabled={!!syncing} variant="outline" className="ml-auto gap-2">
-                {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Sync Substack
-              </Button>
+              <div className="ml-auto flex gap-2">
+                <Button onClick={syncSubstack} disabled={!!syncing} variant="outline" className="gap-2">
+                  {syncing === activeChannel ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Sync Substack
+                </Button>
+                <Button onClick={syncGDrive} disabled={!!syncing} variant="outline" className="gap-2">
+                  {syncing === ("gdrive" as any) ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Sync Google Drive
+                </Button>
+              </div>
             )}
           </div>
 
