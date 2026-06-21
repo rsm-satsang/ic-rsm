@@ -413,8 +413,8 @@ export default function Tracker() {
                   </div>
                 </div>
 
-                <div className="text-sm font-bold uppercase tracking-wide mb-2">
-                  All Posts · {monthName} {YEAR}
+                <div className="text-sm font-bold uppercase tracking-wide mb-2 text-green-700">
+                  Published Posts · {monthName} {YEAR}
                 </div>
                 {monthPublishedPosts.length === 0 ? (
                   <div className="text-xs text-muted-foreground mb-4">No published posts in this month yet.</div>
