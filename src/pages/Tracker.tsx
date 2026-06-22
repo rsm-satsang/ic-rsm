@@ -569,7 +569,9 @@ export default function Tracker() {
                         if (v !== (entry?.notes ?? "")) upsert(week, { notes: v || null });
                       }}
                     />
+                    <WeekWorkflow week={week} entry={entry ?? null} users={users} upsert={upsert as any} />
                   </Card>
+
                 );
               })}
             </div>
