@@ -237,6 +237,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       const userMap = new Map(usersData?.map(u => [u.id, u.name]) || []);
       const now = new Date();
 
+      const contentIdMap = buildContentIds(projects);
+
       // Build the enhanced project data
       const enhanced = projects.map(project => {
         const latestVersion = versionsRes.data?.find(v => v.project_id === project.id);
@@ -257,6 +259,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           daysOld: daysBetween(createdDate, now),
           timeSinceUpdate: formatTimeSince(updatedDate),
           isArchived,
+          contentId: contentIdMap[project.id],
         };
       });
 
