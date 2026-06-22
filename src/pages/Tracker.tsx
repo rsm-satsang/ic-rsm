@@ -166,6 +166,43 @@ export default function Tracker() {
 
   useEffect(() => { load(); }, []);
 
+  // Auto-assign planner + default due date to any visible week missing an entry
+  useEffect(() => {
+    if (loading || !planners.length) return;
+    const missing = visibleWeeks.filter((w) => !(entriesByWeek.get(w) || []).length);
+    if (!missing.length) return;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const defaultDue = (w: string) => {
+      const d = new Date(w + "T00:00:00Z");
+      d.setUTCMonth(d.getUTCMonth() - 2);
+      const iso = d.toISOString().slice(0, 10);
+      return iso < todayIso ? todayIso : iso;
+    };
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const rows = missing.map((w) => {
+        const n = parseInt(w.replace(/-/g, ""), 10);
+        const planner = planners[n % planners.length];
+        return {
+          channel: activeChannel,
+          sub_channel: activeSub,
+          week_start_date: w,
+          status: "planning_assigned" as Status,
+          source: "auto",
+          created_by: user?.id ?? null,
+          plan_assignee_id: planner.id,
+          plan_due_date: defaultDue(w),
+        };
+      });
+      const { data, error } = await supabase
+        .from("tracker_entries")
+        .insert(rows as any)
+        .select();
+      if (!error && data) setEntries((prev) => [...prev, ...(data as Entry[])]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleWeeks, planners, loading, activeChannel, activeSub]);
+
   useEffect(() => {
     const tab = CHANNEL_TABS.find((c) => c.key === activeChannel);
     if (tab && !tab.sub.includes(activeSub)) setActiveSub(tab.sub[0]);
