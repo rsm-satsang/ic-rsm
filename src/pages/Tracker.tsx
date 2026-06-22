@@ -488,8 +488,8 @@ export default function Tracker() {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visibleWeeks.map((week, idx) => {
+            <div className="flex flex-col gap-4">
+              {visibleWeeks.map((week) => {
                 const list = entriesByWeek.get(week) || [];
                 const entry = list[0];
                 if (entry?.status === "published") return null;
@@ -498,84 +498,24 @@ export default function Tracker() {
                 const status = entry?.status ?? "tbd";
                 const meta = STATUS_META[status];
                 const weekNum = weeks.indexOf(week) + 1;
+                const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
                 return (
-                  <Card key={week} className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
+                  <Card key={week} className="p-4 space-y-3 w-full">
+                    <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
                       <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
                     </div>
-                    {list.length > 1 && (
-                      <div className="text-[11px] text-muted-foreground bg-blue-50 border border-blue-100 rounded px-2 py-1">
-                        {list.length} posts this week
-                      </div>
-                    )}
-                    {entry?.publish_date && (
-                      <div className="text-xs text-muted-foreground">
-                        📅 Published: {fmtWeek(entry.publish_date)}
-                      </div>
-                    )}
-                    <Input
-                      placeholder="Content title"
-                      defaultValue={entry?.title ?? ""}
-                      onBlur={(e) => {
-                        const v = e.target.value.trim();
-                        if (v !== (entry?.title ?? "")) upsert(week, { title: v || null });
-                      }}
+                    <WeekWorkflow
+                      week={week}
+                      entry={entry ?? null}
+                      users={users}
+                      planners={planners}
+                      builders={builders}
+                      operators={operators}
+                      upsert={upsert as any}
                     />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Select value={status} onValueChange={(v) => upsert(week, { status: v as Status })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(STATUS_META) as Status[]).map((s) => (
-                            <SelectItem key={s} value={s}>{STATUS_META[s].emoji} {STATUS_META[s].label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={entry?.assignee_id ?? "none"}
-                        onValueChange={(v) => upsert(week, { assignee_id: v === "none" ? null : v })}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Assignee" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Unassigned</SelectItem>
-                          {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Select
-                        value={entry?.theme_id ?? "none"}
-                        onValueChange={(v) => upsert(week, { theme_id: v === "none" ? null : v })}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Theme" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No theme</SelectItem>
-                          {themes.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="date"
-                        min={monthBounds(YEAR, selectedMonth).min}
-                        max={monthBounds(YEAR, selectedMonth).max}
-                        defaultValue={entry?.due_date ?? ""}
-                        onBlur={(e) => {
-                          const v = e.target.value;
-                          if (v !== (entry?.due_date ?? "")) upsert(week, { due_date: v || null });
-                        }}
-                      />
-                    </div>
-                    <Textarea
-                      placeholder="Notes"
-                      defaultValue={entry?.notes ?? ""}
-                      className="min-h-[60px] resize-none"
-                      onBlur={(e) => {
-                        const v = e.target.value.trim();
-                        if (v !== (entry?.notes ?? "")) upsert(week, { notes: v || null });
-                      }}
-                    />
-                    <WeekWorkflow week={week} entry={entry ?? null} users={users} upsert={upsert as any} />
                   </Card>
-
                 );
               })}
             </div>
