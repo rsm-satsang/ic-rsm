@@ -799,57 +799,93 @@ export type Database = {
       tracker_entries: {
         Row: {
           assignee_id: string | null
+          build_assignee_id: string | null
+          build_due_date: string | null
           channel: Database["public"]["Enums"]["tracker_channel"]
           created_at: string
           created_by: string | null
+          draft_title: string | null
           due_date: string | null
           id: string
           notes: string | null
+          operate_assignee_id: string | null
+          operate_due_date: string | null
+          plan_assignee_id: string | null
+          plan_comments: string | null
+          plan_due_date: string | null
+          project_id: string | null
           publish_date: string | null
           source: string
           source_url: string | null
           status: Database["public"]["Enums"]["tracker_status"]
           sub_channel: Database["public"]["Enums"]["tracker_sub_channel"]
+          substack_published: boolean
           theme_id: string | null
+          theme_text: string | null
           title: string | null
           updated_at: string
           week_start_date: string
+          youtube_published: boolean
         }
         Insert: {
           assignee_id?: string | null
+          build_assignee_id?: string | null
+          build_due_date?: string | null
           channel: Database["public"]["Enums"]["tracker_channel"]
           created_at?: string
           created_by?: string | null
+          draft_title?: string | null
           due_date?: string | null
           id?: string
           notes?: string | null
+          operate_assignee_id?: string | null
+          operate_due_date?: string | null
+          plan_assignee_id?: string | null
+          plan_comments?: string | null
+          plan_due_date?: string | null
+          project_id?: string | null
           publish_date?: string | null
           source?: string
           source_url?: string | null
           status?: Database["public"]["Enums"]["tracker_status"]
           sub_channel?: Database["public"]["Enums"]["tracker_sub_channel"]
+          substack_published?: boolean
           theme_id?: string | null
+          theme_text?: string | null
           title?: string | null
           updated_at?: string
           week_start_date: string
+          youtube_published?: boolean
         }
         Update: {
           assignee_id?: string | null
+          build_assignee_id?: string | null
+          build_due_date?: string | null
           channel?: Database["public"]["Enums"]["tracker_channel"]
           created_at?: string
           created_by?: string | null
+          draft_title?: string | null
           due_date?: string | null
           id?: string
           notes?: string | null
+          operate_assignee_id?: string | null
+          operate_due_date?: string | null
+          plan_assignee_id?: string | null
+          plan_comments?: string | null
+          plan_due_date?: string | null
+          project_id?: string | null
           publish_date?: string | null
           source?: string
           source_url?: string | null
           status?: Database["public"]["Enums"]["tracker_status"]
           sub_channel?: Database["public"]["Enums"]["tracker_sub_channel"]
+          substack_published?: boolean
           theme_id?: string | null
+          theme_text?: string | null
           title?: string | null
           updated_at?: string
           week_start_date?: string
+          youtube_published?: boolean
         }
         Relationships: [
           {
@@ -1317,6 +1353,12 @@ export type Database = {
         | "not_published"
         | "tbd"
         | "not_applicable"
+        | "planning_assigned"
+        | "plan_complete"
+        | "build_assigned"
+        | "build_in_progress"
+        | "operate_assigned"
+        | "publish_complete"
       tracker_sub_channel: "newsletter" | "long_form" | "shorts"
       vocab_visibility: "project" | "org" | "public"
     }
@@ -1484,6 +1526,12 @@ export const Constants = {
         "not_published",
         "tbd",
         "not_applicable",
+        "planning_assigned",
+        "plan_complete",
+        "build_assigned",
+        "build_in_progress",
+        "operate_assigned",
+        "publish_complete",
       ],
       tracker_sub_channel: ["newsletter", "long_form", "shorts"],
       vocab_visibility: ["project", "org", "public"],

@@ -13,9 +13,14 @@ import GlobalNav from "@/components/GlobalNav";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Calendar as CalendarIcon } from "lucide-react";
 
+import WeekWorkflow from "@/components/tracker/WeekWorkflow";
+
 type Channel = "substack_satsang" | "substack_lifequest" | "youtube";
 type SubChannel = "newsletter" | "long_form" | "shorts";
-type Status = "published" | "draft" | "not_published" | "tbd" | "not_applicable";
+type Status =
+  | "published" | "draft" | "not_published" | "tbd" | "not_applicable"
+  | "planning_assigned" | "plan_complete" | "build_assigned" | "build_in_progress"
+  | "operate_assigned" | "publish_complete";
 
 interface Entry {
   id: string;
@@ -31,6 +36,18 @@ interface Entry {
   notes: string | null;
   source: string;
   source_url: string | null;
+  plan_assignee_id?: string | null;
+  plan_due_date?: string | null;
+  theme_text?: string | null;
+  plan_comments?: string | null;
+  build_assignee_id?: string | null;
+  build_due_date?: string | null;
+  draft_title?: string | null;
+  project_id?: string | null;
+  operate_assignee_id?: string | null;
+  operate_due_date?: string | null;
+  substack_published?: boolean | null;
+  youtube_published?: boolean | null;
 }
 
 interface UserOpt { id: string; name: string; email: string; }
@@ -42,7 +59,14 @@ const STATUS_META: Record<Status, { label: string; emoji: string; cls: string }>
   not_published: { label: "Not Published", emoji: "🔴", cls: "bg-red-100 text-red-800 border-red-200" },
   tbd: { label: "TBD", emoji: "⚪", cls: "bg-gray-100 text-gray-700 border-gray-200" },
   not_applicable: { label: "Not Applicable", emoji: "⚫", cls: "bg-gray-200 text-gray-600 border-gray-300" },
+  planning_assigned: { label: "Planning Assigned", emoji: "📝", cls: "bg-blue-100 text-blue-800 border-blue-200" },
+  plan_complete: { label: "Plan Complete", emoji: "✅", cls: "bg-indigo-100 text-indigo-800 border-indigo-200" },
+  build_assigned: { label: "Build Assigned", emoji: "🛠️", cls: "bg-purple-100 text-purple-800 border-purple-200" },
+  build_in_progress: { label: "Build In Progress", emoji: "🚧", cls: "bg-amber-100 text-amber-800 border-amber-200" },
+  operate_assigned: { label: "Operate/Publish Assigned", emoji: "📣", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  publish_complete: { label: "Publish Complete", emoji: "🎉", cls: "bg-green-100 text-green-800 border-green-200" },
 };
+
 
 function mondayOf(d: Date): Date {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -545,7 +569,9 @@ export default function Tracker() {
                         if (v !== (entry?.notes ?? "")) upsert(week, { notes: v || null });
                       }}
                     />
+                    <WeekWorkflow week={week} entry={entry ?? null} users={users} upsert={upsert as any} />
                   </Card>
+
                 );
               })}
             </div>
