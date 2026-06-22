@@ -110,9 +110,8 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       const { data } = await supabase
         .from("projects")
         .select("id,title")
-        .eq("status", "draft")
         .order("updated_at", { ascending: false })
-        .limit(200);
+        .limit(500);
       setDraftProjects((data as any[]) ?? []);
     })();
   }, [panel]);
