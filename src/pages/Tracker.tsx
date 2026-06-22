@@ -50,7 +50,7 @@ interface Entry {
   youtube_published?: boolean | null;
 }
 
-interface UserOpt { id: string; name: string; email: string; }
+interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
 interface ThemeOpt { id: string; name: string; }
 
 const STATUS_META: Record<Status, { label: string; emoji: string; cls: string }> = {
