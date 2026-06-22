@@ -75,11 +75,28 @@ export default function AdminUsers() {
     setLoading(true);
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, role, approval_status, approved_by, approved_at, rejection_notes, created_at")
+      .select("id, name, email, role, approval_status, approved_by, approved_at, rejection_notes, created_at, content_roles")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     else setUsers((data || []) as UserRow[]);
     setLoading(false);
+  };
+
+  const toggleAdmin = async (u: UserRow, checked: boolean) => {
+    const newRole = checked ? "admin" : "user";
+    const { error } = await supabase.from("users").update({ role: newRole as any }).eq("id", u.id);
+    if (error) return toast.error(error.message);
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, role: newRole } : x)));
+    toast.success(`Admin ${checked ? "granted" : "revoked"}`);
+  };
+
+  const toggleContentRole = async (u: UserRow, role: "planner" | "builder" | "operator", checked: boolean) => {
+    const current = new Set(u.content_roles ?? []);
+    if (checked) current.add(role); else current.delete(role);
+    const next = Array.from(current);
+    const { error } = await supabase.from("users").update({ content_roles: next } as any).eq("id", u.id);
+    if (error) return toast.error(error.message);
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, content_roles: next } : x)));
   };
 
   const setStatus = async (u: UserRow, status: string, notes?: string) => {
