@@ -368,11 +368,11 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
 
           {panel === "link_build" && !entry?.project_id && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Draft project</label>
+              <label className="text-xs font-medium">Project</label>
               <Select value={linkProjectId} onValueChange={setLinkProjectId}>
-                <SelectTrigger><SelectValue placeholder="Select a draft project" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger>
                 <SelectContent>
-                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No draft projects</div>}
+                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
                   {draftProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
                 </SelectContent>
               </Select>
