@@ -461,6 +461,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Merged Project Column */}
       <TableCell className="py-4">
         <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80">
+            {project.contentId}
+          </span>
           <button
             onClick={() => handleOpenProject(project)}
             className="text-left font-semibold text-foreground hover:text-primary transition-colors text-base"
