@@ -11,7 +11,7 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
@@ -47,8 +47,17 @@ function pickByWeek<T>(arr: T[], weekIso: string): T | null {
   const n = parseInt(weekIso.replace(/-/g, ""), 10);
   return arr[n % arr.length];
 }
+function fmtDate(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
-type Panel = null | "assign_plan" | "complete_plan" | "assign_build" | "complete_build" | "assign_op" | "complete_op";
+type Panel =
+  | null
+  | "edit_plan" | "complete_plan"
+  | "edit_build" | "complete_build"
+  | "edit_op" | "complete_op";
 
 type PhaseState = "todo" | "active" | "done";
 
@@ -93,14 +102,18 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
 
   const close = () => setPanel(null);
 
-  const submitAssignPlan = async () => {
+  const planDone = ps.plan === "done";
+  const buildDone = ps.build === "done";
+  const opDone = ps.operate === "done";
+
+  const submitEditPlan = async () => {
     if (!planAssignee) return toast.error("Select an assignee");
     await upsert(week, {
       plan_assignee_id: planAssignee,
       plan_due_date: planDue || null,
-      status: "planning_assigned",
+      ...(entry?.status ? {} : { status: "planning_assigned" }),
     });
-    toast.success("Planning assigned");
+    toast.success("Planning updated");
     close();
   };
 
@@ -113,7 +126,7 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       status: "plan_complete",
     };
     if (autoBuilder) {
-      patch.build_assignee_id = autoBuilder.id;
+      patch.build_assignee_id = entry?.build_assignee_id ?? autoBuilder.id;
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
       patch.status = "build_assigned";
     }
@@ -124,52 +137,64 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
     close();
   };
 
-  const submitAssignBuild = async () => {
+  const submitEditBuild = async () => {
     if (!buildAssignee) return toast.error("Select an assignee");
     await upsert(week, {
       build_assignee_id: buildAssignee,
       build_due_date: buildDue || null,
-      status: "build_assigned",
     });
-    toast.success("Build assigned");
+    toast.success("Build updated");
     close();
   };
 
-  const startBuilding = async () => {
+  const submitCompleteBuild = async () => {
     if (!draftTitle.trim()) return toast.error("Enter a draft title");
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return toast.error("Sign in required");
-    const { data, error } = await supabase
-      .from("projects")
-      .insert({ title: draftTitle.trim(), owner_id: user.id, type: "document", status: "in_progress" as any })
-      .select()
-      .single();
-    if (error) return toast.error(error.message);
+
+    let projectId: string | null = entry?.project_id ?? null;
+    let hasDraft = false;
+
+    if (projectId) {
+      const { count } = await supabase
+        .from("versions")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId);
+      hasDraft = (count ?? 0) > 0;
+    } else {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({ title: draftTitle.trim(), owner_id: user.id, type: "document", status: "in_progress" as any })
+        .select()
+        .single();
+      if (error) return toast.error(error.message);
+      projectId = (data as any).id;
+    }
+
     const autoOp = pickByWeek(operators, week);
     const patch: any = {
       draft_title: draftTitle.trim(),
       title: draftTitle.trim(),
-      project_id: (data as any).id,
+      project_id: projectId,
       status: "build_in_progress",
     };
     if (autoOp) {
-      patch.operate_assignee_id = autoOp.id;
+      patch.operate_assignee_id = entry?.operate_assignee_id ?? autoOp.id;
       patch.operate_due_date = entry?.operate_due_date ?? wednesdayOf(week);
       patch.status = "operate_assigned";
     }
     await upsert(week, patch);
-    toast.success(autoOp ? `Build started — Operate assigned to ${autoOp.name}` : "Build started");
-    navigate(`/workspace/${(data as any).id}`);
+    toast.success(hasDraft ? "Opening review" : "Opening reference intake");
+    navigate(hasDraft ? `/workspace/${projectId}` : `/project/${projectId}/intake`);
   };
 
-  const submitAssignOp = async () => {
+  const submitEditOp = async () => {
     if (!opAssignee) return toast.error("Select an assignee");
     await upsert(week, {
       operate_assignee_id: opAssignee,
       operate_due_date: opDue || null,
-      status: "operate_assigned",
     });
-    toast.success("Operate/Publish assigned");
+    toast.success("Operate/Publish updated");
     close();
   };
 
@@ -214,38 +239,64 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
     );
   };
 
+  const AssignmentLine = ({
+    assigneeId, due, onEdit, editing,
+  }: { assigneeId?: string | null; due?: string | null; onEdit: () => void; editing: boolean }) => {
+    if (!assigneeId) return null;
+    const name = users.find((u) => u.id === assigneeId)?.name ?? "—";
+    return (
+      <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
+        <span>Assigned to <b>{name}</b>{due ? ` · due ${due}` : ""}</span>
+        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onEdit}>
+          <Pencil className="h-3 w-3 mr-1" />
+          {editing ? "Close" : "Reassign / Edit Due date"}
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="border-t pt-2 space-y-1">
       {/* PLAN */}
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} />
         <CollapsibleContent className="px-2 pb-2">
-          {entry?.plan_assignee_id && (
-            <div className="text-xs text-muted-foreground mb-2">
-              Assigned to {users.find((u) => u.id === entry.plan_assignee_id)?.name ?? "—"}
-              {entry.plan_due_date ? ` · due ${entry.plan_due_date}` : ""}
-            </div>
-          )}
+          <AssignmentLine
+            assigneeId={entry?.plan_assignee_id}
+            due={entry?.plan_due_date}
+            editing={panel === "edit_plan"}
+            onEdit={() => setPanel(panel === "edit_plan" ? null : "edit_plan")}
+          />
           {entry?.theme_text && (
             <div className="text-xs mb-2"><b>Theme:</b> {entry.theme_text}</div>
           )}
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setPanel(panel === "assign_plan" ? null : "assign_plan")}>
-              Assign Planning
-            </Button>
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setPanel(panel === "complete_plan" ? null : "complete_plan")}>
-              Complete Planning
-            </Button>
-          </div>
-          {panel === "assign_plan" && (
-            <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
+
+          {panel === "edit_plan" && (
+            <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <Input type="date" value={planDue} min={todayISO()} onChange={(e) => setPlanDue(e.target.value)} />
               <label className="text-xs font-medium">Planner</label>
               {userSelect(planAssignee, setPlanAssignee, planners)}
-              <Button size="sm" className="w-full" onClick={submitAssignPlan}>Submit Assignment</Button>
+              <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
             </div>
           )}
+
+          {planDone ? (
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <span>
+                Plan completed by <b>{users.find((u) => u.id === entry?.plan_assignee_id)?.name ?? "—"}</b>
+                {entry?.updated_at ? ` on ${fmtDate(entry.updated_at)}` : ""}
+              </span>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(panel === "complete_plan" ? null : "complete_plan")}>
+                Redo planning
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" className="w-full" onClick={() => setPanel(panel === "complete_plan" ? null : "complete_plan")}>
+              Complete Planning
+            </Button>
+          )}
+
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Theme</label>
@@ -262,34 +313,37 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       <Collapsible open={openBuild} onOpenChange={setOpenBuild}>
         <SectionHeader title="Build" state={ps.build} open={openBuild} onToggle={() => setOpenBuild((v) => !v)} />
         <CollapsibleContent className="px-2 pb-2">
-          {entry?.build_assignee_id && (
-            <div className="text-xs text-muted-foreground mb-2">
-              Assigned to {users.find((u) => u.id === entry.build_assignee_id)?.name ?? "—"}
-              {entry.build_due_date ? ` · due ${entry.build_due_date}` : ""}
-            </div>
-          )}
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setPanel(panel === "assign_build" ? null : "assign_build")}>
-              Assign Build
-            </Button>
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setPanel(panel === "complete_build" ? null : "complete_build")}>
-              Complete Build
-            </Button>
-          </div>
-          {panel === "assign_build" && (
-            <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
+          <AssignmentLine
+            assigneeId={entry?.build_assignee_id}
+            due={entry?.build_due_date}
+            editing={panel === "edit_build"}
+            onEdit={() => setPanel(panel === "edit_build" ? null : "edit_build")}
+          />
+          {panel === "edit_build" && (
+            <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <Input type="date" value={buildDue} min={todayISO()} onChange={(e) => setBuildDue(e.target.value)} />
               <label className="text-xs font-medium">Builder</label>
               {userSelect(buildAssignee, setBuildAssignee, builders)}
-              <Button size="sm" className="w-full" onClick={submitAssignBuild}>Submit Build Assignment</Button>
+              <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
             </div>
           )}
+
+          {buildDone ? (
+            <div className="text-xs">Build in progress / complete.</div>
+          ) : (
+            <Button size="sm" variant="outline" className="w-full" onClick={() => setPanel(panel === "complete_build" ? null : "complete_build")}>
+              Complete Build
+            </Button>
+          )}
+
           {panel === "complete_build" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Draft title</label>
               <Input value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} placeholder="Draft title" />
-              <Button size="sm" className="w-full" onClick={startBuilding}>Start Building</Button>
+              <Button size="sm" className="w-full" onClick={submitCompleteBuild}>
+                {entry?.project_id ? "Continue" : "Start Reference Intake"}
+              </Button>
             </div>
           )}
         </CollapsibleContent>
@@ -299,29 +353,30 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       <Collapsible open={openOp} onOpenChange={setOpenOp}>
         <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp} onToggle={() => setOpenOp((v) => !v)} />
         <CollapsibleContent className="px-2 pb-2">
-          {entry?.operate_assignee_id && (
-            <div className="text-xs text-muted-foreground mb-2">
-              Assigned to {users.find((u) => u.id === entry.operate_assignee_id)?.name ?? "—"}
-              {entry.operate_due_date ? ` · due ${entry.operate_due_date}` : ""}
-            </div>
-          )}
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setPanel(panel === "assign_op" ? null : "assign_op")}>
-              Assign Operate/Publish
-            </Button>
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setPanel(panel === "complete_op" ? null : "complete_op")}>
-              Complete Publish/Operate
-            </Button>
-          </div>
-          {panel === "assign_op" && (
-            <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
+          <AssignmentLine
+            assigneeId={entry?.operate_assignee_id}
+            due={entry?.operate_due_date}
+            editing={panel === "edit_op"}
+            onEdit={() => setPanel(panel === "edit_op" ? null : "edit_op")}
+          />
+          {panel === "edit_op" && (
+            <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <Input type="date" value={opDue} onChange={(e) => setOpDue(e.target.value)} />
               <label className="text-xs font-medium">Operator</label>
               {userSelect(opAssignee, setOpAssignee, operators)}
-              <Button size="sm" className="w-full" onClick={submitAssignOp}>Submit Assignment</Button>
+              <Button size="sm" className="w-full" onClick={submitEditOp}>Save</Button>
             </div>
           )}
+
+          {opDone ? (
+            <div className="text-xs">Publishing complete.</div>
+          ) : (
+            <Button size="sm" variant="outline" className="w-full" onClick={() => setPanel(panel === "complete_op" ? null : "complete_op")}>
+              Complete Publish/Operate
+            </Button>
+          )}
+
           {panel === "complete_op" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="flex items-center gap-2 text-sm">
