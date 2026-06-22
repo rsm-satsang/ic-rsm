@@ -204,10 +204,11 @@ export default function AdminUsers() {
               )}
             </TableCell>
           </TableRow>
-        ))}
-        {list.length === 0 && (
-          <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
-        )}
+          );
+          })}
+          {list.length === 0 && (
+            <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
+          )}
       </TableBody>
     </Table>
   );
