@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Pencil } from "lucide-react";
+import { ChevronDown, Pencil, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
@@ -55,8 +55,8 @@ function fmtDate(iso?: string | null) {
 
 type Panel =
   | null
-  | "edit_plan" | "complete_plan"
-  | "edit_build" | "complete_build"
+  | "edit_plan" | "complete_plan" | "see_plan"
+  | "edit_build" | "link_build"
   | "edit_op" | "complete_op";
 
 type PhaseState = "todo" | "active" | "done";
@@ -78,10 +78,13 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
 
   const status = entry?.status ?? "tbd";
   const ps = phaseStates(status);
+  const planDone = ps.plan === "done";
+  const buildDone = ps.build === "done";
+  const opDone = ps.operate === "done";
 
   const [openPlan, setOpenPlan] = useState(ps.plan === "active");
-  const [openBuild, setOpenBuild] = useState(ps.build === "active");
-  const [openOp, setOpenOp] = useState(ps.operate === "active");
+  const [openBuild, setOpenBuild] = useState(planDone && ps.build === "active");
+  const [openOp, setOpenOp] = useState(planDone && buildDone && ps.operate === "active");
 
   // Plan
   const [planAssignee, setPlanAssignee] = useState<string>(entry?.plan_assignee_id ?? "");
@@ -92,7 +95,8 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
   // Build
   const [buildAssignee, setBuildAssignee] = useState<string>(entry?.build_assignee_id ?? "");
   const [buildDue, setBuildDue] = useState<string>(entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1));
-  const [draftTitle, setDraftTitle] = useState<string>(entry?.draft_title ?? entry?.title ?? "");
+  const [draftProjects, setDraftProjects] = useState<Array<{ id: string; title: string }>>([]);
+  const [linkProjectId, setLinkProjectId] = useState<string>("");
 
   // Operate
   const [opAssignee, setOpAssignee] = useState<string>(entry?.operate_assignee_id ?? "");
@@ -100,11 +104,20 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
   const [subPub, setSubPub] = useState<boolean>(!!entry?.substack_published);
   const [ytPub, setYtPub] = useState<boolean>(!!entry?.youtube_published);
 
-  const close = () => setPanel(null);
+  useEffect(() => {
+    if (panel !== "link_build") return;
+    (async () => {
+      const { data } = await supabase
+        .from("projects")
+        .select("id,title")
+        .eq("status", "draft")
+        .order("updated_at", { ascending: false })
+        .limit(200);
+      setDraftProjects((data as any[]) ?? []);
+    })();
+  }, [panel]);
 
-  const planDone = ps.plan === "done";
-  const buildDone = ps.build === "done";
-  const opDone = ps.operate === "done";
+  const close = () => setPanel(null);
 
   const submitEditPlan = async () => {
     if (!planAssignee) return toast.error("Select an assignee");
@@ -147,45 +160,46 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
     close();
   };
 
-  const submitCompleteBuild = async () => {
-    if (!draftTitle.trim()) return toast.error("Enter a draft title");
+  const autoAssignOpPatch = () => {
+    const autoOp = pickByWeek(operators, week);
+    if (!autoOp) return { status: "build_in_progress" as const };
+    return {
+      operate_assignee_id: entry?.operate_assignee_id ?? autoOp.id,
+      operate_due_date: entry?.operate_due_date ?? wednesdayOf(week),
+      status: "operate_assigned" as const,
+    };
+  };
+
+  const startBuildFromScratch = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return toast.error("Sign in required");
+    const title = entry?.title || `Week of ${week}`;
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({ title, owner_id: user.id, type: "document", status: "in_progress" as any })
+      .select()
+      .single();
+    if (error) return toast.error(error.message);
+    const projectId = (data as any).id;
+    await upsert(week, { project_id: projectId, title, ...autoAssignOpPatch() });
+    toast.success("Project created");
+    navigate(`/project/${projectId}/intake`);
+  };
 
-    let projectId: string | null = entry?.project_id ?? null;
-    let hasDraft = false;
+  const linkProject = async () => {
+    if (!linkProjectId) return toast.error("Select a project");
+    const proj = draftProjects.find((p) => p.id === linkProjectId);
+    await upsert(week, {
+      project_id: linkProjectId,
+      ...(proj?.title ? { title: proj.title } : {}),
+      ...autoAssignOpPatch(),
+    });
+    toast.success("Project linked");
+    navigate(`/workspace/${linkProjectId}`);
+  };
 
-    if (projectId) {
-      const { count } = await supabase
-        .from("versions")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", projectId);
-      hasDraft = (count ?? 0) > 0;
-    } else {
-      const { data, error } = await supabase
-        .from("projects")
-        .insert({ title: draftTitle.trim(), owner_id: user.id, type: "document", status: "in_progress" as any })
-        .select()
-        .single();
-      if (error) return toast.error(error.message);
-      projectId = (data as any).id;
-    }
-
-    const autoOp = pickByWeek(operators, week);
-    const patch: any = {
-      draft_title: draftTitle.trim(),
-      title: draftTitle.trim(),
-      project_id: projectId,
-      status: "build_in_progress",
-    };
-    if (autoOp) {
-      patch.operate_assignee_id = entry?.operate_assignee_id ?? autoOp.id;
-      patch.operate_due_date = entry?.operate_due_date ?? wednesdayOf(week);
-      patch.status = "operate_assigned";
-    }
-    await upsert(week, patch);
-    toast.success(hasDraft ? "Opening review" : "Opening reference intake");
-    navigate(hasDraft ? `/workspace/${projectId}` : `/project/${projectId}/intake`);
+  const openLinkedReview = () => {
+    if (entry?.project_id) navigate(`/workspace/${entry.project_id}`);
   };
 
   const submitEditOp = async () => {
@@ -218,20 +232,22 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
   );
 
   const SectionHeader = ({
-    title, state, open, onToggle,
-  }: { title: string; state: PhaseState; open: boolean; onToggle: () => void }) => {
+    title, state, open, onToggle, disabled,
+  }: { title: string; state: PhaseState; open: boolean; onToggle: () => void; disabled?: boolean }) => {
     const dot = state === "done" ? "bg-green-500" : state === "active" ? "bg-amber-500" : "bg-gray-300";
     return (
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          onClick={onToggle}
-          className="w-full flex items-center justify-between py-2 px-2 hover:bg-muted/40 rounded"
+          onClick={() => { if (!disabled) onToggle(); }}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between py-2 px-2 rounded ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted/40"}`}
         >
           <div className="flex items-center gap-2">
             <span className={`inline-block h-2.5 w-2.5 rounded-full ${dot}`} />
             <span className="text-sm font-semibold uppercase tracking-wide">{title}</span>
             {state === "done" && <span className="text-xs text-green-700">Complete</span>}
+            {disabled && <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Locked until plan is complete</span>}
           </div>
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
@@ -267,9 +283,6 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
             editing={panel === "edit_plan"}
             onEdit={() => setPanel(panel === "edit_plan" ? null : "edit_plan")}
           />
-          {entry?.theme_text && (
-            <div className="text-xs mb-2"><b>Theme:</b> {entry.theme_text}</div>
-          )}
 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
@@ -287,6 +300,9 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
                 Plan completed by <b>{users.find((u) => u.id === entry?.plan_assignee_id)?.name ?? "—"}</b>
                 {entry?.updated_at ? ` on ${fmtDate(entry.updated_at)}` : ""}
               </span>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(panel === "see_plan" ? null : "see_plan")}>
+                See Plan
+              </Button>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(panel === "complete_plan" ? null : "complete_plan")}>
                 Redo planning
               </Button>
@@ -295,6 +311,13 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
             <Button size="sm" variant="outline" className="w-full" onClick={() => setPanel(panel === "complete_plan" ? null : "complete_plan")}>
               Complete Planning
             </Button>
+          )}
+
+          {panel === "see_plan" && planDone && (
+            <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2 text-xs">
+              <div><b>Theme:</b> {entry?.theme_text || "—"}</div>
+              <div><b>Plan comments:</b> {entry?.plan_comments || "—"}</div>
+            </div>
           )}
 
           {panel === "complete_plan" && (
@@ -310,8 +333,8 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       </Collapsible>
 
       {/* BUILD */}
-      <Collapsible open={openBuild} onOpenChange={setOpenBuild}>
-        <SectionHeader title="Build" state={ps.build} open={openBuild} onToggle={() => setOpenBuild((v) => !v)} />
+      <Collapsible open={openBuild && planDone} onOpenChange={(v) => { if (planDone) setOpenBuild(v); }}>
+        <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.build_assignee_id}
@@ -329,29 +352,40 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
             </div>
           )}
 
-          {buildDone ? (
-            <div className="text-xs">Build in progress / complete.</div>
-          ) : (
-            <Button size="sm" variant="outline" className="w-full" onClick={() => setPanel(panel === "complete_build" ? null : "complete_build")}>
-              Complete Build
+          {entry?.project_id ? (
+            <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
+              Open Linked Project (Review)
             </Button>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" variant="outline" onClick={startBuildFromScratch}>
+                Start Building from scratch
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setPanel(panel === "link_build" ? null : "link_build")}>
+                Link a Project
+              </Button>
+            </div>
           )}
 
-          {panel === "complete_build" && (
+          {panel === "link_build" && !entry?.project_id && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Draft title</label>
-              <Input value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} placeholder="Draft title" />
-              <Button size="sm" className="w-full" onClick={submitCompleteBuild}>
-                {entry?.project_id ? "Continue" : "Start Reference Intake"}
-              </Button>
+              <label className="text-xs font-medium">Draft project</label>
+              <Select value={linkProjectId} onValueChange={setLinkProjectId}>
+                <SelectTrigger><SelectValue placeholder="Select a draft project" /></SelectTrigger>
+                <SelectContent>
+                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No draft projects</div>}
+                  {draftProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button size="sm" className="w-full" onClick={linkProject}>Link & Open</Button>
             </div>
           )}
         </CollapsibleContent>
       </Collapsible>
 
       {/* OPERATE / PUBLISH */}
-      <Collapsible open={openOp} onOpenChange={setOpenOp}>
-        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp} onToggle={() => setOpenOp((v) => !v)} />
+      <Collapsible open={openOp && planDone} onOpenChange={(v) => { if (planDone) setOpenOp(v); }}>
+        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && planDone} onToggle={() => setOpenOp((v) => !v)} disabled={!planDone} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.operate_assignee_id}
