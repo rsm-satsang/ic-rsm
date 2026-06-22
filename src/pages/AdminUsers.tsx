@@ -130,21 +130,44 @@ export default function AdminUsers() {
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Signup Date</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {list.map((u) => (
-          <TableRow key={u.id}>
-            <TableCell className="font-medium">{u.name}</TableCell>
-            <TableCell>{u.email}</TableCell>
-            <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
-            <TableCell>
-              <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
-                {STATUS_LABEL[u.approval_status] || u.approval_status}
-              </Badge>
-            </TableCell>
+            <TableHead>Status</TableHead>
+            <TableHead>Roles</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {list.map((u) => {
+            const cr = u.content_roles ?? [];
+            return (
+            <TableRow key={u.id}>
+              <TableCell className="font-medium">{u.name}</TableCell>
+              <TableCell>{u.email}</TableCell>
+              <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
+                  {STATUS_LABEL[u.approval_status] || u.approval_status}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={u.role === "admin"} onCheckedChange={(v) => toggleAdmin(u, !!v)} />
+                    Admin
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={cr.includes("planner")} onCheckedChange={(v) => toggleContentRole(u, "planner", !!v)} />
+                    Can Plan
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={cr.includes("builder")} onCheckedChange={(v) => toggleContentRole(u, "builder", !!v)} />
+                    Can Build
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={cr.includes("operator")} onCheckedChange={(v) => toggleContentRole(u, "operator", !!v)} />
+                    Can Operate
+                  </label>
+                </div>
+              </TableCell>
             <TableCell className="text-right space-x-2">
               {u.approval_status !== "approved" && (
                 <Button size="sm" variant="outline" onClick={() => setStatus(u, "approved")}>
