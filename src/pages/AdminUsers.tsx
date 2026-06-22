@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
 
+import { Checkbox } from "@/components/ui/checkbox";
+
 interface UserRow {
   id: string;
   name: string;
@@ -26,6 +28,7 @@ interface UserRow {
   approved_at: string | null;
   rejection_notes: string | null;
   created_at: string;
+  content_roles: string[] | null;
 }
 
 const STATUS_BADGE: Record<string, string> = {
