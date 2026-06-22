@@ -78,7 +78,44 @@ interface ProjectWithDetails extends Project {
   daysOld: number;
   timeSinceUpdate: string;
   isArchived: boolean;
+  contentId: string;
 }
+
+// Compute a short prefix for the content ID based on project goal/type
+const contentPrefix = (project: Project) => {
+  const goal = (project.metadata as any)?.goal;
+  if (goal === "substack_newsletter") return "NL";
+  if (goal === "wordpress_blog") return "BL";
+  if (goal === "video_to_youtube_short" || project.type === "video") return "VD";
+  if (project.type === "note") return "NT";
+  return "DC";
+};
+
+const ymd = (iso: string) => {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+};
+
+// Assign per-(prefix+date) serial numbers in created_at ascending order so IDs are stable
+const buildContentIds = (projects: Project[]): Record<string, string> => {
+  const sorted = [...projects].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+  const counters = new Map<string, number>();
+  const map: Record<string, string> = {};
+  for (const p of sorted) {
+    const prefix = contentPrefix(p);
+    const date = ymd(p.created_at);
+    const key = `${prefix}-${date}`;
+    const n = (counters.get(key) ?? 0) + 1;
+    counters.set(key, n);
+    map[p.id] = `${prefix}-SRJN-DFT-${date}-${n}`;
+  }
+  return map;
+};
 
 interface ProjectsTableProps {
   projects: Project[];
@@ -200,6 +237,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       const userMap = new Map(usersData?.map(u => [u.id, u.name]) || []);
       const now = new Date();
 
+      const contentIdMap = buildContentIds(projects);
+
       // Build the enhanced project data
       const enhanced = projects.map(project => {
         const latestVersion = versionsRes.data?.find(v => v.project_id === project.id);
@@ -220,6 +259,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           daysOld: daysBetween(createdDate, now),
           timeSinceUpdate: formatTimeSince(updatedDate),
           isArchived,
+          contentId: contentIdMap[project.id],
         };
       });
 
@@ -421,6 +461,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Merged Project Column */}
       <TableCell className="py-4">
         <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80">
+            {project.contentId}
+          </span>
           <button
             onClick={() => handleOpenProject(project)}
             className="text-left font-semibold text-foreground hover:text-primary transition-colors text-base"

@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
 
+import { Checkbox } from "@/components/ui/checkbox";
+
 interface UserRow {
   id: string;
   name: string;
@@ -26,6 +28,7 @@ interface UserRow {
   approved_at: string | null;
   rejection_notes: string | null;
   created_at: string;
+  content_roles: string[] | null;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -72,11 +75,28 @@ export default function AdminUsers() {
     setLoading(true);
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, role, approval_status, approved_by, approved_at, rejection_notes, created_at")
+      .select("id, name, email, role, approval_status, approved_by, approved_at, rejection_notes, created_at, content_roles")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     else setUsers((data || []) as UserRow[]);
     setLoading(false);
+  };
+
+  const toggleAdmin = async (u: UserRow, checked: boolean) => {
+    const newRole = checked ? "admin" : "user";
+    const { error } = await supabase.from("users").update({ role: newRole as any }).eq("id", u.id);
+    if (error) return toast.error(error.message);
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, role: newRole } : x)));
+    toast.success(`Admin ${checked ? "granted" : "revoked"}`);
+  };
+
+  const toggleContentRole = async (u: UserRow, role: "planner" | "builder" | "operator", checked: boolean) => {
+    const current = new Set(u.content_roles ?? []);
+    if (checked) current.add(role); else current.delete(role);
+    const next = Array.from(current);
+    const { error } = await supabase.from("users").update({ content_roles: next } as any).eq("id", u.id);
+    if (error) return toast.error(error.message);
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, content_roles: next } : x)));
   };
 
   const setStatus = async (u: UserRow, status: string, notes?: string) => {
@@ -110,21 +130,44 @@ export default function AdminUsers() {
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Signup Date</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {list.map((u) => (
-          <TableRow key={u.id}>
-            <TableCell className="font-medium">{u.name}</TableCell>
-            <TableCell>{u.email}</TableCell>
-            <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
-            <TableCell>
-              <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
-                {STATUS_LABEL[u.approval_status] || u.approval_status}
-              </Badge>
-            </TableCell>
+            <TableHead>Status</TableHead>
+            <TableHead>Roles</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {list.map((u) => {
+            const cr = u.content_roles ?? [];
+            return (
+            <TableRow key={u.id}>
+              <TableCell className="font-medium">{u.name}</TableCell>
+              <TableCell>{u.email}</TableCell>
+              <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
+                  {STATUS_LABEL[u.approval_status] || u.approval_status}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={u.role === "admin"} onCheckedChange={(v) => toggleAdmin(u, !!v)} />
+                    Admin
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={cr.includes("planner")} onCheckedChange={(v) => toggleContentRole(u, "planner", !!v)} />
+                    Can Plan
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={cr.includes("builder")} onCheckedChange={(v) => toggleContentRole(u, "builder", !!v)} />
+                    Can Build
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={cr.includes("operator")} onCheckedChange={(v) => toggleContentRole(u, "operator", !!v)} />
+                    Can Operate
+                  </label>
+                </div>
+              </TableCell>
             <TableCell className="text-right space-x-2">
               {u.approval_status !== "approved" && (
                 <Button size="sm" variant="outline" onClick={() => setStatus(u, "approved")}>
@@ -161,10 +204,11 @@ export default function AdminUsers() {
               )}
             </TableCell>
           </TableRow>
-        ))}
-        {list.length === 0 && (
-          <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
-        )}
+          );
+          })}
+          {list.length === 0 && (
+            <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
+          )}
       </TableBody>
     </Table>
   );
