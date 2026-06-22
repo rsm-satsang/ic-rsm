@@ -151,11 +151,11 @@ export default function Tracker() {
     setLoading(true);
     const [e, u, t] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
-      supabase.from("users").select("id, name, email").order("name"),
+      supabase.from("users").select("id, name, email, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
-    if (u.data) setUsers(u.data as UserOpt[]);
+    if (u.data) setUsers(u.data as any as UserOpt[]);
     if (t.data) setThemes(t.data as ThemeOpt[]);
     setLoading(false);
   };
