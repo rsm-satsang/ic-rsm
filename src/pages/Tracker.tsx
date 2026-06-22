@@ -147,6 +147,10 @@ export default function Tracker() {
 
   const weeks = useMemo(() => weeksOfYear(YEAR), []);
 
+  const planners = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("planner")), [users]);
+  const builders = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("builder")), [users]);
+  const operators = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("operator")), [users]);
+
   const load = async () => {
     setLoading(true);
     const [e, u, t] = await Promise.all([
