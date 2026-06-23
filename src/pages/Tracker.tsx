@@ -326,6 +326,8 @@ export default function Tracker() {
     if (error) return toast.error(error.message);
     setEntries((prev) => prev.filter((e) => e.id !== existing.id));
   };
+
+  const syncSubstack = async () => {
     const feedUrl = SUBSTACK_URLS[activeChannel];
     if (!feedUrl) {
       const u = window.prompt("Enter Substack URL (e.g. https://yourname.substack.com)");
