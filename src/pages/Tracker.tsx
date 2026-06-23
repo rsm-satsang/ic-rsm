@@ -319,7 +319,13 @@ export default function Tracker() {
     }
   };
 
-  const syncSubstack = async () => {
+  const resetWeek = async (week: string) => {
+    const existing = (entriesByWeek.get(week) || [])[0];
+    if (!existing) return;
+    const { error } = await supabase.from("tracker_entries").delete().eq("id", existing.id);
+    if (error) return toast.error(error.message);
+    setEntries((prev) => prev.filter((e) => e.id !== existing.id));
+  };
     const feedUrl = SUBSTACK_URLS[activeChannel];
     if (!feedUrl) {
       const u = window.prompt("Enter Substack URL (e.g. https://yourname.substack.com)");
