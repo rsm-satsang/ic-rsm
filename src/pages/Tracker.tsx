@@ -175,15 +175,28 @@ export default function Tracker() {
 
   useEffect(() => { load(); }, []);
 
-  // Fetch linked project statuses
+  // Fetch linked project statuses; unlink entries whose project was deleted
   useEffect(() => {
-    const ids = Array.from(new Set(entries.map((e) => e.project_id).filter(Boolean))) as string[];
+    const linked = entries.filter((e) => e.project_id);
+    const ids = Array.from(new Set(linked.map((e) => e.project_id as string)));
     if (!ids.length) { setProjectStatusMap({}); return; }
     (async () => {
       const { data } = await supabase.from("projects").select("id,status").in("id", ids);
+      const found = new Set((data as any[] | null)?.map((p) => p.id) ?? []);
       const map: Record<string, string> = {};
       (data as any[] | null)?.forEach((p) => { map[p.id] = p.status; });
       setProjectStatusMap(map);
+
+      const orphanEntries = linked.filter((e) => !found.has(e.project_id as string));
+      if (orphanEntries.length) {
+        for (const e of orphanEntries) {
+          await supabase
+            .from("tracker_entries")
+            .update({ project_id: null, title: null, status: "build_assigned" })
+            .eq("id", (e as any).id);
+        }
+        await load();
+      }
     })();
   }, [entries]);
 
