@@ -537,7 +537,33 @@ export default function Tracker() {
           {/* Section divider */}
           <div className="border-t my-6" />
 
-          {/* Month summary: stats + Published Posts + Missing weeks */}
+          {/* Monthly section header */}
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-xl font-bold">Monthly View</h2>
+            <span className="text-xs text-muted-foreground">{MONTH_NAMES[selectedMonth]} {YEAR}</span>
+          </div>
+
+          {/* Monthly phase metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan · This month</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b>{monthPhaseStats.planInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.planComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build · This month</div>
+              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{monthPhaseStats.buildYet}</b></div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate · This month</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.opInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.opComplete}</b></div>
+              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{monthPhaseStats.buildComplete - monthPhaseStats.opComplete}</b></div>
+            </Card>
+          </div>
+
           {(() => {
             const monthWeeks = visibleWeeks;
             let mPublished = 0, mDraft = 0, mMissing = 0;
