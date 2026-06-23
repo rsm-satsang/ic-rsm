@@ -675,12 +675,17 @@ export default function Tracker() {
                     </div>
                     <WeekWorkflow
                       week={week}
+                      channel={activeChannel}
+                      subChannel={activeSub}
                       entry={entry ?? null}
                       users={users}
                       planners={planners}
                       builders={builders}
                       operators={operators}
+                      isAdmin={isAdmin}
+                      projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
                       upsert={upsert as any}
+                      onReset={resetWeek}
                     />
                   </Card>
                 );
