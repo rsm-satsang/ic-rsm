@@ -796,6 +796,45 @@ export type Database = {
           },
         ]
       }
+      tracker_activity: {
+        Row: {
+          action: string
+          channel: string
+          created_at: string
+          details: Json
+          id: string
+          sub_channel: string
+          tracker_entry_id: string | null
+          user_id: string | null
+          user_name: string | null
+          week_start_date: string
+        }
+        Insert: {
+          action: string
+          channel: string
+          created_at?: string
+          details?: Json
+          id?: string
+          sub_channel: string
+          tracker_entry_id?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          week_start_date: string
+        }
+        Update: {
+          action?: string
+          channel?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          sub_channel?: string
+          tracker_entry_id?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          week_start_date?: string
+        }
+        Relationships: []
+      }
       tracker_entries: {
         Row: {
           assignee_id: string | null

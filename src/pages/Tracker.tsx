@@ -144,6 +144,8 @@ export default function Tracker() {
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
 
   const weeks = useMemo(() => weeksOfYear(YEAR), []);
 
@@ -151,11 +153,18 @@ export default function Tracker() {
   const builders = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("builder")), [users]);
   const operators = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("operator")), [users]);
 
+  const isAdmin = useMemo(() => {
+    const me = users.find((u) => u.id === currentUserId);
+    return (me as any)?.role === "admin";
+  }, [users, currentUserId]);
+
   const load = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id ?? null);
     const [e, u, t] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
-      supabase.from("users").select("id, name, email, content_roles" as any).order("name"),
+      supabase.from("users").select("id, name, email, role, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
@@ -165,6 +174,18 @@ export default function Tracker() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Fetch linked project statuses
+  useEffect(() => {
+    const ids = Array.from(new Set(entries.map((e) => e.project_id).filter(Boolean))) as string[];
+    if (!ids.length) { setProjectStatusMap({}); return; }
+    (async () => {
+      const { data } = await supabase.from("projects").select("id,status").in("id", ids);
+      const map: Record<string, string> = {};
+      (data as any[] | null)?.forEach((p) => { map[p.id] = p.status; });
+      setProjectStatusMap(map);
+    })();
+  }, [entries]);
 
 
 
@@ -255,6 +276,54 @@ export default function Tracker() {
     return { total, published, draft, missing, na };
   }, [weeks, entriesByWeek, ytdMaxMonth]);
 
+  // Phase-bucket metrics (YTD scope)
+  const phaseStats = useMemo(() => {
+    const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
+    let planInProgress = 0, planComplete = 0;
+    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let opInProgress = 0, opComplete = 0;
+    for (const w of ytdWeeks) {
+      const top = (entriesByWeek.get(w) || [])[0];
+      const st = top?.status ?? "tbd";
+      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
+      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
+      const projReady = projSt === "approved" || projSt === "published";
+      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
+      const opDone = ["publish_complete","published"].includes(st);
+      if (planDone) planComplete++; else planInProgress++;
+      if (buildDone) buildComplete++;
+      else if (planDone) buildInProgress++;
+      else buildYet++;
+      if (opDone) opComplete++;
+      else if (buildDone) opInProgress++;
+    }
+    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+  }, [weeks, entriesByWeek, ytdMaxMonth, projectStatusMap]);
+
+  // Monthly phase metrics
+  const monthPhaseStats = useMemo(() => {
+    let planInProgress = 0, planComplete = 0;
+    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let opInProgress = 0, opComplete = 0;
+    for (const w of weeks.filter((w) => monthOf(w) === selectedMonth)) {
+      const top = (entriesByWeek.get(w) || [])[0];
+      const st = top?.status ?? "tbd";
+      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
+      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
+      const projReady = projSt === "approved" || projSt === "published";
+      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
+      const opDone = ["publish_complete","published"].includes(st);
+      if (planDone) planComplete++; else planInProgress++;
+      if (buildDone) buildComplete++;
+      else if (planDone) buildInProgress++;
+      else buildYet++;
+      if (opDone) opComplete++;
+      else if (buildDone) opInProgress++;
+    }
+    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+  }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
+
+
   const monthPublishedPosts = useMemo(() => {
     const list = channelEntries.filter((e) => {
       if (!e.publish_date) return false;
@@ -296,6 +365,14 @@ export default function Tracker() {
       if (error) return toast.error(error.message);
       setEntries((prev) => [...prev, data as Entry]);
     }
+  };
+
+  const resetWeek = async (week: string) => {
+    const existing = (entriesByWeek.get(week) || [])[0];
+    if (!existing) return;
+    const { error } = await supabase.from("tracker_entries").delete().eq("id", existing.id);
+    if (error) return toast.error(error.message);
+    setEntries((prev) => prev.filter((e) => e.id !== existing.id));
   };
 
   const syncSubstack = async () => {
@@ -376,8 +453,12 @@ export default function Tracker() {
             </Tabs>
           )}
 
-          {/* Analytics */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          {/* YTD Section */}
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
+            <span className="text-xs text-muted-foreground">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">Weeks YTD</div>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -387,16 +468,35 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-green-700">{stats.published}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-muted-foreground">🟡 Draft</div>
-              <div className="text-2xl font-bold text-yellow-700">{stats.draft}</div>
-            </Card>
-            <Card className="p-4">
               <div className="text-xs text-muted-foreground">🔴 Missing</div>
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
             <Card className="p-4">
+              <div className="text-xs text-muted-foreground">🟡 Draft</div>
+              <div className="text-2xl font-bold text-yellow-700">{stats.draft}</div>
+            </Card>
+            <Card className="p-4">
               <div className="text-xs text-muted-foreground">⚫ N/A</div>
               <div className="text-2xl font-bold text-gray-600">{stats.na}</div>
+            </Card>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b>{phaseStats.planInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.planComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
+              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{phaseStats.buildYet}</b></div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.buildComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.opInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.opComplete}</b></div>
+              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{phaseStats.buildComplete - phaseStats.opComplete}</b></div>
             </Card>
           </div>
 
@@ -437,7 +537,33 @@ export default function Tracker() {
           {/* Section divider */}
           <div className="border-t my-6" />
 
-          {/* Month summary: stats + Published Posts + Missing weeks */}
+          {/* Monthly section header */}
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-xl font-bold">Monthly View</h2>
+            <span className="text-xs text-muted-foreground">{MONTH_NAMES[selectedMonth]} {YEAR}</span>
+          </div>
+
+          {/* Monthly phase metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan · This month</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b>{monthPhaseStats.planInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.planComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build · This month</div>
+              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{monthPhaseStats.buildYet}</b></div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate · This month</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.opInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.opComplete}</b></div>
+              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{monthPhaseStats.buildComplete - monthPhaseStats.opComplete}</b></div>
+            </Card>
+          </div>
+
           {(() => {
             const monthWeeks = visibleWeeks;
             let mPublished = 0, mDraft = 0, mMissing = 0;
@@ -549,12 +675,17 @@ export default function Tracker() {
                     </div>
                     <WeekWorkflow
                       week={week}
+                      channel={activeChannel}
+                      subChannel={activeSub}
                       entry={entry ?? null}
                       users={users}
                       planners={planners}
                       builders={builders}
                       operators={operators}
+                      isAdmin={isAdmin}
+                      projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
                       upsert={upsert as any}
+                      onReset={resetWeek as any}
                     />
                   </Card>
                 );
