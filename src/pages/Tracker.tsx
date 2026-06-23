@@ -276,6 +276,54 @@ export default function Tracker() {
     return { total, published, draft, missing, na };
   }, [weeks, entriesByWeek, ytdMaxMonth]);
 
+  // Phase-bucket metrics (YTD scope)
+  const phaseStats = useMemo(() => {
+    const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
+    let planInProgress = 0, planComplete = 0;
+    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let opInProgress = 0, opComplete = 0;
+    for (const w of ytdWeeks) {
+      const top = (entriesByWeek.get(w) || [])[0];
+      const st = top?.status ?? "tbd";
+      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
+      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
+      const projReady = projSt === "approved" || projSt === "published";
+      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
+      const opDone = ["publish_complete","published"].includes(st);
+      if (planDone) planComplete++; else planInProgress++;
+      if (buildDone) buildComplete++;
+      else if (planDone) buildInProgress++;
+      else buildYet++;
+      if (opDone) opComplete++;
+      else if (buildDone) opInProgress++;
+    }
+    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+  }, [weeks, entriesByWeek, ytdMaxMonth, projectStatusMap]);
+
+  // Monthly phase metrics
+  const monthPhaseStats = useMemo(() => {
+    let planInProgress = 0, planComplete = 0;
+    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let opInProgress = 0, opComplete = 0;
+    for (const w of weeks.filter((w) => monthOf(w) === selectedMonth)) {
+      const top = (entriesByWeek.get(w) || [])[0];
+      const st = top?.status ?? "tbd";
+      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
+      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
+      const projReady = projSt === "approved" || projSt === "published";
+      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
+      const opDone = ["publish_complete","published"].includes(st);
+      if (planDone) planComplete++; else planInProgress++;
+      if (buildDone) buildComplete++;
+      else if (planDone) buildInProgress++;
+      else buildYet++;
+      if (opDone) opComplete++;
+      else if (buildDone) opInProgress++;
+    }
+    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+  }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
+
+
   const monthPublishedPosts = useMemo(() => {
     const list = channelEntries.filter((e) => {
       if (!e.publish_date) return false;
