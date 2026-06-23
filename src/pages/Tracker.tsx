@@ -685,7 +685,7 @@ export default function Tracker() {
                       isAdmin={isAdmin}
                       projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
                       upsert={upsert as any}
-                      onReset={resetWeek}
+                      onReset={resetWeek as any}
                     />
                   </Card>
                 );
