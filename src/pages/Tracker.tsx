@@ -144,6 +144,8 @@ export default function Tracker() {
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
 
   const weeks = useMemo(() => weeksOfYear(YEAR), []);
 
@@ -151,11 +153,18 @@ export default function Tracker() {
   const builders = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("builder")), [users]);
   const operators = useMemo(() => users.filter((u) => (u.content_roles ?? []).includes("operator")), [users]);
 
+  const isAdmin = useMemo(() => {
+    const me = users.find((u) => u.id === currentUserId);
+    return (me as any)?.role === "admin";
+  }, [users, currentUserId]);
+
   const load = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id ?? null);
     const [e, u, t] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
-      supabase.from("users").select("id, name, email, content_roles" as any).order("name"),
+      supabase.from("users").select("id, name, email, role, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
@@ -165,6 +174,18 @@ export default function Tracker() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Fetch linked project statuses
+  useEffect(() => {
+    const ids = Array.from(new Set(entries.map((e) => e.project_id).filter(Boolean))) as string[];
+    if (!ids.length) { setProjectStatusMap({}); return; }
+    (async () => {
+      const { data } = await supabase.from("projects").select("id,status").in("id", ids);
+      const map: Record<string, string> = {};
+      (data as any[] | null)?.forEach((p) => { map[p.id] = p.status; });
+      setProjectStatusMap(map);
+    })();
+  }, [entries]);
 
 
 
