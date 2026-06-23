@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,19 +11,24 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Pencil, Lock } from "lucide-react";
+import { ChevronDown, Pencil, Lock, History, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
 
 interface Props {
   week: string;
+  channel: string;
+  subChannel: string;
   entry: any | null;
   users: UserOpt[];
   planners: UserOpt[];
   builders: UserOpt[];
   operators: UserOpt[];
-  upsert: (week: string, patch: any) => Promise<void>;
+  isAdmin?: boolean;
+  projectStatus?: string | null;
+  upsert: (week: string, patch: any) => Promise<any>;
+  onReset?: (week: string) => Promise<void>;
 }
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
@@ -52,6 +57,10 @@ function fmtDate(iso?: string | null) {
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+function fmtDateTime(iso?: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
 
 type Panel =
   | null
@@ -61,9 +70,11 @@ type Panel =
 
 type PhaseState = "todo" | "active" | "done";
 
-function phaseStates(status: string): { plan: PhaseState; build: PhaseState; operate: PhaseState } {
+function phaseStates(status: string, projectStatus?: string | null): { plan: PhaseState; build: PhaseState; operate: PhaseState } {
   const planDone = ["plan_complete", "build_assigned", "build_in_progress", "operate_assigned", "publish_complete", "published"].includes(status);
-  const buildDone = ["build_in_progress", "operate_assigned", "publish_complete", "published"].includes(status);
+  const projectReady = projectStatus === "approved" || projectStatus === "published";
+  const buildDoneFromStatus = ["operate_assigned", "publish_complete", "published"].includes(status);
+  const buildDone = buildDoneFromStatus || (planDone && projectReady);
   const opDone = ["publish_complete", "published"].includes(status);
   return {
     plan: planDone ? "done" : "active",
@@ -72,12 +83,12 @@ function phaseStates(status: string): { plan: PhaseState; build: PhaseState; ope
   };
 }
 
-export default function WeekWorkflow({ week, entry, users, planners, builders, operators, upsert }: Props) {
+export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, upsert, onReset }: Props) {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
 
   const status = entry?.status ?? "tbd";
-  const ps = phaseStates(status);
+  const ps = phaseStates(status, projectStatus);
   const planDone = ps.plan === "done";
   const buildDone = ps.build === "done";
   const opDone = ps.operate === "done";
@@ -85,6 +96,7 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
   const [openPlan, setOpenPlan] = useState(ps.plan === "active");
   const [openBuild, setOpenBuild] = useState(planDone && ps.build === "active");
   const [openOp, setOpenOp] = useState(planDone && buildDone && ps.operate === "active");
+  const [openActivity, setOpenActivity] = useState(false);
 
   // Plan
   const [planAssignee, setPlanAssignee] = useState<string>(entry?.plan_assignee_id ?? "");
@@ -103,6 +115,36 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
   const [opDue, setOpDue] = useState<string>(entry?.operate_due_date ?? wednesdayOf(week));
   const [subPub, setSubPub] = useState<boolean>(!!entry?.substack_published);
   const [ytPub, setYtPub] = useState<boolean>(!!entry?.youtube_published);
+
+  // Activity timeline
+  const [activity, setActivity] = useState<any[]>([]);
+  const loadActivity = useCallback(async () => {
+    const { data } = await supabase
+      .from("tracker_activity" as any)
+      .select("*")
+      .eq("channel", channel)
+      .eq("sub_channel", subChannel)
+      .eq("week_start_date", week)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setActivity((data as any[]) ?? []);
+  }, [channel, subChannel, week]);
+  useEffect(() => { loadActivity(); }, [loadActivity]);
+
+  const logActivity = useCallback(async (action: string, details: Record<string, any> = {}) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const me = users.find((u) => u.id === user.id);
+    await supabase.from("tracker_activity" as any).insert({
+      channel, sub_channel: subChannel, week_start_date: week,
+      tracker_entry_id: entry?.id ?? null,
+      user_id: user.id,
+      user_name: me?.name ?? me?.email ?? user.email ?? "Unknown",
+      action,
+      details,
+    });
+    loadActivity();
+  }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
     if (panel !== "link_build") return;
@@ -125,6 +167,7 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       plan_due_date: planDue || null,
       ...(entry?.status ? {} : { status: "planning_assigned" }),
     });
+    await logActivity("plan_assigned", { assignee: users.find(u => u.id === planAssignee)?.name, due: planDue });
     toast.success("Planning updated");
     close();
   };
@@ -143,6 +186,7 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       patch.status = "build_assigned";
     }
     await upsert(week, patch);
+    await logActivity("plan_completed", { theme: theme.trim(), auto_builder: autoBuilder?.name ?? null });
     toast.success(autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
     setOpenPlan(false);
     setOpenBuild(true);
@@ -155,18 +199,9 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       build_assignee_id: buildAssignee,
       build_due_date: buildDue || null,
     });
+    await logActivity("build_assigned", { assignee: users.find(u => u.id === buildAssignee)?.name, due: buildDue });
     toast.success("Build updated");
     close();
-  };
-
-  const autoAssignOpPatch = () => {
-    const autoOp = pickByWeek(operators, week);
-    if (!autoOp) return { status: "build_in_progress" as const };
-    return {
-      operate_assignee_id: entry?.operate_assignee_id ?? autoOp.id,
-      operate_due_date: entry?.operate_due_date ?? wednesdayOf(week),
-      status: "operate_assigned" as const,
-    };
   };
 
   const startBuildFromScratch = async () => {
@@ -180,7 +215,8 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
       .single();
     if (error) return toast.error(error.message);
     const projectId = (data as any).id;
-    await upsert(week, { project_id: projectId, title, ...autoAssignOpPatch() });
+    await upsert(week, { project_id: projectId, title, status: "build_in_progress" });
+    await logActivity("build_project_created", { project_id: projectId, title });
     toast.success("Project created");
     navigate(`/project/${projectId}/intake`);
   };
@@ -191,8 +227,9 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
     await upsert(week, {
       project_id: linkProjectId,
       ...(proj?.title ? { title: proj.title } : {}),
-      ...autoAssignOpPatch(),
+      status: "build_in_progress",
     });
+    await logActivity("build_project_linked", { project_id: linkProjectId, title: proj?.title });
     toast.success("Project linked");
     navigate(`/workspace/${linkProjectId}`);
   };
@@ -201,24 +238,52 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
     if (entry?.project_id) navigate(`/workspace/${entry.project_id}`);
   };
 
+  // Auto-assign operator when build becomes done (project marked ready to publish)
+  useEffect(() => {
+    if (!buildDone || !entry?.id) return;
+    if (entry.operate_assignee_id) return;
+    const autoOp = pickByWeek(operators, week);
+    if (!autoOp) return;
+    (async () => {
+      await upsert(week, {
+        operate_assignee_id: autoOp.id,
+        operate_due_date: entry.operate_due_date ?? wednesdayOf(week),
+        status: "operate_assigned",
+      });
+      await logActivity("operate_auto_assigned", { assignee: autoOp.name });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildDone, entry?.id]);
+
   const submitEditOp = async () => {
     if (!opAssignee) return toast.error("Select an assignee");
     await upsert(week, {
       operate_assignee_id: opAssignee,
       operate_due_date: opDue || null,
     });
+    await logActivity("operate_assigned", { assignee: users.find(u => u.id === opAssignee)?.name, due: opDue });
     toast.success("Operate/Publish updated");
     close();
   };
 
   const submitCompletePublish = async () => {
+    const newStatus = subPub || ytPub ? "published" : "publish_complete";
     await upsert(week, {
       substack_published: subPub,
       youtube_published: ytPub,
-      status: subPub || ytPub ? "published" : "publish_complete",
+      status: newStatus,
     });
+    await logActivity("publish_completed", { substack: subPub, youtube: ytPub });
     toast.success("Publish updated");
     close();
+  };
+
+  const handleReset = async () => {
+    if (!onReset) return;
+    if (!confirm("Reset all updates for this week? Activity history will be preserved.")) return;
+    await onReset(week);
+    await logActivity("week_reset", {});
+    toast.success("Week reset");
   };
 
   const userSelect = (val: string, onChange: (v: string) => void, opts: UserOpt[]) => (
@@ -272,6 +337,13 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
 
   return (
     <div className="border-t pt-2 space-y-1">
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={handleReset}>
+            <RotateCcw className="h-3 w-3 mr-1" /> Reset week (admin)
+          </Button>
+        </div>
+      )}
       {/* PLAN */}
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} />
@@ -351,6 +423,13 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
             </div>
           )}
 
+          {entry?.project_id && (
+            <div className="text-xs text-muted-foreground mb-2">
+              Linked project status: <b>{projectStatus ?? "—"}</b>
+              {buildDone ? " · Build complete (project ready to publish)" : " · Build will complete when project is marked Ready to Publish"}
+            </div>
+          )}
+
           {entry?.project_id ? (
             <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
               Open Linked Project (Review)
@@ -422,6 +501,45 @@ export default function WeekWorkflow({ week, entry, users, planners, builders, o
               </label>
               <Button size="sm" className="w-full" onClick={submitCompletePublish}>Submit Publish</Button>
             </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* ACTIVITY TIMELINE */}
+      <Collapsible open={openActivity} onOpenChange={setOpenActivity}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full flex items-center justify-between py-2 px-2 rounded hover:bg-muted/40"
+          >
+            <div className="flex items-center gap-2">
+              <History className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm font-semibold uppercase tracking-wide">Activity ({activity.length})</span>
+            </div>
+            <ChevronDown className={`h-4 w-4 transition-transform ${openActivity ? "rotate-180" : ""}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-2 pb-2">
+          {activity.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-2">No activity yet.</div>
+          ) : (
+            <ul className="space-y-1.5 max-h-64 overflow-y-auto">
+              {activity.map((a) => (
+                <li key={a.id} className="text-xs border-l-2 border-muted pl-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span><b>{a.user_name ?? "Someone"}</b> · {a.action}</span>
+                    <span className="text-muted-foreground tabular-nums">{fmtDateTime(a.created_at)}</span>
+                  </div>
+                  {a.details && Object.keys(a.details).length > 0 && (
+                    <div className="text-muted-foreground text-[11px] mt-0.5">
+                      {Object.entries(a.details).map(([k, v]) => (
+                        <span key={k} className="mr-2">{k}: <b>{String(v)}</b></span>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </CollapsibleContent>
       </Collapsible>
