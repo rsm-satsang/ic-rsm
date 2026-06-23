@@ -453,8 +453,12 @@ export default function Tracker() {
             </Tabs>
           )}
 
-          {/* Analytics */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          {/* YTD Section */}
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
+            <span className="text-xs text-muted-foreground">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">Weeks YTD</div>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -464,16 +468,35 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-green-700">{stats.published}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-xs text-muted-foreground">🟡 Draft</div>
-              <div className="text-2xl font-bold text-yellow-700">{stats.draft}</div>
-            </Card>
-            <Card className="p-4">
               <div className="text-xs text-muted-foreground">🔴 Missing</div>
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
             <Card className="p-4">
+              <div className="text-xs text-muted-foreground">🟡 Draft</div>
+              <div className="text-2xl font-bold text-yellow-700">{stats.draft}</div>
+            </Card>
+            <Card className="p-4">
               <div className="text-xs text-muted-foreground">⚫ N/A</div>
               <div className="text-2xl font-bold text-gray-600">{stats.na}</div>
+            </Card>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b>{phaseStats.planInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.planComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
+              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{phaseStats.buildYet}</b></div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.buildComplete}</b></div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate</div>
+              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.opInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.opComplete}</b></div>
+              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{phaseStats.buildComplete - phaseStats.opComplete}</b></div>
             </Card>
           </div>
 
