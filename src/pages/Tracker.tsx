@@ -354,7 +354,7 @@ export default function Tracker() {
     if (existing) {
       const { data, error } = await supabase
         .from("tracker_entries")
-        .update(patch)
+        .update(patch as any)
         .eq("id", existing.id)
         .select()
         .single();
