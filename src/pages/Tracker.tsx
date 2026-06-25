@@ -233,6 +233,7 @@ export default function Tracker() {
   // Auto-assign planner + default due date to any visible week missing an entry
   useEffect(() => {
     if (loading || !planners.length) return;
+    if (activeChannel === "workshop" || activeChannel === "daily_quote") return;
     const missing = visibleWeeks.filter((w) => !(entriesByWeek.get(w) || []).length);
     if (!missing.length) return;
     const todayIso = new Date().toISOString().slice(0, 10);
