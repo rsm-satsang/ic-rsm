@@ -559,74 +559,70 @@ export default function Tracker() {
           {/* Section divider */}
           <div className="border-t my-6" />
 
-          {/* Monthly section header */}
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-xl font-bold">Monthly View</h2>
-            <span className="text-xs text-muted-foreground">{MONTH_NAMES[selectedMonth]} {YEAR}</span>
-          </div>
-
-          {/* Monthly phase metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan · This month</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b>{monthPhaseStats.planInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.planComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build · This month</div>
-              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{monthPhaseStats.buildYet}</b></div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate · This month</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.opInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.opComplete}</b></div>
-              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{monthPhaseStats.buildComplete - monthPhaseStats.opComplete}</b></div>
-            </Card>
+          {/* Monthly section header with inline Plan/Track by Month + month dropdown */}
+          <div className="mb-3 flex items-center justify-between flex-wrap gap-3 bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <div className="flex items-center gap-4 flex-wrap">
+              <h2 className="text-xl font-bold text-sky-900">Monthly View</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-sky-900">Plan/Track by Month:</span>
+                <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                  <SelectTrigger className="w-32 h-8 bg-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MONTH_NAMES.map((m, i) => (
+                      <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <span className="text-xs text-sky-900/80">{MONTH_NAMES[selectedMonth]} {YEAR}</span>
           </div>
 
           {(() => {
             const monthWeeks = visibleWeeks;
-            let mPublished = 0, mDraft = 0, mMissing = 0;
+            let mPublished = 0, mMissing = 0;
             const missingWeeks: string[] = [];
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
               if (top?.status === "published") mPublished++;
-              else if (top?.status === "draft") mDraft++;
               else { mMissing++; missingWeeks.push(w); }
             }
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
-                <div className="text-lg font-bold mb-2">Plan/Track by Month</div>
-                <div className="mb-4">
-                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {MONTH_NAMES.map((m, i) => (
-                        <SelectItem key={m} value={String(i)}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div className="rounded-md border p-3">
                     <div className="text-xs text-muted-foreground">Weeks in {monthName}</div>
                     <div className="text-xl font-bold">{monthWeeks.length}</div>
                   </div>
                   <div className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground">🟢 Published</div>
+                    <div className="text-xs text-muted-foreground">🟢 Published posts</div>
                     <div className="text-xl font-bold text-green-700">{mPublished}</div>
                   </div>
                   <div className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground">🟡 Draft</div>
-                    <div className="text-xl font-bold text-yellow-700">{mDraft}</div>
+                    <div className="text-xs text-muted-foreground">🔴 Missing weeks</div>
+                    <div className="text-xl font-bold text-red-700">{mMissing}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
+                    <div className="text-sm flex justify-between"><span>Assigned</span><b>{monthPhaseStats.planInProgress}</b></div>
+                    <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.planComplete}</b></div>
                   </div>
                   <div className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground">🔴 Missing</div>
-                    <div className="text-xl font-bold text-red-700">{mMissing}</div>
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
+                    <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{monthPhaseStats.buildYet}</b></div>
+                    <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
+                    <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate</div>
+                    <div className="text-sm flex justify-between"><span>Awaiting Build</span><b>{Math.max(0, monthWeeks.length - monthPhaseStats.buildComplete - monthPhaseStats.opComplete)}</b></div>
+                    <div className="text-sm flex justify-between"><span>Assigned</span><b className="text-amber-700">{monthPhaseStats.opInProgress}</b></div>
+                    <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.opComplete}</b></div>
                   </div>
                 </div>
 
@@ -672,6 +668,7 @@ export default function Tracker() {
               </Card>
             );
           })()}
+
 
           {/* Weekly cards */}
           {loading ? (
