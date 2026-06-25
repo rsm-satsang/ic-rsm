@@ -476,9 +476,9 @@ export default function Tracker() {
           )}
 
           {/* YTD Section */}
-          <div className="mb-2 flex items-baseline justify-between">
+          <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
             <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
-            <span className="text-xs text-muted-foreground">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
+            <span className="text-xs opacity-90">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
             <Card className="p-4">
