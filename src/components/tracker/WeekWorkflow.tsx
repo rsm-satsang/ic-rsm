@@ -409,7 +409,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
       {/* BUILD */}
       <Collapsible open={openBuild && planDone} onOpenChange={(v) => { if (planDone) setOpenBuild(v); }}>
-        <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} />
+        <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} stateLabel={buildLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.build_assignee_id}
