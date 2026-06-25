@@ -296,28 +296,32 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   );
 
   const SectionHeader = ({
-    title, state, open, onToggle, disabled,
-  }: { title: string; state: PhaseState; open: boolean; onToggle: () => void; disabled?: boolean }) => {
+    title, state, open, onToggle, disabled, stateLabel,
+  }: { title: string; state: PhaseState; open: boolean; onToggle: () => void; disabled?: boolean; stateLabel?: string }) => {
     const dot = state === "done" ? "bg-green-500" : state === "active" ? "bg-amber-500" : "bg-gray-300";
+    const labelCls = state === "done" ? "text-green-700" : state === "active" ? "text-amber-700" : "text-gray-600";
     return (
       <CollapsibleTrigger asChild>
         <button
           type="button"
           onClick={() => { if (!disabled) onToggle(); }}
           disabled={disabled}
-          className={`w-full flex items-center justify-between py-2 px-2 rounded ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted/40"}`}
+          className={`w-full flex items-center justify-between py-2 px-2 rounded ${disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/40"}`}
         >
           <div className="flex items-center gap-2">
             <span className={`inline-block h-2.5 w-2.5 rounded-full ${dot}`} />
             <span className="text-sm font-semibold uppercase tracking-wide">{title}</span>
-            {state === "done" && <span className="text-xs text-green-700">Complete</span>}
-            {disabled && <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Locked until plan is complete</span>}
+            {stateLabel && <span className={`text-xs font-medium ${labelCls}`}>{stateLabel}</span>}
           </div>
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </CollapsibleTrigger>
     );
   };
+
+  const planLabel = ps.plan === "done" ? "Complete" : "Assigned";
+  const buildLabel = ps.build === "done" ? "Complete" : ps.build === "active" ? (entry?.project_id ? "In-progress" : "Assigned") : "Awaiting Plan";
+  const operateLabel = ps.operate === "done" ? "Complete" : ps.operate === "active" ? "Assigned" : "Awaiting Build";
 
   const AssignmentLine = ({
     assigneeId, due, onEdit, editing,
@@ -346,7 +350,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       )}
       {/* PLAN */}
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
-        <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} />
+        <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.plan_assignee_id}
@@ -405,7 +409,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
       {/* BUILD */}
       <Collapsible open={openBuild && planDone} onOpenChange={(v) => { if (planDone) setOpenBuild(v); }}>
-        <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} />
+        <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} stateLabel={buildLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.build_assignee_id}
@@ -463,7 +467,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
       {/* OPERATE / PUBLISH */}
       <Collapsible open={openOp && planDone} onOpenChange={(v) => { if (planDone) setOpenOp(v); }}>
-        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && planDone} onToggle={() => setOpenOp((v) => !v)} disabled={!planDone} />
+        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && planDone} onToggle={() => setOpenOp((v) => !v)} disabled={!planDone} stateLabel={operateLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.operate_assignee_id}

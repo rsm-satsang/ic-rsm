@@ -15,7 +15,7 @@ import { Loader2, RefreshCw, Calendar as CalendarIcon } from "lucide-react";
 
 import WeekWorkflow from "@/components/tracker/WeekWorkflow";
 
-type Channel = "substack_satsang" | "substack_lifequest" | "youtube";
+type Channel = "substack_satsang" | "substack_lifequest" | "youtube" | "workshop" | "daily_quote";
 type SubChannel = "newsletter" | "long_form" | "shorts";
 type Status =
   | "published" | "draft" | "not_published" | "tbd" | "not_applicable"
@@ -109,6 +109,8 @@ const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = 
   { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
   { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
   { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
+  { key: "workshop", label: "Workshop", sub: ["newsletter"] },
+  { key: "daily_quote", label: "Daily Inspirational Quote", sub: ["newsletter"] },
 ];
 
 const SUB_LABEL: Record<SubChannel, string> = {
@@ -231,6 +233,7 @@ export default function Tracker() {
   // Auto-assign planner + default due date to any visible week missing an entry
   useEffect(() => {
     if (loading || !planners.length) return;
+    if (activeChannel === "workshop" || activeChannel === "daily_quote") return;
     const missing = visibleWeeks.filter((w) => !(entriesByWeek.get(w) || []).length);
     if (!missing.length) return;
     const todayIso = new Date().toISOString().slice(0, 10);
@@ -354,7 +357,7 @@ export default function Tracker() {
     if (existing) {
       const { data, error } = await supabase
         .from("tracker_entries")
-        .update(patch)
+        .update(patch as any)
         .eq("id", existing.id)
         .select()
         .single();
@@ -372,7 +375,7 @@ export default function Tracker() {
           source: "manual",
           created_by: user?.id ?? null,
           ...patch,
-        })
+        } as any)
         .select()
         .single();
       if (error) return toast.error(error.message);
@@ -445,9 +448,15 @@ export default function Tracker() {
 
           {/* Channel tabs */}
           <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-3 w-full">
+            <TabsList className="grid grid-cols-5 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
-                <TabsTrigger key={c.key} value={c.key}>{c.label}</TabsTrigger>
+                <TabsTrigger
+                  key={c.key}
+                  value={c.key}
+                  className="data-[state=active]:bg-sky-500 data-[state=active]:text-white whitespace-normal text-xs sm:text-sm"
+                >
+                  {c.label}
+                </TabsTrigger>
               ))}
             </TabsList>
             {CHANNEL_TABS.map((c) => (
@@ -467,9 +476,9 @@ export default function Tracker() {
           )}
 
           {/* YTD Section */}
-          <div className="mb-2 flex items-baseline justify-between">
+          <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
             <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
-            <span className="text-xs text-muted-foreground">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
+            <span className="text-xs opacity-90">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
             <Card className="p-4">
@@ -550,74 +559,70 @@ export default function Tracker() {
           {/* Section divider */}
           <div className="border-t my-6" />
 
-          {/* Monthly section header */}
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-xl font-bold">Monthly View</h2>
-            <span className="text-xs text-muted-foreground">{MONTH_NAMES[selectedMonth]} {YEAR}</span>
-          </div>
-
-          {/* Monthly phase metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan · This month</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b>{monthPhaseStats.planInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.planComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build · This month</div>
-              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{monthPhaseStats.buildYet}</b></div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate · This month</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{monthPhaseStats.opInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.opComplete}</b></div>
-              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{monthPhaseStats.buildComplete - monthPhaseStats.opComplete}</b></div>
-            </Card>
+          {/* Monthly section header with inline Plan/Track by Month + month dropdown */}
+          <div className="mb-3 flex items-center justify-between flex-wrap gap-3 bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <div className="flex items-center gap-4 flex-wrap">
+              <h2 className="text-xl font-bold text-sky-900">Monthly View</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-sky-900">Plan/Track by Month:</span>
+                <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                  <SelectTrigger className="w-32 h-8 bg-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MONTH_NAMES.map((m, i) => (
+                      <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <span className="text-xs text-sky-900/80">{MONTH_NAMES[selectedMonth]} {YEAR}</span>
           </div>
 
           {(() => {
             const monthWeeks = visibleWeeks;
-            let mPublished = 0, mDraft = 0, mMissing = 0;
+            let mPublished = 0, mMissing = 0;
             const missingWeeks: string[] = [];
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
               if (top?.status === "published") mPublished++;
-              else if (top?.status === "draft") mDraft++;
               else { mMissing++; missingWeeks.push(w); }
             }
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
-                <div className="text-lg font-bold mb-2">Plan/Track by Month</div>
-                <div className="mb-4">
-                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {MONTH_NAMES.map((m, i) => (
-                        <SelectItem key={m} value={String(i)}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div className="rounded-md border p-3">
                     <div className="text-xs text-muted-foreground">Weeks in {monthName}</div>
                     <div className="text-xl font-bold">{monthWeeks.length}</div>
                   </div>
                   <div className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground">🟢 Published</div>
+                    <div className="text-xs text-muted-foreground">🟢 Published posts</div>
                     <div className="text-xl font-bold text-green-700">{mPublished}</div>
                   </div>
                   <div className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground">🟡 Draft</div>
-                    <div className="text-xl font-bold text-yellow-700">{mDraft}</div>
+                    <div className="text-xs text-muted-foreground">🔴 Missing weeks</div>
+                    <div className="text-xl font-bold text-red-700">{mMissing}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
+                    <div className="text-sm flex justify-between"><span>Assigned</span><b>{monthPhaseStats.planInProgress}</b></div>
+                    <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.planComplete}</b></div>
                   </div>
                   <div className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground">🔴 Missing</div>
-                    <div className="text-xl font-bold text-red-700">{mMissing}</div>
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
+                    <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{monthPhaseStats.buildYet}</b></div>
+                    <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
+                    <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate</div>
+                    <div className="text-sm flex justify-between"><span>Awaiting Build</span><b>{Math.max(0, monthWeeks.length - monthPhaseStats.buildComplete - monthPhaseStats.opComplete)}</b></div>
+                    <div className="text-sm flex justify-between"><span>Assigned</span><b className="text-amber-700">{monthPhaseStats.opInProgress}</b></div>
+                    <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.opComplete}</b></div>
                   </div>
                 </div>
 
@@ -663,6 +668,7 @@ export default function Tracker() {
               </Card>
             );
           })()}
+
 
           {/* Weekly cards */}
           {loading ? (
