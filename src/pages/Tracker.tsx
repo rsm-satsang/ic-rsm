@@ -15,7 +15,7 @@ import { Loader2, RefreshCw, Calendar as CalendarIcon } from "lucide-react";
 
 import WeekWorkflow from "@/components/tracker/WeekWorkflow";
 
-type Channel = "substack_satsang" | "substack_lifequest" | "youtube";
+type Channel = "substack_satsang" | "substack_lifequest" | "youtube" | "workshop" | "daily_quote";
 type SubChannel = "newsletter" | "long_form" | "shorts";
 type Status =
   | "published" | "draft" | "not_published" | "tbd" | "not_applicable"
