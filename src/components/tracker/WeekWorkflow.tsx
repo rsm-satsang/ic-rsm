@@ -350,7 +350,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       )}
       {/* PLAN */}
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
-        <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} />
+        <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.plan_assignee_id}
