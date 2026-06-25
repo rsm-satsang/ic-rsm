@@ -448,9 +448,15 @@ export default function Tracker() {
 
           {/* Channel tabs */}
           <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-3 w-full">
+            <TabsList className="grid grid-cols-5 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
-                <TabsTrigger key={c.key} value={c.key}>{c.label}</TabsTrigger>
+                <TabsTrigger
+                  key={c.key}
+                  value={c.key}
+                  className="data-[state=active]:bg-sky-500 data-[state=active]:text-white whitespace-normal text-xs sm:text-sm"
+                >
+                  {c.label}
+                </TabsTrigger>
               ))}
             </TabsList>
             {CHANNEL_TABS.map((c) => (
