@@ -372,7 +372,7 @@ export default function Tracker() {
           source: "manual",
           created_by: user?.id ?? null,
           ...patch,
-        })
+        } as any)
         .select()
         .single();
       if (error) return toast.error(error.message);
