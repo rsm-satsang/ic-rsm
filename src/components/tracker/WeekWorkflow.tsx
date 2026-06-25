@@ -467,7 +467,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
       {/* OPERATE / PUBLISH */}
       <Collapsible open={openOp && planDone} onOpenChange={(v) => { if (planDone) setOpenOp(v); }}>
-        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && planDone} onToggle={() => setOpenOp((v) => !v)} disabled={!planDone} />
+        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && planDone} onToggle={() => setOpenOp((v) => !v)} disabled={!planDone} stateLabel={operateLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
             assigneeId={entry?.operate_assignee_id}
