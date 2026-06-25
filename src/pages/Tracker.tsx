@@ -109,6 +109,8 @@ const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = 
   { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
   { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
   { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
+  { key: "workshop", label: "Workshop", sub: ["newsletter"] },
+  { key: "daily_quote", label: "Daily Inspirational Quote", sub: ["newsletter"] },
 ];
 
 const SUB_LABEL: Record<SubChannel, string> = {
