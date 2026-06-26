@@ -223,8 +223,16 @@ export default function Tracker() {
       arr.push(e);
       m.set(e.week_start_date, arr);
     }
+    // Sort: most recently updated first, so list[0] reflects latest state.
+    for (const [k, arr] of m) {
+      arr.sort((a: any, b: any) =>
+        (b.updated_at ?? b.created_at ?? "").localeCompare(a.updated_at ?? a.created_at ?? "")
+      );
+      m.set(k, arr);
+    }
     return m;
   }, [channelEntries]);
+
 
   const visibleWeeks = useMemo(() => {
     return weeks.filter((w) => monthOf(w) === selectedMonth);
