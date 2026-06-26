@@ -506,8 +506,9 @@ export default function Tracker() {
             </Card>
             <Card className="p-4">
               <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
-              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{phaseStats.buildYet}</b></div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{phaseStats.buildYet}</b></div>
+              <div className="text-sm flex justify-between"><span>Assigned</span><b>{phaseStats.buildAssigned}</b></div>
+              <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
               <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.buildComplete}</b></div>
             </Card>
             <Card className="p-4">
