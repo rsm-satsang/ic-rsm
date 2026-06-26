@@ -352,12 +352,19 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
+          <div className="mb-2 rounded-md border bg-sky-50/60 p-2 text-xs space-y-0.5">
+            <div className="font-semibold text-sky-900 mb-1">Week assignments</div>
+            <div>📝 <b>Plan:</b> {users.find((u) => u.id === entry?.plan_assignee_id)?.name ?? "—"}{entry?.plan_due_date ? ` · due ${entry.plan_due_date}` : ""}</div>
+            <div>🛠️ <b>Build:</b> {users.find((u) => u.id === entry?.build_assignee_id)?.name ?? "—"}{entry?.build_due_date ? ` · due ${entry.build_due_date}` : ""}</div>
+            <div>📣 <b>Operate:</b> {users.find((u) => u.id === entry?.operate_assignee_id)?.name ?? "—"}{entry?.operate_due_date ? ` · due ${entry.operate_due_date}` : ""}</div>
+          </div>
           <AssignmentLine
             assigneeId={entry?.plan_assignee_id}
             due={entry?.plan_due_date}
             editing={panel === "edit_plan"}
             onEdit={() => setPanel(panel === "edit_plan" ? null : "edit_plan")}
           />
+
 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
