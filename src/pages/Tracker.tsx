@@ -576,7 +576,8 @@ export default function Tracker() {
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
-              if (top?.status === "published") mPublished++;
+              const isPub = !!top?.substack_published || top?.status === "published";
+              if (isPub) mPublished++;
               else { mMissing++; missingWeeks.push(w); }
             }
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
