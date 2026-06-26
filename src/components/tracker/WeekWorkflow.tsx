@@ -469,19 +469,20 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
 
 
-          {panel === "link_build" && !entry?.project_id && (
+          {panel === "link_build" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Project</label>
+              <label className="text-xs font-medium">{entry?.project_id ? "Link a different project" : "Project"}</label>
               <Select value={linkProjectId} onValueChange={setLinkProjectId}>
                 <SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger>
                 <SelectContent>
                   {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
-                  {draftProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                  {draftProjects.filter((p) => p.id !== entry?.project_id).map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button size="sm" className="w-full" onClick={linkProject}>Link & Open</Button>
             </div>
           )}
+
         </CollapsibleContent>
       </Collapsible>
 
