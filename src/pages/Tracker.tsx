@@ -239,11 +239,16 @@ export default function Tracker() {
   }, [weeks, selectedMonth]);
 
   // Auto-assign planner + default due date to any visible week missing an entry
+  const autoCreateLock = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (loading || !planners.length) return;
     if (activeChannel === "workshop" || activeChannel === "daily_quote") return;
-    const missing = visibleWeeks.filter((w) => !(entriesByWeek.get(w) || []).length);
+    const missing = visibleWeeks.filter((w) => {
+      const key = `${activeChannel}|${activeSub}|${w}`;
+      return !(entriesByWeek.get(w) || []).length && !autoCreateLock.current.has(key);
+    });
     if (!missing.length) return;
+    missing.forEach((w) => autoCreateLock.current.add(`${activeChannel}|${activeSub}|${w}`));
     const todayIso = new Date().toISOString().slice(0, 10);
     const defaultDue = (w: string) => {
       const d = new Date(w + "T00:00:00Z");
@@ -269,12 +274,17 @@ export default function Tracker() {
       });
       const { data, error } = await supabase
         .from("tracker_entries")
-        .insert(rows as any)
+        .upsert(rows as any, { onConflict: "channel,sub_channel,week_start_date", ignoreDuplicates: true })
         .select();
-      if (!error && data) setEntries((prev) => [...prev, ...(data as Entry[])]);
+      if (!error && data) setEntries((prev) => {
+        const ids = new Set(prev.map((p: any) => p.id));
+        const fresh = (data as Entry[]).filter((d: any) => !ids.has(d.id));
+        return [...prev, ...fresh];
+      });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleWeeks, planners, loading, activeChannel, activeSub]);
+  }, [visibleWeeks, planners, loading, activeChannel, activeSub, entriesByWeek]);
+
 
 
   const ytdMaxMonth = useMemo(() => {
