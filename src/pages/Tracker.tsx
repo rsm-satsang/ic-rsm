@@ -613,6 +613,7 @@ export default function Tracker() {
                   <div className="rounded-md border p-3">
                     <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
                     <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{monthPhaseStats.buildYet}</b></div>
+                    <div className="text-sm flex justify-between"><span>Assigned</span><b>{monthPhaseStats.buildAssigned}</b></div>
                     <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
                     <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
                   </div>
