@@ -445,9 +445,18 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
 
           {entry?.project_id ? (
-            <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
-              Open Linked Project (Review)
-            </Button>
+            <div className="space-y-2">
+              <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
+                Open Linked Project (Review)
+              </Button>
+              <button
+                type="button"
+                className="text-xs text-blue-600 hover:underline"
+                onClick={() => setPanel(panel === "link_build" ? null : "link_build")}
+              >
+                Link a different project
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <Button size="sm" variant="outline" onClick={startBuildFromScratch}>
@@ -458,6 +467,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
               </Button>
             </div>
           )}
+
 
           {panel === "link_build" && !entry?.project_id && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
