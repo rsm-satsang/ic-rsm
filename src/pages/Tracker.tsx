@@ -480,7 +480,7 @@ export default function Tracker() {
             <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
             <span className="text-xs opacity-90">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">Weeks YTD</div>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -492,14 +492,6 @@ export default function Tracker() {
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">🔴 Missing</div>
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">🟡 Draft</div>
-              <div className="text-2xl font-bold text-yellow-700">{stats.draft}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">⚫ N/A</div>
-              <div className="text-2xl font-bold text-gray-600">{stats.na}</div>
             </Card>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
