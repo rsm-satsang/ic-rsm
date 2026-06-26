@@ -533,6 +533,10 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
         </CollapsibleContent>
       </Collapsible>
+        );
+      })()}
+
+
 
       {/* ACTIVITY TIMELINE */}
       <Collapsible open={openActivity} onOpenChange={setOpenActivity}>
