@@ -277,19 +277,18 @@ export default function Tracker() {
   }, []);
 
   const stats = useMemo(() => {
-    let published = 0, draft = 0, missing = 0, na = 0, total = 0;
+    let published = 0, missing = 0, total = 0;
     for (const w of weeks) {
       if (monthOf(w) > ytdMaxMonth) continue;
       total++;
       const list = entriesByWeek.get(w) || [];
-      if (list.length === 0) { missing++; continue; }
       const top = list[0];
-      if (top.status === "published") published++;
-      else if (top.status === "draft") draft++;
-      else if (top.status === "not_applicable") na++;
+      // Published/Missing only based on actual Substack publish (or status published)
+      const isPub = !!top?.substack_published || top?.status === "published";
+      if (isPub) published++;
       else missing++;
     }
-    return { total, published, draft, missing, na };
+    return { total, published, missing };
   }, [weeks, entriesByWeek, ytdMaxMonth]);
 
   // Phase-bucket metrics (YTD scope)
