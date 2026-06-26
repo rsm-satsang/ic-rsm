@@ -295,7 +295,7 @@ export default function Tracker() {
   const phaseStats = useMemo(() => {
     const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
     let planInProgress = 0, planComplete = 0;
-    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let buildYet = 0, buildAssigned = 0, buildInProgress = 0, buildComplete = 0;
     let opInProgress = 0, opComplete = 0;
     for (const w of ytdWeeks) {
       const top = (entriesByWeek.get(w) || [])[0];
@@ -307,18 +307,20 @@ export default function Tracker() {
       const opDone = ["publish_complete","published"].includes(st);
       if (planDone) planComplete++; else planInProgress++;
       if (buildDone) buildComplete++;
-      else if (planDone) buildInProgress++;
-      else buildYet++;
+      else if (planDone) {
+        if (top?.project_id || st === "build_in_progress") buildInProgress++;
+        else buildAssigned++;
+      } else buildYet++;
       if (opDone) opComplete++;
       else if (buildDone) opInProgress++;
     }
-    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+    return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, ytdMaxMonth, projectStatusMap]);
 
   // Monthly phase metrics
   const monthPhaseStats = useMemo(() => {
     let planInProgress = 0, planComplete = 0;
-    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let buildYet = 0, buildAssigned = 0, buildInProgress = 0, buildComplete = 0;
     let opInProgress = 0, opComplete = 0;
     for (const w of weeks.filter((w) => monthOf(w) === selectedMonth)) {
       const top = (entriesByWeek.get(w) || [])[0];
@@ -330,13 +332,16 @@ export default function Tracker() {
       const opDone = ["publish_complete","published"].includes(st);
       if (planDone) planComplete++; else planInProgress++;
       if (buildDone) buildComplete++;
-      else if (planDone) buildInProgress++;
-      else buildYet++;
+      else if (planDone) {
+        if (top?.project_id || st === "build_in_progress") buildInProgress++;
+        else buildAssigned++;
+      } else buildYet++;
       if (opDone) opComplete++;
       else if (buildDone) opInProgress++;
     }
-    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+    return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
+
 
 
   const monthPublishedPosts = useMemo(() => {
