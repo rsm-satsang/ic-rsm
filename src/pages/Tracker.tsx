@@ -277,26 +277,25 @@ export default function Tracker() {
   }, []);
 
   const stats = useMemo(() => {
-    let published = 0, draft = 0, missing = 0, na = 0, total = 0;
+    let published = 0, missing = 0, total = 0;
     for (const w of weeks) {
       if (monthOf(w) > ytdMaxMonth) continue;
       total++;
       const list = entriesByWeek.get(w) || [];
-      if (list.length === 0) { missing++; continue; }
       const top = list[0];
-      if (top.status === "published") published++;
-      else if (top.status === "draft") draft++;
-      else if (top.status === "not_applicable") na++;
+      // Published/Missing only based on actual Substack publish (or status published)
+      const isPub = !!top?.substack_published || top?.status === "published";
+      if (isPub) published++;
       else missing++;
     }
-    return { total, published, draft, missing, na };
+    return { total, published, missing };
   }, [weeks, entriesByWeek, ytdMaxMonth]);
 
   // Phase-bucket metrics (YTD scope)
   const phaseStats = useMemo(() => {
     const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
     let planInProgress = 0, planComplete = 0;
-    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let buildYet = 0, buildAssigned = 0, buildInProgress = 0, buildComplete = 0;
     let opInProgress = 0, opComplete = 0;
     for (const w of ytdWeeks) {
       const top = (entriesByWeek.get(w) || [])[0];
@@ -308,18 +307,20 @@ export default function Tracker() {
       const opDone = ["publish_complete","published"].includes(st);
       if (planDone) planComplete++; else planInProgress++;
       if (buildDone) buildComplete++;
-      else if (planDone) buildInProgress++;
-      else buildYet++;
+      else if (planDone) {
+        if (top?.project_id || st === "build_in_progress") buildInProgress++;
+        else buildAssigned++;
+      } else buildYet++;
       if (opDone) opComplete++;
       else if (buildDone) opInProgress++;
     }
-    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+    return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, ytdMaxMonth, projectStatusMap]);
 
   // Monthly phase metrics
   const monthPhaseStats = useMemo(() => {
     let planInProgress = 0, planComplete = 0;
-    let buildYet = 0, buildInProgress = 0, buildComplete = 0;
+    let buildYet = 0, buildAssigned = 0, buildInProgress = 0, buildComplete = 0;
     let opInProgress = 0, opComplete = 0;
     for (const w of weeks.filter((w) => monthOf(w) === selectedMonth)) {
       const top = (entriesByWeek.get(w) || [])[0];
@@ -331,13 +332,16 @@ export default function Tracker() {
       const opDone = ["publish_complete","published"].includes(st);
       if (planDone) planComplete++; else planInProgress++;
       if (buildDone) buildComplete++;
-      else if (planDone) buildInProgress++;
-      else buildYet++;
+      else if (planDone) {
+        if (top?.project_id || st === "build_in_progress") buildInProgress++;
+        else buildAssigned++;
+      } else buildYet++;
       if (opDone) opComplete++;
       else if (buildDone) opInProgress++;
     }
-    return { planInProgress, planComplete, buildYet, buildInProgress, buildComplete, opInProgress, opComplete };
+    return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
+
 
 
   const monthPublishedPosts = useMemo(() => {
@@ -480,7 +484,7 @@ export default function Tracker() {
             <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
             <span className="text-xs opacity-90">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">Weeks YTD</div>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -493,14 +497,6 @@ export default function Tracker() {
               <div className="text-xs text-muted-foreground">🔴 Missing</div>
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">🟡 Draft</div>
-              <div className="text-2xl font-bold text-yellow-700">{stats.draft}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">⚫ N/A</div>
-              <div className="text-2xl font-bold text-gray-600">{stats.na}</div>
-            </Card>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
             <Card className="p-4">
@@ -510,8 +506,9 @@ export default function Tracker() {
             </Card>
             <Card className="p-4">
               <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
-              <div className="text-sm flex justify-between"><span>Yet to begin</span><b>{phaseStats.buildYet}</b></div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
+              <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{phaseStats.buildYet}</b></div>
+              <div className="text-sm flex justify-between"><span>Assigned</span><b>{phaseStats.buildAssigned}</b></div>
+              <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
               <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.buildComplete}</b></div>
             </Card>
             <Card className="p-4">
@@ -585,7 +582,8 @@ export default function Tracker() {
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
-              if (top?.status === "published") mPublished++;
+              const isPub = !!top?.substack_published || top?.status === "published";
+              if (isPub) mPublished++;
               else { mMissing++; missingWeeks.push(w); }
             }
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
@@ -615,6 +613,7 @@ export default function Tracker() {
                   <div className="rounded-md border p-3">
                     <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
                     <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{monthPhaseStats.buildYet}</b></div>
+                    <div className="text-sm flex justify-between"><span>Assigned</span><b>{monthPhaseStats.buildAssigned}</b></div>
                     <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{monthPhaseStats.buildInProgress}</b></div>
                     <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{monthPhaseStats.buildComplete}</b></div>
                   </div>
@@ -670,6 +669,12 @@ export default function Tracker() {
           })()}
 
 
+          {/* Weekly cards section header */}
+          <div className="mb-3 flex items-baseline justify-between bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <h2 className="text-lg font-bold text-sky-900">Weekly Cards · {MONTH_NAMES[selectedMonth]} {YEAR}</h2>
+            <span className="text-xs text-sky-900/80">{visibleWeeks.length} week(s)</span>
+          </div>
+
           {/* Weekly cards */}
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
@@ -678,34 +683,84 @@ export default function Tracker() {
               {visibleWeeks.map((week) => {
                 const list = entriesByWeek.get(week) || [];
                 const entry = list[0];
-                if (entry?.status === "published") return null;
                 if (assigneeFilter !== "all" && entry?.assignee_id !== assigneeFilter) return null;
                 if (statusFilter !== "all" && (entry?.status ?? "tbd") !== statusFilter) return null;
                 const status = entry?.status ?? "tbd";
                 const meta = STATUS_META[status];
                 const weekNum = weeks.indexOf(week) + 1;
                 const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
+
+                // Header background based on phase status
+                const projSt = entry?.project_id ? projectStatusMap[entry.project_id] : undefined;
+                const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(status);
+                const projReady = projSt === "approved" || projSt === "published";
+                const buildDone = ["operate_assigned","publish_complete","published"].includes(status) || (planDone && projReady);
+                const opDone = ["publish_complete","published"].includes(status);
+                let headerBg = "bg-gray-50"; // plan not complete → very light grey
+                if (opDone) headerBg = "bg-green-200"; // operate complete → green
+                else if (buildDone) headerBg = "bg-green-50"; // build complete → very light green
+                else if (planDone && (status === "build_in_progress" || entry?.project_id)) headerBg = "bg-yellow-50"; // build in progress → light yellow
+
+                const notifyAssignees = async () => {
+                  try {
+                    const assigneeIds = [entry?.plan_assignee_id, entry?.build_assignee_id, entry?.operate_assignee_id].filter(Boolean);
+                    if (assigneeIds.length === 0) {
+                      return toast.error("No assignees on this week");
+                    }
+                    const recipients = users.filter((u) => assigneeIds.includes(u.id)).map((u) => ({
+                      name: u.name, email: u.email, id: u.id,
+                    }));
+                    const { error } = await supabase.functions.invoke("notify-week-assignees", {
+                      body: {
+                        contentId,
+                        weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+                        title: entry?.title || entry?.theme_text || `Week of ${week}`,
+                        status: meta?.label ?? status,
+                        recipients,
+                        plan: { assignee_id: entry?.plan_assignee_id, due: entry?.plan_due_date, description: "Plan the weekly content theme and brief." },
+                        build: { assignee_id: entry?.build_assignee_id, due: entry?.build_due_date, description: "Build the draft / produce the content." },
+                        operate: { assignee_id: entry?.operate_assignee_id, due: entry?.operate_due_date, description: "Publish on Substack/YouTube." },
+                      },
+                    });
+                    if (error) throw error;
+                    toast.success(`Reminder sent to ${recipients.length} assignee(s)`);
+                  } catch (e: any) {
+                    toast.error(e.message ?? "Failed to send reminders");
+                  }
+                };
+
                 return (
-                  <Card key={week} className="p-4 space-y-3 w-full">
-                    <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
-                      <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+                  <Card key={week} className="space-y-3 w-full overflow-hidden">
+                    <div className={`px-4 py-3 ${headerBg} border-b`}>
+                      <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
+                      <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
+                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+                          {isAdmin && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={notifyAssignees}>
+                              Notify assignees
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <WeekWorkflow
-                      week={week}
-                      channel={activeChannel}
-                      subChannel={activeSub}
-                      entry={entry ?? null}
-                      users={users}
-                      planners={planners}
-                      builders={builders}
-                      operators={operators}
-                      isAdmin={isAdmin}
-                      projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
-                      upsert={upsert as any}
-                      onReset={resetWeek as any}
-                    />
+                    <div className="px-4 pb-4">
+                      <WeekWorkflow
+                        week={week}
+                        channel={activeChannel}
+                        subChannel={activeSub}
+                        entry={entry ?? null}
+                        users={users}
+                        planners={planners}
+                        builders={builders}
+                        operators={operators}
+                        isAdmin={isAdmin}
+                        projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
+                        upsert={upsert as any}
+                        onReset={resetWeek as any}
+                      />
+                    </div>
                   </Card>
                 );
               })}

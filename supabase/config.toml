@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.transcribe-video-captions]
 verify_jwt = true
+
+[functions.notify-week-assignees]
+verify_jwt = true
