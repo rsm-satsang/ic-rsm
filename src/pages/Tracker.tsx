@@ -662,6 +662,12 @@ export default function Tracker() {
           })()}
 
 
+          {/* Weekly cards section header */}
+          <div className="mb-3 flex items-baseline justify-between bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <h2 className="text-lg font-bold text-sky-900">Weekly Cards · {MONTH_NAMES[selectedMonth]} {YEAR}</h2>
+            <span className="text-xs text-sky-900/80">{visibleWeeks.length} week(s)</span>
+          </div>
+
           {/* Weekly cards */}
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
@@ -670,34 +676,84 @@ export default function Tracker() {
               {visibleWeeks.map((week) => {
                 const list = entriesByWeek.get(week) || [];
                 const entry = list[0];
-                if (entry?.status === "published") return null;
                 if (assigneeFilter !== "all" && entry?.assignee_id !== assigneeFilter) return null;
                 if (statusFilter !== "all" && (entry?.status ?? "tbd") !== statusFilter) return null;
                 const status = entry?.status ?? "tbd";
                 const meta = STATUS_META[status];
                 const weekNum = weeks.indexOf(week) + 1;
                 const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
+
+                // Header background based on phase status
+                const projSt = entry?.project_id ? projectStatusMap[entry.project_id] : undefined;
+                const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(status);
+                const projReady = projSt === "approved" || projSt === "published";
+                const buildDone = ["operate_assigned","publish_complete","published"].includes(status) || (planDone && projReady);
+                const opDone = ["publish_complete","published"].includes(status);
+                let headerBg = "bg-gray-50"; // plan not complete → very light grey
+                if (opDone) headerBg = "bg-green-200"; // operate complete → green
+                else if (buildDone) headerBg = "bg-green-50"; // build complete → very light green
+                else if (planDone && (status === "build_in_progress" || entry?.project_id)) headerBg = "bg-yellow-50"; // build in progress → light yellow
+
+                const notifyAssignees = async () => {
+                  try {
+                    const assigneeIds = [entry?.plan_assignee_id, entry?.build_assignee_id, entry?.operate_assignee_id].filter(Boolean);
+                    if (assigneeIds.length === 0) {
+                      return toast.error("No assignees on this week");
+                    }
+                    const recipients = users.filter((u) => assigneeIds.includes(u.id)).map((u) => ({
+                      name: u.name, email: u.email, id: u.id,
+                    }));
+                    const { error } = await supabase.functions.invoke("notify-week-assignees", {
+                      body: {
+                        contentId,
+                        weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+                        title: entry?.title || entry?.theme_text || `Week of ${week}`,
+                        status: meta?.label ?? status,
+                        recipients,
+                        plan: { assignee_id: entry?.plan_assignee_id, due: entry?.plan_due_date, description: "Plan the weekly content theme and brief." },
+                        build: { assignee_id: entry?.build_assignee_id, due: entry?.build_due_date, description: "Build the draft / produce the content." },
+                        operate: { assignee_id: entry?.operate_assignee_id, due: entry?.operate_due_date, description: "Publish on Substack/YouTube." },
+                      },
+                    });
+                    if (error) throw error;
+                    toast.success(`Reminder sent to ${recipients.length} assignee(s)`);
+                  } catch (e: any) {
+                    toast.error(e.message ?? "Failed to send reminders");
+                  }
+                };
+
                 return (
-                  <Card key={week} className="p-4 space-y-3 w-full">
-                    <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
-                      <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+                  <Card key={week} className="space-y-3 w-full overflow-hidden">
+                    <div className={`px-4 py-3 ${headerBg} border-b`}>
+                      <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
+                      <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
+                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+                          {isAdmin && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={notifyAssignees}>
+                              Notify assignees
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <WeekWorkflow
-                      week={week}
-                      channel={activeChannel}
-                      subChannel={activeSub}
-                      entry={entry ?? null}
-                      users={users}
-                      planners={planners}
-                      builders={builders}
-                      operators={operators}
-                      isAdmin={isAdmin}
-                      projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
-                      upsert={upsert as any}
-                      onReset={resetWeek as any}
-                    />
+                    <div className="px-4 pb-4">
+                      <WeekWorkflow
+                        week={week}
+                        channel={activeChannel}
+                        subChannel={activeSub}
+                        entry={entry ?? null}
+                        users={users}
+                        planners={planners}
+                        builders={builders}
+                        operators={operators}
+                        isAdmin={isAdmin}
+                        projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
+                        upsert={upsert as any}
+                        onReset={resetWeek as any}
+                      />
+                    </div>
                   </Card>
                 );
               })}
