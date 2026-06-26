@@ -238,22 +238,25 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     if (entry?.project_id) navigate(`/workspace/${entry.project_id}`);
   };
 
-  // Auto-assign operator when build becomes done (project marked ready to publish)
+  // Auto-assign operator + sync status when build becomes done (project marked ready to publish)
   useEffect(() => {
     if (!buildDone || !entry?.id) return;
-    if (entry.operate_assignee_id) return;
-    const autoOp = pickByWeek(operators, week);
-    if (!autoOp) return;
+    const needsOp = !entry.operate_assignee_id;
+    const needsStatusBump = !["operate_assigned", "publish_complete", "published"].includes(entry.status);
+    if (!needsOp && !needsStatusBump) return;
+    const autoOp = needsOp ? pickByWeek(operators, week) : null;
     (async () => {
-      await upsert(week, {
-        operate_assignee_id: autoOp.id,
-        operate_due_date: entry.operate_due_date ?? wednesdayOf(week),
-        status: "operate_assigned",
-      });
-      await logActivity("operate_auto_assigned", { assignee: autoOp.name });
+      const patch: any = { status: "operate_assigned" };
+      if (autoOp) {
+        patch.operate_assignee_id = autoOp.id;
+        patch.operate_due_date = entry.operate_due_date ?? wednesdayOf(week);
+      }
+      await upsert(week, patch);
+      await logActivity("build_complete_auto", { project_status: projectStatus, auto_operator: autoOp?.name ?? null });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildDone, entry?.id]);
+  }, [buildDone, entry?.id, projectStatus]);
+
 
   const submitEditOp = async () => {
     if (!opAssignee) return toast.error("Select an assignee");
