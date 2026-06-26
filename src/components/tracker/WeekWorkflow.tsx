@@ -238,22 +238,25 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     if (entry?.project_id) navigate(`/workspace/${entry.project_id}`);
   };
 
-  // Auto-assign operator when build becomes done (project marked ready to publish)
+  // Auto-assign operator + sync status when build becomes done (project marked ready to publish)
   useEffect(() => {
     if (!buildDone || !entry?.id) return;
-    if (entry.operate_assignee_id) return;
-    const autoOp = pickByWeek(operators, week);
-    if (!autoOp) return;
+    const needsOp = !entry.operate_assignee_id;
+    const needsStatusBump = !["operate_assigned", "publish_complete", "published"].includes(entry.status);
+    if (!needsOp && !needsStatusBump) return;
+    const autoOp = needsOp ? pickByWeek(operators, week) : null;
     (async () => {
-      await upsert(week, {
-        operate_assignee_id: autoOp.id,
-        operate_due_date: entry.operate_due_date ?? wednesdayOf(week),
-        status: "operate_assigned",
-      });
-      await logActivity("operate_auto_assigned", { assignee: autoOp.name });
+      const patch: any = { status: "operate_assigned" };
+      if (autoOp) {
+        patch.operate_assignee_id = autoOp.id;
+        patch.operate_due_date = entry.operate_due_date ?? wednesdayOf(week);
+      }
+      await upsert(week, patch);
+      await logActivity("build_complete_auto", { project_status: projectStatus, auto_operator: autoOp?.name ?? null });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildDone, entry?.id]);
+  }, [buildDone, entry?.id, projectStatus]);
+
 
   const submitEditOp = async () => {
     if (!opAssignee) return toast.error("Select an assignee");
@@ -442,9 +445,18 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
 
           {entry?.project_id ? (
-            <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
-              Open Linked Project (Review)
-            </Button>
+            <div className="space-y-2">
+              <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
+                Open Linked Project (Review)
+              </Button>
+              <button
+                type="button"
+                className="text-xs text-blue-600 hover:underline"
+                onClick={() => setPanel(panel === "link_build" ? null : "link_build")}
+              >
+                Link a different project
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <Button size="sm" variant="outline" onClick={startBuildFromScratch}>
@@ -456,26 +468,32 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             </div>
           )}
 
-          {panel === "link_build" && !entry?.project_id && (
+
+          {panel === "link_build" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Project</label>
+              <label className="text-xs font-medium">{entry?.project_id ? "Link a different project" : "Project"}</label>
               <Select value={linkProjectId} onValueChange={setLinkProjectId}>
                 <SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger>
                 <SelectContent>
                   {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
-                  {draftProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                  {draftProjects.filter((p) => p.id !== entry?.project_id).map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button size="sm" className="w-full" onClick={linkProject}>Link & Open</Button>
             </div>
           )}
+
         </CollapsibleContent>
       </Collapsible>
 
       {/* OPERATE / PUBLISH */}
-      <Collapsible open={openOp && planDone} onOpenChange={(v) => { if (planDone) setOpenOp(v); }}>
-        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && planDone} onToggle={() => setOpenOp((v) => !v)} disabled={!planDone} stateLabel={operateLabel} />
+      {(() => {
+        const opAllowed = planDone && !!entry?.operate_assignee_id;
+        return (
+      <Collapsible open={openOp && opAllowed} onOpenChange={(v) => { if (opAllowed) setOpenOp(v); }}>
+        <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && opAllowed} onToggle={() => setOpenOp((v) => !v)} disabled={!opAllowed} stateLabel={operateLabel} />
         <CollapsibleContent className="px-2 pb-2">
+
           <AssignmentLine
             assigneeId={entry?.operate_assignee_id}
             due={entry?.operate_due_date}
@@ -515,6 +533,10 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
         </CollapsibleContent>
       </Collapsible>
+        );
+      })()}
+
+
 
       {/* ACTIVITY TIMELINE */}
       <Collapsible open={openActivity} onOpenChange={setOpenActivity}>
