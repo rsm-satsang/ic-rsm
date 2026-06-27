@@ -57,12 +57,14 @@ Deno.serve(async (req) => {
 
     // Recipients: admins + builders. We treat "builder" as anyone with role
     // 'builder' OR 'admin'. Fallback: include all approved users with role != 'viewer'.
-    // Notify all approved admins + builders. The project uses roles 'admin'
-    // and 'user' (treated as builder); only approved accounts get emailed.
+    // Notify all approved admins + builders. The app_role enum only contains
+    // 'admin' and 'user' — 'user' is treated as the Builder role. Passing
+    // 'builder' would error the entire query with "invalid input value for
+    // enum app_role".
     const { data: recipients, error: recipientsError } = await supabase
       .from("users")
       .select("email, name, role, approval_status")
-      .in("role", ["admin", "builder", "user"])
+      .in("role", ["admin", "user"])
       .eq("approval_status", "approved");
     if (recipientsError) console.error("recipients query error", recipientsError);
     console.log("notify-reviewers recipients:", recipients?.length ?? 0);
