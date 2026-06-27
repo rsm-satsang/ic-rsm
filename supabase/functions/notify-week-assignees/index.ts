@@ -85,13 +85,16 @@ Deno.serve(async (req) => {
     const fromHeader = `"Srijan Newsletter Reminder" <rsm.ai.labs@gmail.com>`;
     const subject = `🪷 Reminder: ${title} (${weekLabel})`;
 
-    const phaseRow = (label: string, p: Phase) => `
+    const phaseRow = (label: string, p: Phase) => {
+      if (!p || (!p.assignee_id && !p.due && !p.description)) return "";
+      return `
       <tr>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;"><b>${label}</b></td>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;">${nm(p.assignee_id)}</td>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;">${p.due || "—"}</td>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;">${p.description || "—"}</td>
       </tr>`;
+    };
 
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;padding:24px;">

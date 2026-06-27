@@ -9,9 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface Props {
   projectId: string;
   userId: string;
+  onUploaded?: (image: { url: string; caption: string | null }) => void;
 }
 
-export default function AddImageDialog({ projectId, userId }: Props) {
+export default function AddImageDialog({ projectId, userId, onUploaded }: Props) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
@@ -42,6 +43,7 @@ export default function AddImageDialog({ projectId, userId }: Props) {
         created_by: userId,
       });
       if (insErr) throw insErr;
+      onUploaded?.({ url: pub.publicUrl, caption: caption || `Uploaded: ${file.name}` });
       toast.success("Image added to project");
       setOpen(false);
       reset();

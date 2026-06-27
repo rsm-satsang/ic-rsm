@@ -721,13 +721,35 @@ export default function Tracker() {
 
                 const notifyAssignees = async () => {
                   try {
-                    const assigneeIds = [entry?.plan_assignee_id, entry?.build_assignee_id, entry?.operate_assignee_id].filter(Boolean);
-                    if (assigneeIds.length === 0) {
-                      return toast.error("No assignees on this week");
+                    // Only notify the assignee(s) of the current in-progress phase.
+                    // Plan in progress → plan; plan done & build not done → build; build done & operate not done → operate.
+                    let activePhase: "plan" | "build" | "operate" | null = null;
+                    if (!planDone) activePhase = "plan";
+                    else if (!buildDone) activePhase = "build";
+                    else if (!opDone) activePhase = "operate";
+
+                    if (!activePhase) {
+                      return toast.error("All phases are complete — nothing to remind");
                     }
-                    const recipients = users.filter((u) => assigneeIds.includes(u.id)).map((u) => ({
-                      name: u.name, email: u.email, id: u.id,
-                    }));
+
+                    const activeAssigneeId =
+                      activePhase === "plan" ? entry?.plan_assignee_id
+                      : activePhase === "build" ? entry?.build_assignee_id
+                      : entry?.operate_assignee_id;
+
+                    if (!activeAssigneeId) {
+                      return toast.error(`No assignee on the current ${activePhase} phase`);
+                    }
+
+                    const recipients = users
+                      .filter((u) => u.id === activeAssigneeId)
+                      .map((u) => ({ name: u.name, email: u.email, id: u.id }));
+
+                    const phaseDescription =
+                      activePhase === "plan" ? "Plan the weekly content theme and brief."
+                      : activePhase === "build" ? "Build the draft / produce the content."
+                      : "Publish on Substack/YouTube.";
+
                     const { error } = await supabase.functions.invoke("notify-week-assignees", {
                       body: {
                         contentId,
@@ -735,13 +757,14 @@ export default function Tracker() {
                         title: entry?.title || entry?.theme_text || `Week of ${week}`,
                         status: meta?.label ?? status,
                         recipients,
-                        plan: { assignee_id: entry?.plan_assignee_id, due: entry?.plan_due_date, description: "Plan the weekly content theme and brief." },
-                        build: { assignee_id: entry?.build_assignee_id, due: entry?.build_due_date, description: "Build the draft / produce the content." },
-                        operate: { assignee_id: entry?.operate_assignee_id, due: entry?.operate_due_date, description: "Publish on Substack/YouTube." },
+                        // Only include the active phase in the email table.
+                        plan: activePhase === "plan" ? { assignee_id: entry?.plan_assignee_id, due: entry?.plan_due_date, description: phaseDescription } : {},
+                        build: activePhase === "build" ? { assignee_id: entry?.build_assignee_id, due: entry?.build_due_date, description: phaseDescription } : {},
+                        operate: activePhase === "operate" ? { assignee_id: entry?.operate_assignee_id, due: entry?.operate_due_date, description: phaseDescription } : {},
                       },
                     });
                     if (error) throw error;
-                    toast.success(`Reminder sent to ${recipients.length} assignee(s)`);
+                    toast.success(`Reminder sent for ${activePhase} phase (+ admins)`);
                   } catch (e: any) {
                     toast.error(e.message ?? "Failed to send reminders");
                   }
