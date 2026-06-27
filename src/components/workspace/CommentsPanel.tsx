@@ -186,6 +186,13 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         user_name: (meRow as any)?.name || "User",
       } as any);
 
+      // Email notification to admins + builders (reviewers)
+      supabase.functions
+        .invoke("notify-comment", {
+          body: { projectId, commentId: data.id, commentText: text.trim(), authorId: me },
+        })
+        .catch((err) => console.error("notify-comment failed", err));
+
       setText("");
       setReplyTo(null);
       await load();
