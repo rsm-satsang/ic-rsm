@@ -886,36 +886,8 @@ const Workspace = () => {
                 {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
               </Button>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Comments
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[420px] p-0 h-[550px]" align="end">
-                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
-                </PopoverContent>
-              </Popover>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Settings className="h-4 w-4" />
-                    Manage
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[420px] p-0 max-h-[550px] overflow-hidden" align="end">
-                  <ManagePanel
-                    projectId={project.id}
-                    versionId={currentVersionId}
-                    currentStatus={currentStatus}
-                    onStatusChange={handleStatusChange}
-                  />
-                </PopoverContent>
-              </Popover>
-
               <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
+
 
               <Button variant="outline" size="icon" onClick={() => navigate("/settings")}>
                 <Settings className="h-4 w-4" />
