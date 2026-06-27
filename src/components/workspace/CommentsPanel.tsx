@@ -344,6 +344,40 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
           {submitting ? "Sending…" : replyTo ? "Reply" : "Comment"}
         </Button>
       </div>
+
+      <Dialog open={emailedDialog.open} onOpenChange={(o) => setEmailedDialog((s) => ({ ...s, open: o }))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Comment email sent
+            </DialogTitle>
+            <DialogDescription>
+              {emailedDialog.sentTo.length > 0
+                ? `Your comment was emailed to ${emailedDialog.sentTo.length} reviewer${emailedDialog.sentTo.length === 1 ? "" : "s"}.`
+                : "No emails were sent."}
+            </DialogDescription>
+          </DialogHeader>
+          {emailedDialog.sentTo.length > 0 && (
+            <div className="max-h-64 overflow-y-auto border rounded-md divide-y">
+              {emailedDialog.sentTo.map((r) => (
+                <div key={r.email} className="px-3 py-2 text-sm">
+                  <div className="font-medium">{r.name || r.email}</div>
+                  {r.name && <div className="text-xs text-muted-foreground">{r.email}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          {emailedDialog.errors.length > 0 && (
+            <div className="text-xs text-destructive space-y-1 max-h-32 overflow-y-auto">
+              <div className="font-semibold">Errors:</div>
+              {emailedDialog.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setEmailedDialog((s) => ({ ...s, open: false }))}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
