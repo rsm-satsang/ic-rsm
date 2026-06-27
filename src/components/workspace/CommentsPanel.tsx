@@ -239,17 +239,17 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
                       const ru = userOf(r.user_id);
                       return (
                         <div key={r.id} className="mt-2 ml-4 border-l-2 pl-3 py-1">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5"><AvatarFallback className="text-[10px]">{initials(ru?.name || "?")}</AvatarFallback></Avatar>
-                            <span className="text-xs font-medium">{ru?.name}</span>
-                            <span className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <Avatar className="h-5 w-5 self-center"><AvatarFallback className="text-[10px]">{initials(ru?.name || "?")}</AvatarFallback></Avatar>
+                            <span className="text-xs font-medium whitespace-nowrap">{ru?.name}</span>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</span>
+                            <p className="text-xs whitespace-pre-wrap break-words flex-1 min-w-0">{r.text}</p>
                             {r.user_id === me && (
-                              <button onClick={() => remove(r.id)} className="text-destructive ml-auto">
+                              <button onClick={() => remove(r.id)} className="text-destructive">
                                 <Trash2 className="h-3 w-3" />
                               </button>
                             )}
                           </div>
-                          <p className="text-xs mt-1 whitespace-pre-wrap">{r.text}</p>
                         </div>
                       );
                     })}
