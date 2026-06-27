@@ -876,6 +876,16 @@ const Workspace = () => {
 
               <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleNotifyReviewers}
+                disabled={notifyingReviewers}
+              >
+                <Send className="h-4 w-4" />
+                {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
+              </Button>
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2">
@@ -916,10 +926,25 @@ const Workspace = () => {
               </Button>
 
               {showPublishButton && (
-                <Button onClick={() => navigate(`/publish/${projectId}`)} variant="default" className="gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Ready to Publish
-                </Button>
+                <>
+                  <Button onClick={() => navigate(`/publish/${projectId}`)} variant="outline" className="gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Export
+                  </Button>
+                  <Button
+                    onClick={handleReadyForPublishing}
+                    disabled={markingReady || currentStatus === "approved" || currentStatus === "published"}
+                    variant="default"
+                    className="gap-2"
+                  >
+                    <FileCheck2 className="h-4 w-4" />
+                    {currentStatus === "approved" || currentStatus === "published"
+                      ? "Complete"
+                      : markingReady
+                        ? "Marking..."
+                        : "Ready for Publishing"}
+                  </Button>
+                </>
               )}
             </div>
           </div>
