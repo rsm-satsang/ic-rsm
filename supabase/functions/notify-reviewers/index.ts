@@ -25,7 +25,7 @@ function createRawEmail(from: string, to: string, subject: string, html: string)
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { projectId, versionId, requesterId } = await req.json();
+    const { projectId, versionId, requesterId, recipientEmails } = await req.json();
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId required" }), {
         status: 400,
@@ -62,13 +62,27 @@ Deno.serve(async (req) => {
     // 'admin' and 'user' — 'user' is treated as the Builder role. Passing
     // 'builder' would error the entire query with "invalid input value for
     // enum app_role".
-    const { data: recipients, error: recipientsError } = await supabase
-      .from("users")
-      .select("email, name, role, approval_status")
-      .in("role", ["admin", "user"])
-      .eq("approval_status", "approved");
-    if (recipientsError) console.error("recipients query error", recipientsError);
-    console.log("notify-reviewers recipients:", recipients?.length ?? 0);
+    // Recipients: explicit list from the Notify Reviewers dialog if provided,
+    // otherwise fall back to all approved admins + builders.
+    let recipients: any[] = [];
+    if (Array.isArray(recipientEmails) && recipientEmails.length > 0) {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, email, name, role, approval_status")
+        .in("email", recipientEmails);
+      if (error) console.error("explicit recipients query error", error);
+      recipients = (data || []).filter((r: any) => r.approval_status === "approved");
+      console.log("notify-reviewers explicit recipients:", recipients.length, "of", recipientEmails.length, "requested");
+    } else {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, email, name, role, approval_status")
+        .in("role", ["admin", "user"])
+        .eq("approval_status", "approved");
+      if (error) console.error("recipients query error", error);
+      recipients = data || [];
+      console.log("notify-reviewers default recipients:", recipients.length);
+    }
 
     let requesterName = "A teammate";
     if (requesterId) {
