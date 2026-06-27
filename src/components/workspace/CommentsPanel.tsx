@@ -197,10 +197,23 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
           console.error("notify-comment failed", emailErr);
           toast.error("Comment saved, but email notification failed");
         } else {
-          console.log("notify-comment result", emailRes);
+          const res: any = emailRes || {};
+          const sentTo = Array.isArray(res.sentTo) ? res.sentTo : [];
+          const errors = Array.isArray(res.errors) ? res.errors : [];
+          console.log("notify-comment result", res);
+          if (sentTo.length > 0) {
+            toast.success(`Email sent to ${sentTo.length} reviewer${sentTo.length === 1 ? "" : "s"}`);
+            setEmailedDialog({ open: true, sentTo, errors });
+          } else if (errors.length > 0) {
+            toast.error(`Email send failed (${errors.length} error${errors.length === 1 ? "" : "s"})`);
+            setEmailedDialog({ open: true, sentTo: [], errors });
+          } else {
+            toast.message("No reviewers to notify");
+          }
         }
       } catch (err) {
         console.error("notify-comment exception", err);
+        toast.error("Email notification exception");
       }
 
       setText("");
