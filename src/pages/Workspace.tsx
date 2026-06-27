@@ -1024,6 +1024,7 @@ const Workspace = () => {
               <ImageIcon className="h-4 w-4" />
               Generate an image for the article
             </Button>
+            {project && user && <AddImageDialog projectId={project.id} userId={user.id} />}
           </div>
           {project && user && (
             <GenerateImageDialog
