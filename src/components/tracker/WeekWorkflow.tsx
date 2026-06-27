@@ -295,6 +295,20 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildDone, entry?.id, projectStatus]);
 
+  // Revert Build → In-progress when a linked project is reversed from ready-to-publish back to in_progress/draft/review.
+  useEffect(() => {
+    if (!entry?.id || !entry?.project_id) return;
+    const projectActive = projectStatus && !["approved", "published"].includes(projectStatus);
+    const trackerThinksDone = ["operate_assigned", "publish_complete"].includes(entry.status);
+    if (projectActive && trackerThinksDone && !entry.substack_published && !entry.youtube_published) {
+      (async () => {
+        await upsert(week, { status: "build_in_progress" });
+        await logActivity("build_reverted_from_project", { project_status: projectStatus });
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectStatus, entry?.id, entry?.project_id, entry?.status]);
+
 
   const submitEditOp = async () => {
     if (!opAssignee) return toast.error("Select an assignee");
