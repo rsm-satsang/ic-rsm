@@ -73,6 +73,8 @@ const Workspace = () => {
   const [savingTitle, setSavingTitle] = useState(false);
   const [selectedVersionForView, setSelectedVersionForView] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [notifyingReviewers, setNotifyingReviewers] = useState(false);
+  const [markingReady, setMarkingReady] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
