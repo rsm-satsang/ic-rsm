@@ -29,7 +29,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2 } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
@@ -76,6 +78,8 @@ const Workspace = () => {
   const [notifyingReviewers, setNotifyingReviewers] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
@@ -886,36 +890,8 @@ const Workspace = () => {
                 {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
               </Button>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Comments
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[420px] p-0 h-[550px]" align="end">
-                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
-                </PopoverContent>
-              </Popover>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Settings className="h-4 w-4" />
-                    Manage
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[420px] p-0 max-h-[550px] overflow-hidden" align="end">
-                  <ManagePanel
-                    projectId={project.id}
-                    versionId={currentVersionId}
-                    currentStatus={currentStatus}
-                    onStatusChange={handleStatusChange}
-                  />
-                </PopoverContent>
-              </Popover>
-
               <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
+
 
               <Button variant="outline" size="icon" onClick={() => navigate("/settings")}>
                 <Settings className="h-4 w-4" />
@@ -1045,24 +1021,57 @@ const Workspace = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - AI Tools & References (Tabbed) */}
-        <div className="w-80 lg:w-96 flex-shrink-0 border-l bg-card overflow-hidden hidden lg:block">
-          <WorkspaceSidebar
-            projectId={project.id}
-            selectedText={selectedText}
-            onInsertText={handleInsertText}
-            editorRef={editorRef}
-            projectMetadata={project.metadata}
-            markdownContent={markdownContent}
-            onContentUpdate={setMarkdownContent}
-          />
+        {/* Right Sidebar - AI Tools & Feedback (collapsible, default collapsed) */}
+        <div
+          className={`relative flex-shrink-0 border-l bg-card overflow-hidden hidden lg:block transition-all duration-200 ${
+            sidebarOpen ? "w-80 xl:w-96" : "w-10"
+          }`}
+        >
+          <button
+            onClick={() => setSidebarOpen((v) => !v)}
+            className="absolute top-2 left-1 z-10 p-1.5 rounded hover:bg-muted text-muted-foreground"
+            title={sidebarOpen ? "Collapse AI panel" : "Expand AI panel"}
+          >
+            {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
+          {sidebarOpen ? (
+            <div className="pl-8 h-full">
+              <WorkspaceSidebar
+                projectId={project.id}
+                selectedText={selectedText}
+                onInsertText={handleInsertText}
+                editorRef={editorRef}
+                projectMetadata={project.metadata}
+                markdownContent={markdownContent}
+                onContentUpdate={setMarkdownContent}
+              />
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-start pt-12 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span className="[writing-mode:vertical-rl] rotate-180">AI Feedback & Tools</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bottom Bar - Timeline */}
+      {/* Bottom Bar - Activity Timeline + Comments tabs */}
       <div className="border-t bg-card">
-        <TimelineFeed projectId={project.id} />
+        <Tabs defaultValue="timeline" className="w-full">
+          <TabsList className="h-9 mx-3 mt-2 bg-muted rounded-md">
+            <TabsTrigger value="timeline" className="text-xs px-3">Activity Timeline</TabsTrigger>
+            <TabsTrigger value="comments" className="text-xs px-3">Add Review Comments</TabsTrigger>
+          </TabsList>
+          <TabsContent value="timeline" className="m-0">
+            <TimelineFeed projectId={project.id} />
+          </TabsContent>
+          <TabsContent value="comments" className="m-0">
+            <div className="h-64">
+              <CommentsPanel projectId={project.id} versionId={currentVersionId} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
