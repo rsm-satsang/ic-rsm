@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { MessageSquare, Send, Trash2, CheckCircle2, Reply } from "lucide-react";
+import { MessageSquare, Send, Trash2, CheckCircle2, Reply, Mail } from "lucide-react";
 
 interface User { id: string; name: string; email: string; }
 
@@ -51,6 +52,7 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [emailedDialog, setEmailedDialog] = useState<{ open: boolean; sentTo: { email: string; name: string | null }[]; errors: string[] }>({ open: false, sentTo: [], errors: [] });
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -195,10 +197,23 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
           console.error("notify-comment failed", emailErr);
           toast.error("Comment saved, but email notification failed");
         } else {
-          console.log("notify-comment result", emailRes);
+          const res: any = emailRes || {};
+          const sentTo = Array.isArray(res.sentTo) ? res.sentTo : [];
+          const errors = Array.isArray(res.errors) ? res.errors : [];
+          console.log("notify-comment result", res);
+          if (sentTo.length > 0) {
+            toast.success(`Email sent to ${sentTo.length} reviewer${sentTo.length === 1 ? "" : "s"}`);
+            setEmailedDialog({ open: true, sentTo, errors });
+          } else if (errors.length > 0) {
+            toast.error(`Email send failed (${errors.length} error${errors.length === 1 ? "" : "s"})`);
+            setEmailedDialog({ open: true, sentTo: [], errors });
+          } else {
+            toast.message("No reviewers to notify");
+          }
         }
       } catch (err) {
         console.error("notify-comment exception", err);
+        toast.error("Email notification exception");
       }
 
       setText("");
@@ -329,6 +344,40 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
           {submitting ? "Sending…" : replyTo ? "Reply" : "Comment"}
         </Button>
       </div>
+
+      <Dialog open={emailedDialog.open} onOpenChange={(o) => setEmailedDialog((s) => ({ ...s, open: o }))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Comment email sent
+            </DialogTitle>
+            <DialogDescription>
+              {emailedDialog.sentTo.length > 0
+                ? `Your comment was emailed to ${emailedDialog.sentTo.length} reviewer${emailedDialog.sentTo.length === 1 ? "" : "s"}.`
+                : "No emails were sent."}
+            </DialogDescription>
+          </DialogHeader>
+          {emailedDialog.sentTo.length > 0 && (
+            <div className="max-h-64 overflow-y-auto border rounded-md divide-y">
+              {emailedDialog.sentTo.map((r) => (
+                <div key={r.email} className="px-3 py-2 text-sm">
+                  <div className="font-medium">{r.name || r.email}</div>
+                  {r.name && <div className="text-xs text-muted-foreground">{r.email}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          {emailedDialog.errors.length > 0 && (
+            <div className="text-xs text-destructive space-y-1 max-h-32 overflow-y-auto">
+              <div className="font-semibold">Errors:</div>
+              {emailedDialog.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setEmailedDialog((s) => ({ ...s, open: false }))}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

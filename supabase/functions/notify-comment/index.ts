@@ -50,14 +50,15 @@ Deno.serve(async (req) => {
 
     const { data: recipients } = await supabase
       .from("users")
-      .select("email, id")
+      .select("email, id, name")
       .in("role", ["admin", "user"])
       .eq("approval_status", "approved");
 
-    const emails = Array.from(new Set((recipients || [])
-      .filter((r: any) => r.id !== authorId)
-      .map((r: any) => r.email)
-      .filter(Boolean)));
+    const filtered = (recipients || []).filter(
+      (r: any) => r.id !== authorId && r.email
+    );
+    const emails = Array.from(new Set(filtered.map((r: any) => r.email)));
+    console.log(`notify-comment: ${emails.length} recipients for project ${projectId}`);
 
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/workspace/${projectId}`;
@@ -77,8 +78,9 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     const errors: string[] = [];
-    for (const email of emails) {
-      const raw = createRawEmail(fromHeader, email, subject, html);
+    const sentTo: { email: string; name: string | null }[] = [];
+    for (const r of filtered) {
+      const raw = createRawEmail(fromHeader, r.email, subject, html);
       const resp = await fetch(`${GATEWAY_URL}/users/me/messages/send`, {
         method: "POST",
         headers: {
@@ -88,11 +90,18 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ raw }),
       });
-      if (resp.ok) sent++;
-      else errors.push(`${email}: ${resp.status} ${(await resp.text()).slice(0, 200)}`);
+      if (resp.ok) {
+        sent++;
+        sentTo.push({ email: r.email, name: r.name });
+      } else {
+        const errText = (await resp.text()).slice(0, 200);
+        console.error(`notify-comment send failed for ${r.email}: ${resp.status} ${errText}`);
+        errors.push(`${r.email}: ${resp.status} ${errText}`);
+      }
     }
+    console.log(`notify-comment: sent=${sent}, errors=${errors.length}`);
 
-    return new Response(JSON.stringify({ ok: true, sent, recipients: emails, errors }), {
+    return new Response(JSON.stringify({ ok: true, sent, recipients: emails, sentTo, errors }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
