@@ -79,7 +79,7 @@ const Workspace = () => {
   const [publishing, setPublishing] = useState(false);
   const [notifyingReviewers, setNotifyingReviewers] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
-  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
 
