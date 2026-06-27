@@ -1082,7 +1082,13 @@ const Workspace = () => {
               <ImageIcon className="h-4 w-4" />
               Generate an image for the article
             </Button>
-            {project && user && <AddImageDialog projectId={project.id} userId={user.id} />}
+            {project && user && (
+              <AddImageDialog
+                projectId={project.id}
+                userId={user.id}
+                onUploaded={(img) => setHeroImage(img)}
+              />
+            )}
 
             {/* Font size selector on the newsletter */}
             <div className="ml-auto flex items-center gap-1 border rounded-md px-2 py-1 bg-background">
