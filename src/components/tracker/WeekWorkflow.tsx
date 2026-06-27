@@ -496,7 +496,9 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {entry?.project_id && (
             <div className="mb-2 rounded-md border bg-amber-50/60 p-2 text-xs space-y-0.5">
-              <div className="font-semibold text-amber-900 mb-1">Build progress</div>
+              <div className="font-semibold text-amber-900 mb-1">
+                Build progress — <span className="font-normal">{entry?.title || "(untitled project)"}</span>
+              </div>
               <div>📝 Drafts generated: <b>{buildProgress.draftCount}</b></div>
               <div>💬 Review comments: <b>{buildProgress.commentCount}</b>
                 {buildProgress.lastCommentBy && (
