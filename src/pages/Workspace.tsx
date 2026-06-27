@@ -910,7 +910,7 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-end gap-3 flex-wrap">
-            <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
+            <Button onClick={handleSaveCurrentVersion} disabled={saving} variant="outline" className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Saving..." : "Save Project"}
             </Button>
@@ -932,21 +932,35 @@ const Workspace = () => {
                   <CheckCircle className="h-4 w-4" />
                   Export
                 </Button>
-                <Button
-                  onClick={handleReadyForPublishing}
-                  disabled={markingReady || currentStatus === "approved" || currentStatus === "published"}
-                  variant="default"
-                  className="gap-2"
-                >
-                  <FileCheck2 className="h-4 w-4" />
-                  {currentStatus === "approved" || currentStatus === "published"
-                    ? "Complete"
-                    : markingReady
-                      ? "Marking..."
-                      : "Ready for Publishing"}
-                </Button>
+                <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-background">
+                  <FileCheck2 className="h-4 w-4 text-muted-foreground" />
+                  <Select
+                    value={
+                      currentStatus === "approved" || currentStatus === "published"
+                        ? "ready"
+                        : "in_progress"
+                    }
+                    onValueChange={async (v) => {
+                      if (v === "ready") {
+                        await handleReadyForPublishing();
+                      } else {
+                        await handleStatusChange("in_progress");
+                      }
+                    }}
+                    disabled={markingReady}
+                  >
+                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[170px] focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="ready">Ready for Publishing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
+
 
             <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
 
