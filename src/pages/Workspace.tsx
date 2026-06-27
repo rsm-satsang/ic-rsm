@@ -33,6 +33,8 @@ import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquar
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
+import AddImageDialog from "@/components/workspace/AddImageDialog";
+import NotifyReviewersDialog from "@/components/workspace/NotifyReviewersDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
 import AssignDialog from "@/components/workspace/AssignDialog";
@@ -77,13 +79,14 @@ const Workspace = () => {
   const [publishing, setPublishing] = useState(false);
   const [notifyingReviewers, setNotifyingReviewers] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
-  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
+  const [heroImage, setHeroImage] = useState<{ url: string; caption: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
 
@@ -250,6 +253,31 @@ const Workspace = () => {
 
   useEffect(() => {
     checkUserAndLoadProject();
+  }, [projectId]);
+
+  // Subscribe to project_images so the hero box updates after upload/generate
+  useEffect(() => {
+    if (!projectId) return;
+    const fetchHero = async () => {
+      const { data } = await supabase
+        .from("project_images")
+        .select("image_url, prompt")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setHeroImage(data ? { url: data.image_url, caption: data.prompt } : null);
+    };
+    fetchHero();
+    const channel = supabase
+      .channel(`workspace-images-${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_images", filter: `project_id=eq.${projectId}` },
+        () => fetchHero()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [projectId]);
 
   // Load version content when version changes
@@ -885,15 +913,14 @@ const Workspace = () => {
 
             <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleNotifyReviewers}
-              disabled={notifyingReviewers}
-            >
-              <Send className="h-4 w-4" />
-              {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
-            </Button>
+            {user && (
+              <NotifyReviewersDialog
+                projectId={project.id}
+                versionId={currentVersionId}
+                requesterId={user.id}
+                projectTitle={projectTitle}
+              />
+            )}
 
             {showPublishButton && (
               <>
@@ -997,6 +1024,7 @@ const Workspace = () => {
               <ImageIcon className="h-4 w-4" />
               Generate an image for the article
             </Button>
+            {project && user && <AddImageDialog projectId={project.id} userId={user.id} />}
           </div>
           {project && user && (
             <GenerateImageDialog
@@ -1018,19 +1046,39 @@ const Workspace = () => {
                 </div>
               </div>
             ) : viewMode === "edit" ? (
-              <Textarea
-                ref={textareaRef}
-                value={markdownContent}
-                onChange={(e) => setMarkdownContent(e.target.value)}
-                onSelect={handleTextSelection}
-                onMouseUp={handleTextSelection}
-                onKeyUp={handleTextSelection}
-                className="w-full h-full min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
-                placeholder="Start writing your content here..."
-                style={{ whiteSpace: "pre-wrap" }}
-              />
+              <div className="flex flex-col h-full">
+                {heroImage && (
+                  <div className="px-8 pt-6">
+                    <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+                      <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-80 object-cover" />
+                      {heroImage.caption && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <Textarea
+                  ref={textareaRef}
+                  value={markdownContent}
+                  onChange={(e) => setMarkdownContent(e.target.value)}
+                  onSelect={handleTextSelection}
+                  onMouseUp={handleTextSelection}
+                  onKeyUp={handleTextSelection}
+                  className="w-full flex-1 min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
+                  placeholder="Start writing your content here..."
+                  style={{ whiteSpace: "pre-wrap" }}
+                />
+              </div>
             ) : (
               <div className="p-8 max-w-4xl mx-auto">
+                {heroImage && (
+                  <div className="mb-6 border rounded-lg overflow-hidden bg-card shadow-sm">
+                    <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-96 object-cover" />
+                    {heroImage.caption && (
+                      <div className="px-4 py-2 text-sm text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
+                    )}
+                  </div>
+                )}
                 <article className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed">
                   <ReactMarkdown>{markdownContent}</ReactMarkdown>
                 </article>

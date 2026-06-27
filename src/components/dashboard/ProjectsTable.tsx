@@ -486,7 +486,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
               variant={getStatusColor(project.status)}
               className="text-xs capitalize"
             >
-              {project.status.replace("_", " ")}
+              {project.status === "approved" ? "Complete" : project.status.replace("_", " ")}
             </Badge>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-1">
@@ -639,7 +639,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             <SelectItem value="all">All Status</SelectItem>
             {uniqueStatuses.map(status => (
               <SelectItem key={status} value={status} className="capitalize">
-                {status.replace("_", " ")}
+                {status === "approved" ? "Complete" : status.replace("_", " ")}
               </SelectItem>
             ))}
           </SelectContent>

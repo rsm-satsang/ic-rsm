@@ -1,4 +1,4 @@
-// Notify all Builder users + admins that a draft is ready for review.
+// Notify Builders + admins (or an explicit list) that a draft is ready for review.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -25,7 +25,7 @@ function createRawEmail(from: string, to: string, subject: string, html: string)
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { projectId, versionId, requesterId } = await req.json();
+    const { projectId, versionId, requesterId, recipientEmails } = await req.json();
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -55,19 +55,19 @@ Deno.serve(async (req) => {
       if (v) versionLabel = `${v.title || "Untitled"} (v${v.version_number ?? "?"})`;
     }
 
-    // Recipients: admins + builders. We treat "builder" as anyone with role
-    // 'builder' OR 'admin'. Fallback: include all approved users with role != 'viewer'.
-    // Notify all approved admins + builders. The app_role enum only contains
-    // 'admin' and 'user' — 'user' is treated as the Builder role. Passing
-    // 'builder' would error the entire query with "invalid input value for
-    // enum app_role".
-    const { data: recipients, error: recipientsError } = await supabase
-      .from("users")
-      .select("email, name, role, approval_status")
-      .in("role", ["admin", "user"])
-      .eq("approval_status", "approved");
-    if (recipientsError) console.error("recipients query error", recipientsError);
-    console.log("notify-reviewers recipients:", recipients?.length ?? 0);
+    let emails: string[] = [];
+    if (Array.isArray(recipientEmails) && recipientEmails.length > 0) {
+      emails = Array.from(new Set(recipientEmails.filter((e: any) => typeof e === "string" && e.includes("@"))));
+    } else {
+      const { data: recipients, error: recipientsError } = await supabase
+        .from("users")
+        .select("email, role, approval_status")
+        .in("role", ["admin", "user"])
+        .eq("approval_status", "approved");
+      if (recipientsError) console.error("recipients query error", recipientsError);
+      emails = Array.from(new Set((recipients || []).map((r: any) => r.email).filter(Boolean)));
+    }
+    console.log("notify-reviewers recipients:", emails.length);
 
     let requesterName = "A teammate";
     if (requesterId) {
@@ -97,7 +97,6 @@ Deno.serve(async (req) => {
         <p style="color:#888;font-size:12px;margin-top:24px;">— Ram Chandra Mission Content Platform</p>
       </div>`;
 
-    const emails = Array.from(new Set((recipients || []).map((r: any) => r.email).filter(Boolean)));
     let sent = 0;
     const errors: string[] = [];
     for (const email of emails) {
