@@ -1141,9 +1141,10 @@ const Workspace = () => {
                     )}
                   </div>
                 )}
-                <article className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed">
+                <article className={`prose max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed ${fontSize === "sm" ? "prose-sm" : fontSize === "lg" ? "prose-lg" : fontSize === "xl" ? "prose-xl" : "prose-base"}`}>
                   <ReactMarkdown>{markdownContent}</ReactMarkdown>
                 </article>
+
               </div>
             )}
           </div>
