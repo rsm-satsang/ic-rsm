@@ -1010,7 +1010,7 @@ const Workspace = () => {
                 {leftPanel === "versions" && (
                   <div className="flex flex-col">
                     <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
-                    <ProjectImagesSection projectId={project.id} />
+                    <ProjectImagesSection projectId={project.id} userId={user?.id} />
                   </div>
                 )}
                 {leftPanel === "timeline" && <TimelineFeed projectId={project.id} />}

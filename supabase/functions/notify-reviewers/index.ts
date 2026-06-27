@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/workspace/${projectId}`;
     const fromHeader = `"RSM Srijan Newsletter Review Request" <rsm.ai.labs@gmail.com>`;
-    const subject = `📝 Review requested: ${project?.title || "Untitled"} — ${versionLabel}`;
+    const subject = `Review requested: ${project?.title || "Untitled"} - ${versionLabel}`;
 
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;">

@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/tracker`;
     const fromHeader = `"Srijan Newsletter Reminder" <rsm.ai.labs@gmail.com>`;
-    const subject = `🪷 Reminder: ${title} (${weekLabel})`;
+    const subject = `Reminder: ${title} (${weekLabel})`;
 
     const phaseRow = (label: string, p: Phase) => {
       if (!p || (!p.assignee_id && !p.due && !p.description)) return "";

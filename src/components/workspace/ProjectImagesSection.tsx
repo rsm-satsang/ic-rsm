@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Download } from "lucide-react";
+import { ImageIcon, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import AddImageDialog from "./AddImageDialog";
 
 interface ProjectImage {
   id: string;
@@ -14,9 +15,10 @@ interface ProjectImage {
 
 interface Props {
   projectId: string;
+  userId?: string;
 }
 
-const ProjectImagesSection = ({ projectId }: Props) => {
+const ProjectImagesSection = ({ projectId, userId }: Props) => {
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,16 +72,35 @@ const ProjectImagesSection = ({ projectId }: Props) => {
     }
   };
 
+  const handleDelete = async (img: ProjectImage) => {
+    if (!confirm("Delete this image? This cannot be undone.")) return;
+    try {
+      if (img.storage_path) {
+        await supabase.storage.from("project-images").remove([img.storage_path]);
+      }
+      const { error } = await supabase.from("project_images").delete().eq("id", img.id);
+      if (error) throw error;
+      setImages((prev) => prev.filter((i) => i.id !== img.id));
+      toast.success("Image deleted");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to delete image");
+    }
+  };
+
   return (
     <div className="border-t">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold flex items-center gap-2">
-          <ImageIcon className="h-4 w-4" />
-          Project Images
-        </h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          {images.length} image{images.length !== 1 ? "s" : ""}
-        </p>
+      <div className="p-4 border-b flex items-center justify-between gap-2">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Project Images
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {images.length} image{images.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        {userId && <AddImageDialog projectId={projectId} userId={userId} />}
       </div>
       <div className="p-4 space-y-3">
         {loading ? (
@@ -91,7 +112,7 @@ const ProjectImagesSection = ({ projectId }: Props) => {
           <div className="text-center py-6 text-muted-foreground">
             <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No images yet</p>
-            <p className="text-xs">Generate one from the editor above</p>
+            <p className="text-xs">Add or generate one above</p>
           </div>
         ) : (
           images.map((img) => (
@@ -108,15 +129,15 @@ const ProjectImagesSection = ({ projectId }: Props) => {
                 <span className="text-xs text-muted-foreground truncate">
                   {new Date(img.created_at).toLocaleDateString()}
                 </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7"
-                  onClick={() => handleDownload(img)}
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Download
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => handleDownload(img)}>
+                    <Download className="h-3 w-3 mr-1" />
+                    Download
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-destructive hover:text-destructive" onClick={() => handleDelete(img)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))
