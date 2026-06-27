@@ -1,4 +1,4 @@
-// Notify Builders + admins (or an explicit list) that a draft is ready for review.
+// Notify all Builder users + admins that a draft is ready for review.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -25,10 +25,11 @@ function createRawEmail(from: string, to: string, subject: string, html: string)
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { projectId, versionId, requesterId, recipientEmails } = await req.json();
+    const { projectId, versionId, requesterId } = await req.json();
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -36,49 +37,48 @@ Deno.serve(async (req) => {
     const GOOGLE_MAIL_API_KEY = Deno.env.get("GOOGLE_MAIL_API_KEY");
     if (!LOVABLE_API_KEY || !GOOGLE_MAIL_API_KEY) {
       return new Response(JSON.stringify({ error: "Gmail connector not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data: project } = await supabase
-      .from("projects").select("title").eq("id", projectId).maybeSingle();
+    const { data: project } = await supabase.from("projects").select("title").eq("id", projectId).maybeSingle();
 
     let versionLabel = "Latest";
     if (versionId) {
       const { data: v } = await supabase
-        .from("versions").select("title, version_number").eq("id", versionId).maybeSingle();
+        .from("versions")
+        .select("title, version_number")
+        .eq("id", versionId)
+        .maybeSingle();
       if (v) versionLabel = `${v.title || "Untitled"} (v${v.version_number ?? "?"})`;
     }
 
-    let emails: string[] = [];
-    if (Array.isArray(recipientEmails) && recipientEmails.length > 0) {
-      emails = Array.from(new Set(recipientEmails.filter((e: any) => typeof e === "string" && e.includes("@"))));
-    } else {
-      const { data: recipients, error: recipientsError } = await supabase
-        .from("users")
-        .select("email, role, approval_status")
-        .in("role", ["admin", "user"])
-        .eq("approval_status", "approved");
-      if (recipientsError) console.error("recipients query error", recipientsError);
-      emails = Array.from(new Set((recipients || []).map((r: any) => r.email).filter(Boolean)));
-    }
-    console.log("notify-reviewers recipients:", emails.length);
+    // Recipients: admins + builders. We treat "builder" as anyone with role
+    // 'builder' OR 'admin'. Fallback: include all approved users with role != 'viewer'.
+    // Notify all approved admins + builders. The app_role enum only contains
+    // 'admin' and 'user' — 'user' is treated as the Builder role. Passing
+    // 'builder' would error the entire query with "invalid input value for
+    // enum app_role".
+    const { data: recipients, error: recipientsError } = await supabase
+      .from("users")
+      .select("email, name, role, approval_status")
+      .in("role", ["admin", "user"])
+      .eq("approval_status", "approved");
+    if (recipientsError) console.error("recipients query error", recipientsError);
+    console.log("notify-reviewers recipients:", recipients?.length ?? 0);
 
     let requesterName = "A teammate";
     if (requesterId) {
-      const { data: ru } = await supabase
-        .from("users").select("name").eq("id", requesterId).maybeSingle();
+      const { data: ru } = await supabase.from("users").select("name").eq("id", requesterId).maybeSingle();
       if (ru?.name) requesterName = ru.name;
     }
 
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/workspace/${projectId}`;
-    const fromHeader = `"Srijan Review Request" <rsm.ai.labs@gmail.com>`;
+    const fromHeader = `"RSM Srijan Newsletter Review Request" <rsm.ai.labs@gmail.com>`;
     const subject = `📝 Review requested: ${project?.title || "Untitled"} — ${versionLabel}`;
 
     const html = `
@@ -94,9 +94,10 @@ Deno.serve(async (req) => {
             Open in workspace
           </a>
         </p>
-        <p style="color:#888;font-size:12px;margin-top:24px;">— Ram Chandra Mission Content Platform</p>
+        <p style="color:#888;font-size:12px;margin-top:24px;">— Srijan Content Platform</p>
       </div>`;
 
+    const emails = Array.from(new Set((recipients || []).map((r: any) => r.email).filter(Boolean)));
     let sent = 0;
     const errors: string[] = [];
     for (const email of emails) {
@@ -120,7 +121,8 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("notify-reviewers error", e);
     return new Response(JSON.stringify({ error: e.message || String(e) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
