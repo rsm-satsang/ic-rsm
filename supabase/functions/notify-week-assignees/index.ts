@@ -53,10 +53,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { data: admins } = await supabase.from("users").select("email, name").eq("role", "admin");
 
@@ -81,11 +78,11 @@ Deno.serve(async (req) => {
       const { data: us } = await supabase.from("users").select("id, name, email").in("id", ids);
       for (const u of us || []) nameMap.set(u.id, u.name || u.email || "—");
     }
-    const nm = (id?: string | null) => (id ? (nameMap.get(id) || "—") : "—");
+    const nm = (id?: string | null) => (id ? nameMap.get(id) || "—" : "—");
 
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/tracker`;
-    const fromHeader = `"Srijan Weekly Reminder" <rsm.ai.labs@gmail.com>`;
+    const fromHeader = `"Srijan Newsletter Reminder" <rsm.ai.labs@gmail.com>`;
     const subject = `🪷 Reminder: ${title} (${weekLabel})`;
 
     const phaseRow = (label: string, p: Phase) => `
@@ -128,7 +125,7 @@ Deno.serve(async (req) => {
             Open Tracker
           </a>
         </p>
-        <p style="color:#888;font-size:12px;margin-top:24px;">— Ram Chandra Mission Content Platform</p>
+        <p style="color:#888;font-size:12px;margin-top:24px;">— Srijan Content Platform</p>
       </div>`;
 
     let sent = 0;
