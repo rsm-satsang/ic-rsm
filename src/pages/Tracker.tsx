@@ -177,6 +177,41 @@ export default function Tracker() {
 
   useEffect(() => { load(); }, []);
 
+  // Deep-link from Workspace: ?project=<id> → switch to that entry's channel/sub/month and scroll to its week
+  const focusedWeekRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading || !entries.length) return;
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("project");
+    if (!pid) return;
+    const match = entries.find((e) => e.project_id === pid);
+    if (!match) return;
+    setActiveChannel(match.channel);
+    setActiveSub(match.sub_channel);
+    setSelectedMonth(monthOf(match.week_start_date));
+    focusedWeekRef.current = match.week_start_date;
+    // Clear param after handling so it doesn't re-trigger
+    const url = new URL(window.location.href);
+    url.searchParams.delete("project");
+    window.history.replaceState({}, "", url.toString());
+  }, [loading, entries]);
+
+  useEffect(() => {
+    if (!focusedWeekRef.current) return;
+    const w = focusedWeekRef.current;
+    // Wait a tick for re-render
+    const t = setTimeout(() => {
+      const el = document.getElementById(`week-card-${w}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.classList.add("ring-2", "ring-sky-400");
+        setTimeout(() => el.classList.remove("ring-2", "ring-sky-400"), 2500);
+        focusedWeekRef.current = null;
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [activeChannel, activeSub, selectedMonth, entries]);
+
   // Fetch linked project statuses; unlink entries whose project was deleted
   useEffect(() => {
     const linked = entries.filter((e) => e.project_id);
@@ -771,7 +806,7 @@ export default function Tracker() {
                 };
 
                 return (
-                  <Card key={week} className="space-y-3 w-full overflow-hidden">
+                  <Card key={week} id={`week-card-${week}`} className="space-y-3 w-full overflow-hidden transition-all">
                     <div className={`px-4 py-3 ${headerBg} border-b`}>
                       <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
                       <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
