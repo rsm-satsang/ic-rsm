@@ -87,7 +87,7 @@ const Workspace = () => {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
-  const [heroImage, setHeroImage] = useState<{ url: string; caption: string | null } | null>(null);
+  const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
 
@@ -263,12 +263,12 @@ const Workspace = () => {
     const fetchHero = async () => {
       const { data } = await supabase
         .from("project_images")
-        .select("image_url, prompt")
+        .select("id, image_url, storage_path, prompt")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      setHeroImage(data ? { url: data.image_url, caption: data.prompt } : null);
+      setHeroImage(data ? { id: data.id, storage_path: data.storage_path, url: data.image_url, caption: data.prompt } : null);
     };
     fetchHero();
     const channel = supabase
@@ -281,6 +281,23 @@ const Workspace = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [projectId]);
+
+  const handleDeleteHeroImage = async () => {
+    if (!heroImage?.id) return;
+    if (!confirm("Delete this image? This cannot be undone.")) return;
+    try {
+      if (heroImage.storage_path) {
+        await supabase.storage.from("project-images").remove([heroImage.storage_path]);
+      }
+      const { error } = await supabase.from("project_images").delete().eq("id", heroImage.id);
+      if (error) throw error;
+      setHeroImage(null);
+      toast.success("Image deleted");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to delete image");
+    }
+  };
 
   // Load version content when version changes
   useEffect(() => {
@@ -1133,8 +1150,16 @@ const Workspace = () => {
               <div className="flex flex-col h-full">
                 {heroImage && (
                   <div className="px-8 pt-6">
-                    <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+                    <div className="relative border rounded-lg overflow-hidden bg-card shadow-sm group">
                       <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-80 object-cover" />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 opacity-90 hover:opacity-100"
+                        onClick={() => handleDeleteHeroImage()}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" /> Delete image
+                      </Button>
                       {heroImage.caption && (
                         <div className="px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
                       )}
@@ -1156,8 +1181,16 @@ const Workspace = () => {
             ) : (
               <div className="p-8 max-w-4xl mx-auto">
                 {heroImage && (
-                  <div className="mb-6 border rounded-lg overflow-hidden bg-card shadow-sm">
+                  <div className="relative mb-6 border rounded-lg overflow-hidden bg-card shadow-sm group">
                     <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-96 object-cover" />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 opacity-90 hover:opacity-100"
+                      onClick={() => handleDeleteHeroImage()}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete image
+                    </Button>
                     {heroImage.caption && (
                       <div className="px-4 py-2 text-sm text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
                     )}
