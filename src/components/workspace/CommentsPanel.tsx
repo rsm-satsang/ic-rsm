@@ -157,7 +157,12 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
       await supabase.from("timeline").insert({
         project_id: projectId,
         event_type: "comment_added",
-        event_details: { preview: text.trim().slice(0, 140) },
+        event_details: {
+          text: text.trim(),
+          preview: text.trim().slice(0, 140),
+          is_reply: !!replyTo,
+          parent_id: replyTo,
+        },
         user_id: me,
         user_name: (meRow as any)?.name || "User",
       } as any);
