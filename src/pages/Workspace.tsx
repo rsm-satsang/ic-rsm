@@ -1183,23 +1183,8 @@ const Workspace = () => {
         </div>
       </div>
 
-      {/* Bottom Bar - Activity Timeline + Comments tabs */}
-      <div className="border-t bg-card">
-        <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="h-9 mx-3 mt-2 bg-muted rounded-md">
-            <TabsTrigger value="timeline" className="text-xs px-3">Activity Timeline</TabsTrigger>
-            <TabsTrigger value="comments" className="text-xs px-3">Add Review Comments</TabsTrigger>
-          </TabsList>
-          <TabsContent value="timeline" className="m-0">
-            <TimelineFeed projectId={project.id} />
-          </TabsContent>
-          <TabsContent value="comments" className="m-0">
-            <div className="h-64">
-              <CommentsPanel projectId={project.id} versionId={currentVersionId} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+
+
 
 
       {/* Delete Confirmation Dialog */}
