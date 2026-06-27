@@ -33,6 +33,8 @@ import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquar
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
+import AddImageDialog from "@/components/workspace/AddImageDialog";
+import NotifyReviewersDialog from "@/components/workspace/NotifyReviewersDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
 import AssignDialog from "@/components/workspace/AssignDialog";
