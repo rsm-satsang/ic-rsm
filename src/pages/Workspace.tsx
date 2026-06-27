@@ -925,7 +925,7 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-end gap-3 flex-wrap">
-            <Button onClick={() => navigate("/tracker")} variant="ghost" size="sm" className="gap-2">
+            <Button onClick={() => navigate(`/tracker?project=${project.id}`)} variant="outline" className="gap-2">
               Tracker
             </Button>
             <Button onClick={handleSaveCurrentVersion} disabled={saving} variant="outline" className="gap-2">

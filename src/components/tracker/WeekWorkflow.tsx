@@ -331,7 +331,11 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     <Select value={val} onValueChange={onChange}>
       <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
       <SelectContent>
-        {(opts.length ? opts : users).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+        {opts.length === 0 ? (
+          <div className="p-2 text-xs text-muted-foreground">No eligible users — assign the role in Users.</div>
+        ) : (
+          opts.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)
+        )}
       </SelectContent>
     </Select>
   );
@@ -393,12 +397,6 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
-          <div className="mb-2 rounded-md border bg-sky-50/60 p-2 text-xs space-y-0.5">
-            <div className="font-semibold text-sky-900 mb-1">Week assignments</div>
-            <div>📝 <b>Plan:</b> {users.find((u) => u.id === entry?.plan_assignee_id)?.name ?? "—"}{entry?.plan_due_date ? ` · due ${entry.plan_due_date}` : ""}</div>
-            <div>🛠️ <b>Build:</b> {users.find((u) => u.id === entry?.build_assignee_id)?.name ?? "—"}{entry?.build_due_date ? ` · due ${entry.build_due_date}` : ""}</div>
-            <div>📣 <b>Operate:</b> {users.find((u) => u.id === entry?.operate_assignee_id)?.name ?? "—"}{entry?.operate_due_date ? ` · due ${entry.operate_due_date}` : ""}</div>
-          </div>
           <AssignmentLine
             assigneeId={entry?.plan_assignee_id}
             due={entry?.plan_due_date}
@@ -500,7 +498,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {entry?.project_id ? (
             <div className="space-y-2">
               <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
-                Open Linked Project (Review)
+                Open Linked Project: {entry?.title || "(untitled)"}
               </Button>
               <button
                 type="button"
