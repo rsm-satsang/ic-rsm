@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.notify-week-assignees]
 verify_jwt = true
+
+[functions.notify-reviewers]
+verify_jwt = true
