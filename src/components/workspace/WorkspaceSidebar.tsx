@@ -1,4 +1,6 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import AIToolsPanel from "./AIToolsPanel";
 import AIFeedbackPanel from "./AIFeedbackPanel";
 
@@ -12,53 +14,74 @@ interface WorkspaceSidebarProps {
   onContentUpdate?: (newContent: string) => void;
 }
 
-export const WorkspaceSidebar = ({ 
-  projectId, 
-  selectedText, 
-  onInsertText, 
-  editorRef, 
-  projectMetadata, 
+export const WorkspaceSidebar = ({
+  projectId,
+  selectedText,
+  onInsertText,
+  editorRef,
+  projectMetadata,
   markdownContent,
-  onContentUpdate 
+  onContentUpdate,
 }: WorkspaceSidebarProps) => {
+  const [openPanel, setOpenPanel] = useState<"feedback" | "ai" | null>(null);
+
+  const toggle = (p: "feedback" | "ai") => setOpenPanel((cur) => (cur === p ? null : p));
+
   return (
-    <Tabs defaultValue="feedback" className="flex flex-col h-full w-full">
-      <TabsList className="w-full grid grid-cols-2 h-auto p-0 bg-transparent border-b rounded-none flex-shrink-0">
-        <TabsTrigger 
-          value="feedback" 
-          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-muted/30 py-3 text-xs"
+    <div className="flex flex-col h-full w-full">
+      <div className="border-b flex-shrink-0">
+        <button
+          onClick={() => toggle("feedback")}
+          className="w-full flex items-center justify-between px-3 py-3 text-xs font-medium hover:bg-muted/40 transition-colors"
         >
-          AI Feedback
-        </TabsTrigger>
-        <TabsTrigger 
-          value="ai" 
-          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-muted/30 py-3 text-xs"
+          <span>AI Feedback</span>
+          {openPanel === "feedback" ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </button>
+        {openPanel === "feedback" && (
+          <div className="border-t max-h-[45vh] overflow-y-auto">
+            <AIFeedbackPanel
+              projectId={projectId}
+              editorRef={editorRef}
+              projectMetadata={projectMetadata}
+              previewContent={markdownContent}
+              onContentUpdate={onContentUpdate}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="border-b flex-shrink-0">
+        <button
+          onClick={() => toggle("ai")}
+          className="w-full flex items-center justify-between px-3 py-3 text-xs font-medium hover:bg-muted/40 transition-colors"
         >
-          AI Tools
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="feedback" className="flex-1 m-0 border-0 focus-visible:ring-0 overflow-hidden">
-        <div className="h-full overflow-y-auto">
-          <AIFeedbackPanel
-            projectId={projectId}
-            editorRef={editorRef}
-            projectMetadata={projectMetadata}
-            previewContent={markdownContent}
-            onContentUpdate={onContentUpdate}
-          />
+          <span>AI Tools</span>
+          {openPanel === "ai" ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </button>
+        {openPanel === "ai" && (
+          <div className="border-t flex-1 overflow-y-auto">
+            <AIToolsPanel
+              projectId={projectId}
+              selectedText={selectedText}
+              onInsertText={onInsertText}
+            />
+          </div>
+        )}
+      </div>
+
+      {!openPanel && (
+        <div className="flex-1 flex items-center justify-center p-6 text-center text-xs text-muted-foreground">
+          Expand a panel above to open AI Feedback or AI Tools.
         </div>
-      </TabsContent>
-      
-      <TabsContent value="ai" className="flex-1 m-0 border-0 focus-visible:ring-0 overflow-hidden">
-        <div className="h-full overflow-y-auto">
-          <AIToolsPanel
-            projectId={projectId}
-            selectedText={selectedText}
-            onInsertText={onInsertText}
-          />
-        </div>
-      </TabsContent>
-    </Tabs>
+      )}
+    </div>
   );
 };
