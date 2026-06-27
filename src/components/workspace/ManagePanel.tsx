@@ -173,7 +173,7 @@ const ManagePanel = ({ projectId, versionId, currentStatus, onStatusChange }: Ma
       case "draft": return "In Progress";
       case "in_progress": return "In Progress";
       case "review": return "Under Review";
-      case "approved": return "Approved";
+      case "approved": return "Complete";
       case "published": return "Published";
       default: return status;
     }
