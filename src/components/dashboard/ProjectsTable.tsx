@@ -639,7 +639,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             <SelectItem value="all">All Status</SelectItem>
             {uniqueStatuses.map(status => (
               <SelectItem key={status} value={status} className="capitalize">
-                {status.replace("_", " ")}
+                {status === "approved" ? "Complete" : status.replace("_", " ")}
               </SelectItem>
             ))}
           </SelectContent>
