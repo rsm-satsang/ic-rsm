@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2 } from "lucide-react";
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
 import VersionNotesPanel from "@/components/workspace/VersionNotesPanel";
 import ManagePanel from "@/components/workspace/ManagePanel";
@@ -73,6 +73,8 @@ const Workspace = () => {
   const [savingTitle, setSavingTitle] = useState(false);
   const [selectedVersionForView, setSelectedVersionForView] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [notifyingReviewers, setNotifyingReviewers] = useState(false);
+  const [markingReady, setMarkingReady] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
@@ -753,6 +755,71 @@ const Workspace = () => {
     }
   };
 
+  const handleNotifyReviewers = async () => {
+    if (!project || !user) return;
+    setNotifyingReviewers(true);
+    try {
+      let versionLabel = "Latest";
+      if (currentVersionId) {
+        const { data: v } = await supabase
+          .from("versions")
+          .select("title, version_number")
+          .eq("id", currentVersionId)
+          .maybeSingle();
+        if (v) versionLabel = `${v.title || "Untitled"} (v${v.version_number ?? "?"})`;
+      }
+
+      const { data, error } = await supabase.functions.invoke("notify-reviewers", {
+        body: { projectId: project.id, versionId: currentVersionId, requesterId: user.id },
+      });
+      if (error) throw error;
+
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "review_requested" as any,
+        event_details: {
+          version: versionLabel,
+          recipients: (data as any)?.sent ?? 0,
+          project_title: projectTitle,
+        },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      } as any);
+
+      toast.success(`Notified ${(data as any)?.sent ?? 0} reviewer(s)`);
+    } catch (e: any) {
+      console.error("notify-reviewers failed", e);
+      toast.error(e?.message || "Failed to notify reviewers");
+    } finally {
+      setNotifyingReviewers(false);
+    }
+  };
+
+  const handleReadyForPublishing = async () => {
+    if (!project || !user) return;
+    setMarkingReady(true);
+    try {
+      // "Complete" maps to project status `approved`, which the tracker
+      // WeekWorkflow already treats as Build-complete for linked projects.
+      await handleStatusChange("approved");
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "ready_for_publishing" as any,
+        event_details: { project_title: projectTitle },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      } as any);
+      toast.success("Project marked as Complete — linked tracker week will update");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to mark Ready for Publishing");
+    } finally {
+      setMarkingReady(false);
+    }
+  };
+
   // Determine if publish button should be shown
   const showPublishButton =
     project?.type === "article" ||
@@ -809,6 +876,16 @@ const Workspace = () => {
 
               <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleNotifyReviewers}
+                disabled={notifyingReviewers}
+              >
+                <Send className="h-4 w-4" />
+                {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
+              </Button>
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2">
@@ -849,10 +926,25 @@ const Workspace = () => {
               </Button>
 
               {showPublishButton && (
-                <Button onClick={() => navigate(`/publish/${projectId}`)} variant="default" className="gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Ready to Publish
-                </Button>
+                <>
+                  <Button onClick={() => navigate(`/publish/${projectId}`)} variant="outline" className="gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Export
+                  </Button>
+                  <Button
+                    onClick={handleReadyForPublishing}
+                    disabled={markingReady || currentStatus === "approved" || currentStatus === "published"}
+                    variant="default"
+                    className="gap-2"
+                  >
+                    <FileCheck2 className="h-4 w-4" />
+                    {currentStatus === "approved" || currentStatus === "published"
+                      ? "Complete"
+                      : markingReady
+                        ? "Marking..."
+                        : "Ready for Publishing"}
+                  </Button>
+                </>
               )}
             </div>
           </div>

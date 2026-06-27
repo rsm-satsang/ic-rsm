@@ -146,7 +146,14 @@ const TimelineFeed = ({ projectId }: TimelineFeedProps) => {
       case "ai_action":
         return `ran ${details.action || "an AI action"}`;
       case "comment":
-        return "added a comment";
+      case "comment_added":
+        return details.text || details.preview || "added a comment";
+      case "review_requested":
+        return `requested review${details.version ? ` on ${details.version}` : ""}${
+          details.recipients ? ` — notified ${details.recipients} reviewer(s)` : ""
+        }`;
+      case "ready_for_publishing":
+        return "marked the project Ready for Publishing (Complete)";
       case "version_created":
         return `created version ${versionLabel || details.version || ""}`;
       case "status_change":
