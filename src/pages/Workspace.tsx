@@ -806,11 +806,11 @@ const Workspace = () => {
       const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
       await supabase.from("timeline").insert({
         project_id: project.id,
-        event_type: "ready_for_publishing",
+        event_type: "ready_for_publishing" as any,
         event_details: { project_title: projectTitle },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
-      });
+      } as any);
       toast.success("Project marked as Complete — linked tracker week will update");
     } catch (e: any) {
       console.error(e);
