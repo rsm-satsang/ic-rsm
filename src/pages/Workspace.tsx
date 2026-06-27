@@ -1061,7 +1061,7 @@ const Workspace = () => {
               Save in new version
             </Button>
             <Button
-              variant="gradient"
+              variant="outline"
               size="sm"
               onClick={() => setShowImageDialog(true)}
               className="gap-2 ml-2"
@@ -1070,7 +1070,24 @@ const Workspace = () => {
               Generate an image for the article
             </Button>
             {project && user && <AddImageDialog projectId={project.id} userId={user.id} />}
+
+            {/* Font size selector on the newsletter */}
+            <div className="ml-auto flex items-center gap-1 border rounded-md px-2 py-1 bg-background">
+              <Type className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={fontSize} onValueChange={(v) => setFontSize(v as any)}>
+                <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-xs w-[90px] focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="base">Normal</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                  <SelectItem value="xl">X-Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           {project && user && (
             <GenerateImageDialog
               open={showImageDialog}
