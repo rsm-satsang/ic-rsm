@@ -913,15 +913,14 @@ const Workspace = () => {
 
             <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleNotifyReviewers}
-              disabled={notifyingReviewers}
-            >
-              <Send className="h-4 w-4" />
-              {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
-            </Button>
+            {user && (
+              <NotifyReviewersDialog
+                projectId={project.id}
+                versionId={currentVersionId}
+                requesterId={user.id}
+                projectTitle={projectTitle}
+              />
+            )}
 
             {showPublishButton && (
               <>
