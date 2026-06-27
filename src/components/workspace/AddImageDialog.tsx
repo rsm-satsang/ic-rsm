@@ -43,6 +43,7 @@ export default function AddImageDialog({ projectId, userId, onUploaded }: Props)
         created_by: userId,
       });
       if (insErr) throw insErr;
+      onUploaded?.({ url: pub.publicUrl, caption: caption || `Uploaded: ${file.name}` });
       toast.success("Image added to project");
       setOpen(false);
       reset();
