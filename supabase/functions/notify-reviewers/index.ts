@@ -57,10 +57,15 @@ Deno.serve(async (req) => {
 
     // Recipients: admins + builders. We treat "builder" as anyone with role
     // 'builder' OR 'admin'. Fallback: include all approved users with role != 'viewer'.
-    const { data: recipients } = await supabase
+    // Notify all approved admins + builders. The project uses roles 'admin'
+    // and 'user' (treated as builder); only approved accounts get emailed.
+    const { data: recipients, error: recipientsError } = await supabase
       .from("users")
       .select("email, name, role, approval_status")
-      .in("role", ["admin", "builder"]);
+      .in("role", ["admin", "builder", "user"])
+      .eq("approval_status", "approved");
+    if (recipientsError) console.error("recipients query error", recipientsError);
+    console.log("notify-reviewers recipients:", recipients?.length ?? 0);
 
     let requesterName = "A teammate";
     if (requesterId) {
