@@ -755,6 +755,71 @@ const Workspace = () => {
     }
   };
 
+  const handleNotifyReviewers = async () => {
+    if (!project || !user) return;
+    setNotifyingReviewers(true);
+    try {
+      let versionLabel = "Latest";
+      if (currentVersionId) {
+        const { data: v } = await supabase
+          .from("versions")
+          .select("title, version_number")
+          .eq("id", currentVersionId)
+          .maybeSingle();
+        if (v) versionLabel = `${v.title || "Untitled"} (v${v.version_number ?? "?"})`;
+      }
+
+      const { data, error } = await supabase.functions.invoke("notify-reviewers", {
+        body: { projectId: project.id, versionId: currentVersionId, requesterId: user.id },
+      });
+      if (error) throw error;
+
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "review_requested",
+        event_details: {
+          version: versionLabel,
+          recipients: (data as any)?.sent ?? 0,
+          project_title: projectTitle,
+        },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
+
+      toast.success(`Notified ${(data as any)?.sent ?? 0} reviewer(s)`);
+    } catch (e: any) {
+      console.error("notify-reviewers failed", e);
+      toast.error(e?.message || "Failed to notify reviewers");
+    } finally {
+      setNotifyingReviewers(false);
+    }
+  };
+
+  const handleReadyForPublishing = async () => {
+    if (!project || !user) return;
+    setMarkingReady(true);
+    try {
+      // "Complete" maps to project status `approved`, which the tracker
+      // WeekWorkflow already treats as Build-complete for linked projects.
+      await handleStatusChange("approved");
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      await supabase.from("timeline").insert({
+        project_id: project.id,
+        event_type: "ready_for_publishing",
+        event_details: { project_title: projectTitle },
+        user_id: user.id,
+        user_name: userData?.name || "Unknown User",
+      });
+      toast.success("Project marked as Complete — linked tracker week will update");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to mark Ready for Publishing");
+    } finally {
+      setMarkingReady(false);
+    }
+  };
+
   // Determine if publish button should be shown
   const showPublishButton =
     project?.type === "article" ||
