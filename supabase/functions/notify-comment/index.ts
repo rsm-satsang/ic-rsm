@@ -50,14 +50,15 @@ Deno.serve(async (req) => {
 
     const { data: recipients } = await supabase
       .from("users")
-      .select("email, id")
+      .select("email, id, name")
       .in("role", ["admin", "user"])
       .eq("approval_status", "approved");
 
-    const emails = Array.from(new Set((recipients || [])
-      .filter((r: any) => r.id !== authorId)
-      .map((r: any) => r.email)
-      .filter(Boolean)));
+    const filtered = (recipients || []).filter(
+      (r: any) => r.id !== authorId && r.email
+    );
+    const emails = Array.from(new Set(filtered.map((r: any) => r.email)));
+    console.log(`notify-comment: ${emails.length} recipients for project ${projectId}`);
 
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/workspace/${projectId}`;
