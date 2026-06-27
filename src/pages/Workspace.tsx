@@ -282,6 +282,23 @@ const Workspace = () => {
     return () => { supabase.removeChannel(channel); };
   }, [projectId]);
 
+  const handleDeleteHeroImage = async () => {
+    if (!heroImage?.id) return;
+    if (!confirm("Delete this image? This cannot be undone.")) return;
+    try {
+      if (heroImage.storage_path) {
+        await supabase.storage.from("project-images").remove([heroImage.storage_path]);
+      }
+      const { error } = await supabase.from("project_images").delete().eq("id", heroImage.id);
+      if (error) throw error;
+      setHeroImage(null);
+      toast.success("Image deleted");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to delete image");
+    }
+  };
+
   // Load version content when version changes
   useEffect(() => {
     if (selectedVersionForView) {
