@@ -130,19 +130,38 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         .single();
       if (error) throw error;
 
-      // notifications for mentions + reply target
+      // notifications for mentions + reply target + draft author + admins/builders
       const recipients = new Set<string>(mentions);
       if (replyTo) {
         const parent = comments.find((c) => c.id === replyTo);
         if (parent && parent.user_id !== me) recipients.add(parent.user_id);
       }
+
+      // Draft author (version creator) — task to address comments on their draft
+      if (versionId) {
+        const { data: ver } = await supabase
+          .from("versions")
+          .select("created_by")
+          .eq("id", versionId)
+          .maybeSingle();
+        if (ver?.created_by && ver.created_by !== me) recipients.add(ver.created_by);
+      }
+
+      // All approved admins + builders (reviewers) get notified of new comments
+      const { data: reviewers } = await supabase
+        .from("users")
+        .select("id")
+        .in("role", ["admin", "user"])
+        .eq("approval_status", "approved");
+      (reviewers || []).forEach((r: any) => recipients.add(r.id));
+
       recipients.delete(me);
       if (recipients.size) {
         await supabase.from("notifications").insert(
           Array.from(recipients).map((uid) => ({
             user_id: uid,
             actor_id: me,
-            type: replyTo ? "reply" : "mention",
+            type: replyTo ? "reply" : "draft_comment",
             entity_type: "comment",
             entity_id: data.id,
             project_id: projectId,
