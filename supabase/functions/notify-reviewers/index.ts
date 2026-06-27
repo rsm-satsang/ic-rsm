@@ -115,7 +115,31 @@ Deno.serve(async (req) => {
       else errors.push(`${email}: ${resp.status} ${(await resp.text()).slice(0, 200)}`);
     }
 
-    return new Response(JSON.stringify({ ok: true, sent, recipients: emails, errors }), {
+    // Insert in-app notifications so reviewers see the task in "My Assigned Tasks"
+    const notifRecipientIds = (recipients || [])
+      .filter((r: any) => r.email && (!requesterId || r.email))
+      .map((r: any) => r.email);
+    const { data: notifUsers } = await supabase
+      .from("users")
+      .select("id, email")
+      .in("email", notifRecipientIds.length ? notifRecipientIds : ["__none__"]);
+    const notifRows = (notifUsers || [])
+      .filter((u: any) => u.id !== requesterId)
+      .map((u: any) => ({
+        user_id: u.id,
+        actor_id: requesterId || null,
+        type: "review_request",
+        entity_type: "version",
+        entity_id: versionId || null,
+        project_id: projectId,
+        message: `${requesterName} asked you to review "${project?.title || "Untitled"}" — ${versionLabel}`,
+        link: `/workspace/${projectId}`,
+      }));
+    if (notifRows.length) {
+      await supabase.from("notifications").insert(notifRows);
+    }
+
+    return new Response(JSON.stringify({ ok: true, sent, recipients: emails, errors, notified: notifRows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
