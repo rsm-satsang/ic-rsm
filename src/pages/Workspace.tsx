@@ -416,6 +416,13 @@ const Workspace = () => {
       setProject(data);
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
+
+      // If the project has comments, open the Comments tab by default
+      const { count } = await supabase
+        .from("comments")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", id);
+      setLeftPanel((prev) => prev ?? ((count ?? 0) > 0 ? "comments" : null));
     } catch (error: any) {
       toast.error("Failed to load project");
       console.error(error);
@@ -1001,9 +1008,9 @@ const Workspace = () => {
             <>
               <div className="flex items-stretch border-b text-xs font-medium">
                 {([
+                  ["comments", "Review Comments"],
                   ["versions", "Versions"],
-                  ["timeline", "Timeline"],
-                  ["comments", "Comments"],
+                  ["timeline", "Activity Timeline"],
                 ] as const).map(([key, label]) => (
                   <button
                     key={key}
@@ -1024,6 +1031,9 @@ const Workspace = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto">
+                {leftPanel === "comments" && (
+                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
+                )}
                 {leftPanel === "versions" && (
                   <div className="flex flex-col">
                     <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
@@ -1031,17 +1041,14 @@ const Workspace = () => {
                   </div>
                 )}
                 {leftPanel === "timeline" && <TimelineFeed projectId={project.id} />}
-                {leftPanel === "comments" && (
-                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
-                )}
               </div>
             </>
           ) : (
             <div className="flex flex-col h-full">
               {([
+                ["comments", "Review Comments"],
                 ["versions", "Versions"],
                 ["timeline", "Activity Timeline"],
-                ["comments", "Review Comments"],
               ] as const).map(([key, label]) => (
                 <button
                   key={key}
