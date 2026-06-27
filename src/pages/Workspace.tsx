@@ -777,7 +777,7 @@ const Workspace = () => {
       const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
       await supabase.from("timeline").insert({
         project_id: project.id,
-        event_type: "review_requested",
+        event_type: "review_requested" as any,
         event_details: {
           version: versionLabel,
           recipients: (data as any)?.sent ?? 0,
@@ -785,7 +785,7 @@ const Workspace = () => {
         },
         user_id: user.id,
         user_name: userData?.name || "Unknown User",
-      });
+      } as any);
 
       toast.success(`Notified ${(data as any)?.sent ?? 0} reviewer(s)`);
     } catch (e: any) {
