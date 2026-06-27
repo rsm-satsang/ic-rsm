@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { MessageSquare, Send, Trash2, CheckCircle2, Reply } from "lucide-react";
+import { MessageSquare, Send, Trash2, CheckCircle2, Reply, Mail } from "lucide-react";
 
 interface User { id: string; name: string; email: string; }
 
