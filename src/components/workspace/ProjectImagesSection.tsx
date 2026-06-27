@@ -15,9 +15,10 @@ interface ProjectImage {
 
 interface Props {
   projectId: string;
+  userId?: string;
 }
 
-const ProjectImagesSection = ({ projectId }: Props) => {
+const ProjectImagesSection = ({ projectId, userId }: Props) => {
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [loading, setLoading] = useState(true);
 
