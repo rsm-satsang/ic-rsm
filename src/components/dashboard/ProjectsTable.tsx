@@ -486,7 +486,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
               variant={getStatusColor(project.status)}
               className="text-xs capitalize"
             >
-              {project.status.replace("_", " ")}
+              {project.status === "approved" ? "Complete" : project.status.replace("_", " ")}
             </Badge>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-1">
