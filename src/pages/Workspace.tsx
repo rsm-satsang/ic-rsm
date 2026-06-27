@@ -1126,7 +1126,7 @@ const Workspace = () => {
                   onSelect={handleTextSelection}
                   onMouseUp={handleTextSelection}
                   onKeyUp={handleTextSelection}
-                  className="w-full flex-1 min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
+                  className={`w-full flex-1 min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono leading-relaxed text-${fontSize}`}
                   placeholder="Start writing your content here..."
                   style={{ whiteSpace: "pre-wrap" }}
                 />
