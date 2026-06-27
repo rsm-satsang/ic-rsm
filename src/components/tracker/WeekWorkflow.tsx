@@ -482,6 +482,21 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             </div>
           )}
 
+          {entry?.project_id && (
+            <div className="mb-2 rounded-md border bg-amber-50/60 p-2 text-xs space-y-0.5">
+              <div className="font-semibold text-amber-900 mb-1">Build progress</div>
+              <div>📝 Drafts generated: <b>{buildProgress.draftCount}</b></div>
+              <div>💬 Review comments: <b>{buildProgress.commentCount}</b>
+                {buildProgress.lastCommentBy && (
+                  <> · last by <b>{buildProgress.lastCommentBy}</b> {buildProgress.lastCommentAt ? `(${fmtDateTime(buildProgress.lastCommentAt)})` : ""}</>
+                )}
+              </div>
+              <div>📧 Reviewers notified: <b>{buildProgress.reviewersNotifiedAt ? `Yes · ${fmtDateTime(buildProgress.reviewersNotifiedAt)}` : "No"}</b></div>
+            </div>
+          )}
+
+
+
           {entry?.project_id ? (
             <div className="space-y-2">
               <Button size="sm" variant="outline" className="w-full" onClick={openLinkedReview}>
