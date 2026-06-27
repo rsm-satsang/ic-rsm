@@ -186,12 +186,20 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         user_name: (meRow as any)?.name || "User",
       } as any);
 
-      // Email notification to admins + builders (reviewers)
-      supabase.functions
-        .invoke("notify-comment", {
+      // Email notification to admins + builders (reviewers) — await so errors surface
+      try {
+        const { data: emailRes, error: emailErr } = await supabase.functions.invoke("notify-comment", {
           body: { projectId, commentId: data.id, commentText: text.trim(), authorId: me },
-        })
-        .catch((err) => console.error("notify-comment failed", err));
+        });
+        if (emailErr) {
+          console.error("notify-comment failed", emailErr);
+          toast.error("Comment saved, but email notification failed");
+        } else {
+          console.log("notify-comment result", emailRes);
+        }
+      } catch (err) {
+        console.error("notify-comment exception", err);
+      }
 
       setText("");
       setReplyTo(null);
