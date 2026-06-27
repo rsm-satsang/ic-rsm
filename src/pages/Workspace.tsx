@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2, PanelRightOpen, PanelRightClose, ChevronDown, Type } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
@@ -82,6 +82,9 @@ const Workspace = () => {
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("base");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
@@ -89,6 +92,7 @@ const Workspace = () => {
   const [heroImage, setHeroImage] = useState<{ url: string; caption: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
+
 
   // Autosave: title
   const autosaveTitle = useCallback(async (title: string) => {
@@ -906,7 +910,7 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-end gap-3 flex-wrap">
-            <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
+            <Button onClick={handleSaveCurrentVersion} disabled={saving} variant="outline" className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Saving..." : "Save Project"}
             </Button>
@@ -928,21 +932,35 @@ const Workspace = () => {
                   <CheckCircle className="h-4 w-4" />
                   Export
                 </Button>
-                <Button
-                  onClick={handleReadyForPublishing}
-                  disabled={markingReady || currentStatus === "approved" || currentStatus === "published"}
-                  variant="default"
-                  className="gap-2"
-                >
-                  <FileCheck2 className="h-4 w-4" />
-                  {currentStatus === "approved" || currentStatus === "published"
-                    ? "Complete"
-                    : markingReady
-                      ? "Marking..."
-                      : "Ready for Publishing"}
-                </Button>
+                <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-background">
+                  <FileCheck2 className="h-4 w-4 text-muted-foreground" />
+                  <Select
+                    value={
+                      currentStatus === "approved" || currentStatus === "published"
+                        ? "ready"
+                        : "in_progress"
+                    }
+                    onValueChange={async (v) => {
+                      if (v === "ready") {
+                        await handleReadyForPublishing();
+                      } else {
+                        await handleStatusChange("in_progress");
+                      }
+                    }}
+                    disabled={markingReady}
+                  >
+                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[170px] focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="ready">Ready for Publishing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
+
 
             <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
 
@@ -955,33 +973,60 @@ const Workspace = () => {
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Versions (collapsible, default collapsed) + Images */}
+        {/* Left Sidebar - Versions / Timeline / Comments (each collapsible) */}
         <div
           className={`flex-shrink-0 border-r bg-card overflow-hidden hidden md:flex flex-col transition-all duration-200 ${
-            versionsOpen ? "w-56 lg:w-64" : "w-10"
+            versionsOpen || timelineOpen || commentsOpen ? "w-64 lg:w-72" : "w-10"
           }`}
         >
+          {/* Versions toggle */}
           <button
             onClick={() => setVersionsOpen((v) => !v)}
-            className="p-2 border-b hover:bg-muted text-muted-foreground flex items-center justify-center"
+            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
             title={versionsOpen ? "Collapse versions" : "Expand versions"}
           >
-            {versionsOpen ? <PanelRightOpen className="h-4 w-4 rotate-180" /> : <PanelRightClose className="h-4 w-4 rotate-180" />}
+            <span className={versionsOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Versions</span>
+            {versionsOpen && <ChevronDown className="h-3.5 w-3.5" />}
           </button>
-          {versionsOpen ? (
-            <div className="flex-1 overflow-y-auto flex flex-col">
+          {versionsOpen && (
+            <div className="max-h-[40vh] overflow-y-auto border-b flex flex-col">
               <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
               <ProjectImagesSection projectId={project.id} />
             </div>
-          ) : (
-            <div className="flex-1 flex items-start justify-center pt-4 text-[10px] text-muted-foreground uppercase tracking-wider">
-              <span className="[writing-mode:vertical-rl]">Versions</span>
+          )}
+
+          {/* Activity Timeline toggle */}
+          <button
+            onClick={() => setTimelineOpen((v) => !v)}
+            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
+          >
+            <span className={timelineOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Activity Timeline</span>
+            {timelineOpen && <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {timelineOpen && (
+            <div className="max-h-[40vh] overflow-y-auto border-b">
+              <TimelineFeed projectId={project.id} />
+            </div>
+          )}
+
+          {/* Review Comments toggle */}
+          <button
+            onClick={() => setCommentsOpen((v) => !v)}
+            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
+          >
+            <span className={commentsOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Add Review Comments</span>
+            {commentsOpen && <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {commentsOpen && (
+            <div className="flex-1 min-h-[200px] overflow-y-auto">
+              <CommentsPanel projectId={project.id} versionId={currentVersionId} />
             </div>
           )}
         </div>
 
         {/* Center - Editor/Preview */}
         <div className="flex-1 min-w-0 overflow-hidden bg-background flex flex-col">
+
           {/* Edit/Preview Toggle */}
           <div className="border-b bg-muted/30 px-4 py-2 flex items-center gap-2">
             <Button
@@ -1016,7 +1061,7 @@ const Workspace = () => {
               Save in new version
             </Button>
             <Button
-              variant="gradient"
+              variant="outline"
               size="sm"
               onClick={() => setShowImageDialog(true)}
               className="gap-2 ml-2"
@@ -1025,7 +1070,24 @@ const Workspace = () => {
               Generate an image for the article
             </Button>
             {project && user && <AddImageDialog projectId={project.id} userId={user.id} />}
+
+            {/* Font size selector on the newsletter */}
+            <div className="ml-auto flex items-center gap-1 border rounded-md px-2 py-1 bg-background">
+              <Type className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={fontSize} onValueChange={(v) => setFontSize(v as any)}>
+                <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-xs w-[90px] focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="base">Normal</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                  <SelectItem value="xl">X-Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           {project && user && (
             <GenerateImageDialog
               open={showImageDialog}
@@ -1064,7 +1126,7 @@ const Workspace = () => {
                   onSelect={handleTextSelection}
                   onMouseUp={handleTextSelection}
                   onKeyUp={handleTextSelection}
-                  className="w-full flex-1 min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
+                  className={`w-full flex-1 min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono leading-relaxed ${fontSize === "sm" ? "text-sm" : fontSize === "lg" ? "text-lg" : fontSize === "xl" ? "text-xl" : "text-base"}`}
                   placeholder="Start writing your content here..."
                   style={{ whiteSpace: "pre-wrap" }}
                 />
@@ -1079,9 +1141,10 @@ const Workspace = () => {
                     )}
                   </div>
                 )}
-                <article className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed">
+                <article className={`prose max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed ${fontSize === "sm" ? "prose-sm" : fontSize === "lg" ? "prose-lg" : fontSize === "xl" ? "prose-xl" : "prose-base"}`}>
                   <ReactMarkdown>{markdownContent}</ReactMarkdown>
                 </article>
+
               </div>
             )}
           </div>
@@ -1120,23 +1183,8 @@ const Workspace = () => {
         </div>
       </div>
 
-      {/* Bottom Bar - Activity Timeline + Comments tabs */}
-      <div className="border-t bg-card">
-        <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="h-9 mx-3 mt-2 bg-muted rounded-md">
-            <TabsTrigger value="timeline" className="text-xs px-3">Activity Timeline</TabsTrigger>
-            <TabsTrigger value="comments" className="text-xs px-3">Add Review Comments</TabsTrigger>
-          </TabsList>
-          <TabsContent value="timeline" className="m-0">
-            <TimelineFeed projectId={project.id} />
-          </TabsContent>
-          <TabsContent value="comments" className="m-0">
-            <div className="h-64">
-              <CommentsPanel projectId={project.id} versionId={currentVersionId} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+
+
 
 
       {/* Delete Confirmation Dialog */}

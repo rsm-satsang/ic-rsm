@@ -131,6 +131,44 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week]);
   useEffect(() => { loadActivity(); }, [loadActivity]);
 
+  // Build progress metrics for linked project
+  const [buildProgress, setBuildProgress] = useState<{
+    draftCount: number;
+    commentCount: number;
+    lastCommentBy: string | null;
+    lastCommentAt: string | null;
+    reviewersNotifiedAt: string | null;
+  }>({ draftCount: 0, commentCount: 0, lastCommentBy: null, lastCommentAt: null, reviewersNotifiedAt: null });
+
+  useEffect(() => {
+    const pid = entry?.project_id;
+    if (!pid) {
+      setBuildProgress({ draftCount: 0, commentCount: 0, lastCommentBy: null, lastCommentAt: null, reviewersNotifiedAt: null });
+      return;
+    }
+    (async () => {
+      const [versionsRes, commentsRes, timelineRes] = await Promise.all([
+        supabase.from("versions").select("id", { count: "exact", head: true }).eq("project_id", pid),
+        supabase.from("comments").select("id,created_at,user_id", { count: "exact" }).eq("project_id", pid).order("created_at", { ascending: false }).limit(1),
+        supabase.from("timeline").select("created_at").eq("project_id", pid).eq("event_type", "review_requested" as any).order("created_at", { ascending: false }).limit(1),
+      ]);
+      let lastBy: string | null = null;
+      const last = commentsRes.data?.[0];
+      if (last?.user_id) {
+        const { data: u } = await supabase.from("users").select("name").eq("id", last.user_id).maybeSingle();
+        lastBy = u?.name ?? null;
+      }
+      setBuildProgress({
+        draftCount: versionsRes.count ?? 0,
+        commentCount: commentsRes.count ?? 0,
+        lastCommentBy: lastBy,
+        lastCommentAt: last?.created_at ?? null,
+        reviewersNotifiedAt: (timelineRes.data?.[0] as any)?.created_at ?? null,
+      });
+    })();
+  }, [entry?.project_id, projectStatus, activity.length]);
+
+
   const logActivity = useCallback(async (action: string, details: Record<string, any> = {}) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -443,6 +481,21 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
               {buildDone ? " · Build complete (project ready to publish)" : " · Build will complete when project is marked Ready to Publish"}
             </div>
           )}
+
+          {entry?.project_id && (
+            <div className="mb-2 rounded-md border bg-amber-50/60 p-2 text-xs space-y-0.5">
+              <div className="font-semibold text-amber-900 mb-1">Build progress</div>
+              <div>📝 Drafts generated: <b>{buildProgress.draftCount}</b></div>
+              <div>💬 Review comments: <b>{buildProgress.commentCount}</b>
+                {buildProgress.lastCommentBy && (
+                  <> · last by <b>{buildProgress.lastCommentBy}</b> {buildProgress.lastCommentAt ? `(${fmtDateTime(buildProgress.lastCommentAt)})` : ""}</>
+                )}
+              </div>
+              <div>📧 Reviewers notified: <b>{buildProgress.reviewersNotifiedAt ? `Yes · ${fmtDateTime(buildProgress.reviewersNotifiedAt)}` : "No"}</b></div>
+            </div>
+          )}
+
+
 
           {entry?.project_id ? (
             <div className="space-y-2">
