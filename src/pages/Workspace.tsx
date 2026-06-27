@@ -973,33 +973,60 @@ const Workspace = () => {
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Versions (collapsible, default collapsed) + Images */}
+        {/* Left Sidebar - Versions / Timeline / Comments (each collapsible) */}
         <div
           className={`flex-shrink-0 border-r bg-card overflow-hidden hidden md:flex flex-col transition-all duration-200 ${
-            versionsOpen ? "w-56 lg:w-64" : "w-10"
+            versionsOpen || timelineOpen || commentsOpen ? "w-64 lg:w-72" : "w-10"
           }`}
         >
+          {/* Versions toggle */}
           <button
             onClick={() => setVersionsOpen((v) => !v)}
-            className="p-2 border-b hover:bg-muted text-muted-foreground flex items-center justify-center"
+            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
             title={versionsOpen ? "Collapse versions" : "Expand versions"}
           >
-            {versionsOpen ? <PanelRightOpen className="h-4 w-4 rotate-180" /> : <PanelRightClose className="h-4 w-4 rotate-180" />}
+            <span className={versionsOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Versions</span>
+            {versionsOpen && <ChevronDown className="h-3.5 w-3.5" />}
           </button>
-          {versionsOpen ? (
-            <div className="flex-1 overflow-y-auto flex flex-col">
+          {versionsOpen && (
+            <div className="max-h-[40vh] overflow-y-auto border-b flex flex-col">
               <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
               <ProjectImagesSection projectId={project.id} />
             </div>
-          ) : (
-            <div className="flex-1 flex items-start justify-center pt-4 text-[10px] text-muted-foreground uppercase tracking-wider">
-              <span className="[writing-mode:vertical-rl]">Versions</span>
+          )}
+
+          {/* Activity Timeline toggle */}
+          <button
+            onClick={() => setTimelineOpen((v) => !v)}
+            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
+          >
+            <span className={timelineOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Activity Timeline</span>
+            {timelineOpen && <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {timelineOpen && (
+            <div className="max-h-[40vh] overflow-y-auto border-b">
+              <TimelineFeed projectId={project.id} />
+            </div>
+          )}
+
+          {/* Review Comments toggle */}
+          <button
+            onClick={() => setCommentsOpen((v) => !v)}
+            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
+          >
+            <span className={commentsOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Add Review Comments</span>
+            {commentsOpen && <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {commentsOpen && (
+            <div className="flex-1 min-h-[200px] overflow-y-auto">
+              <CommentsPanel projectId={project.id} versionId={currentVersionId} />
             </div>
           )}
         </div>
 
         {/* Center - Editor/Preview */}
         <div className="flex-1 min-w-0 overflow-hidden bg-background flex flex-col">
+
           {/* Edit/Preview Toggle */}
           <div className="border-b bg-muted/30 px-4 py-2 flex items-center gap-2">
             <Button
