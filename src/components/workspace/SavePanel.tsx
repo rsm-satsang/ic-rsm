@@ -118,7 +118,7 @@ const SavePanel = ({
                     <SelectItem value="draft">In Progress</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="approved">Complete</SelectItem>
                     <SelectItem value="published">Published</SelectItem>
                   </SelectContent>
                 </Select>
