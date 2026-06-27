@@ -971,56 +971,71 @@ const Workspace = () => {
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Versions / Timeline / Comments (each collapsible) */}
+        {/* Left Sidebar - Versions / Timeline / Comments as tabs */}
         <div
           className={`flex-shrink-0 border-r bg-card overflow-hidden hidden md:flex flex-col transition-all duration-200 ${
-            versionsOpen || timelineOpen || commentsOpen ? "w-64 lg:w-72" : "w-10"
+            leftPanel ? "w-72 lg:w-80" : "w-10"
           }`}
         >
-          {/* Versions toggle */}
-          <button
-            onClick={() => setVersionsOpen((v) => !v)}
-            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
-            title={versionsOpen ? "Collapse versions" : "Expand versions"}
-          >
-            <span className={versionsOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Versions</span>
-            {versionsOpen && <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-          {versionsOpen && (
-            <div className="max-h-[40vh] overflow-y-auto border-b flex flex-col">
-              <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
-              <ProjectImagesSection projectId={project.id} />
-            </div>
-          )}
-
-          {/* Activity Timeline toggle */}
-          <button
-            onClick={() => setTimelineOpen((v) => !v)}
-            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
-          >
-            <span className={timelineOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Activity Timeline</span>
-            {timelineOpen && <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-          {timelineOpen && (
-            <div className="max-h-[40vh] overflow-y-auto border-b">
-              <TimelineFeed projectId={project.id} />
-            </div>
-          )}
-
-          {/* Review Comments toggle */}
-          <button
-            onClick={() => setCommentsOpen((v) => !v)}
-            className="px-2 py-2 border-b hover:bg-muted text-xs font-medium flex items-center justify-between"
-          >
-            <span className={commentsOpen ? "" : "[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider text-muted-foreground"}>Add Review Comments</span>
-            {commentsOpen && <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-          {commentsOpen && (
-            <div className="flex-1 min-h-[200px] overflow-y-auto">
-              <CommentsPanel projectId={project.id} versionId={currentVersionId} />
+          {leftPanel ? (
+            <>
+              <div className="flex items-stretch border-b text-xs font-medium">
+                {([
+                  ["versions", "Versions"],
+                  ["timeline", "Timeline"],
+                  ["comments", "Comments"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setLeftPanel(key)}
+                    className={`flex-1 px-2 py-2 border-r last:border-r-0 transition-colors ${
+                      leftPanel === key ? "bg-background text-foreground" : "text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setLeftPanel(null)}
+                  className="px-2 py-2 hover:bg-muted text-muted-foreground border-l"
+                  title="Collapse panel"
+                >
+                  <ChevronDown className="h-3.5 w-3.5 rotate-90" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {leftPanel === "versions" && (
+                  <div className="flex flex-col">
+                    <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
+                    <ProjectImagesSection projectId={project.id} />
+                  </div>
+                )}
+                {leftPanel === "timeline" && <TimelineFeed projectId={project.id} />}
+                {leftPanel === "comments" && (
+                  <CommentsPanel projectId={project.id} versionId={currentVersionId} />
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col h-full">
+              {([
+                ["versions", "Versions"],
+                ["timeline", "Activity Timeline"],
+                ["comments", "Review Comments"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setLeftPanel(key)}
+                  className="flex-1 border-b hover:bg-muted text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-center"
+                  title={`Open ${label}`}
+                >
+                  <span className="[writing-mode:vertical-rl]">{label}</span>
+                </button>
+              ))}
             </div>
           )}
         </div>
+
 
         {/* Center - Editor/Preview */}
         <div className="flex-1 min-w-0 overflow-hidden bg-background flex flex-col">
