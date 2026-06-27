@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Download } from "lucide-react";
+import { ImageIcon, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import AddImageDialog from "./AddImageDialog";
 
 interface ProjectImage {
   id: string;
