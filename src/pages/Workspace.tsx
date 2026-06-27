@@ -255,6 +255,31 @@ const Workspace = () => {
     checkUserAndLoadProject();
   }, [projectId]);
 
+  // Subscribe to project_images so the hero box updates after upload/generate
+  useEffect(() => {
+    if (!projectId) return;
+    const fetchHero = async () => {
+      const { data } = await supabase
+        .from("project_images")
+        .select("image_url, prompt")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setHeroImage(data ? { url: data.image_url, caption: data.prompt } : null);
+    };
+    fetchHero();
+    const channel = supabase
+      .channel(`workspace-images-${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_images", filter: `project_id=eq.${projectId}` },
+        () => fetchHero()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId]);
+
   // Load version content when version changes
   useEffect(() => {
     if (selectedVersionForView) {
