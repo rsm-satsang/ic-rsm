@@ -214,12 +214,12 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
                 <div className="flex items-start gap-2">
                   <Avatar className="h-6 w-6"><AvatarFallback className="text-xs">{initials(u?.name || "?")}</AvatarFallback></Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{u?.name || "User"}</span>
-                      <span className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-sm font-medium whitespace-nowrap">{u?.name || "User"}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(c.created_at).toLocaleString()}</span>
                       {c.resolved && <Badge variant="outline" className="text-xs">Resolved</Badge>}
+                      <p className="text-sm whitespace-pre-wrap break-words flex-1 min-w-0">{c.text}</p>
                     </div>
-                    <p className="text-sm mt-1 whitespace-pre-wrap break-words">{c.text}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setReplyTo(c.id)}>
                         <Reply className="h-3 w-3 mr-1" /> Reply
