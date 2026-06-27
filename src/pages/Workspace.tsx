@@ -1164,8 +1164,16 @@ const Workspace = () => {
             ) : (
               <div className="p-8 max-w-4xl mx-auto">
                 {heroImage && (
-                  <div className="mb-6 border rounded-lg overflow-hidden bg-card shadow-sm">
+                  <div className="relative mb-6 border rounded-lg overflow-hidden bg-card shadow-sm group">
                     <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-96 object-cover" />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 opacity-90 hover:opacity-100"
+                      onClick={() => handleDeleteHeroImage()}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete image
+                    </Button>
                     {heroImage.caption && (
                       <div className="px-4 py-2 text-sm text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
                     )}
