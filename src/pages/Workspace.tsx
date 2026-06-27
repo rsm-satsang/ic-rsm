@@ -82,6 +82,9 @@ const Workspace = () => {
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("base");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
@@ -89,6 +92,7 @@ const Workspace = () => {
   const [heroImage, setHeroImage] = useState<{ url: string; caption: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
+
 
   // Autosave: title
   const autosaveTitle = useCallback(async (title: string) => {
