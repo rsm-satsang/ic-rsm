@@ -263,12 +263,12 @@ const Workspace = () => {
     const fetchHero = async () => {
       const { data } = await supabase
         .from("project_images")
-        .select("image_url, prompt")
+        .select("id, image_url, storage_path, prompt")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      setHeroImage(data ? { url: data.image_url, caption: data.prompt } : null);
+      setHeroImage(data ? { id: data.id, storage_path: data.storage_path, url: data.image_url, caption: data.prompt } : null);
     };
     fetchHero();
     const channel = supabase
