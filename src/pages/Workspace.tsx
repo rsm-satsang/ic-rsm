@@ -79,6 +79,7 @@ const Workspace = () => {
   const [markingReady, setMarkingReady] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
