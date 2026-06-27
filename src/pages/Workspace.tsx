@@ -1046,19 +1046,39 @@ const Workspace = () => {
                 </div>
               </div>
             ) : viewMode === "edit" ? (
-              <Textarea
-                ref={textareaRef}
-                value={markdownContent}
-                onChange={(e) => setMarkdownContent(e.target.value)}
-                onSelect={handleTextSelection}
-                onMouseUp={handleTextSelection}
-                onKeyUp={handleTextSelection}
-                className="w-full h-full min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
-                placeholder="Start writing your content here..."
-                style={{ whiteSpace: "pre-wrap" }}
-              />
+              <div className="flex flex-col h-full">
+                {heroImage && (
+                  <div className="px-8 pt-6">
+                    <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+                      <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-80 object-cover" />
+                      {heroImage.caption && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <Textarea
+                  ref={textareaRef}
+                  value={markdownContent}
+                  onChange={(e) => setMarkdownContent(e.target.value)}
+                  onSelect={handleTextSelection}
+                  onMouseUp={handleTextSelection}
+                  onKeyUp={handleTextSelection}
+                  className="w-full flex-1 min-h-[500px] p-8 resize-none border-none focus-visible:ring-0 font-mono text-sm leading-relaxed"
+                  placeholder="Start writing your content here..."
+                  style={{ whiteSpace: "pre-wrap" }}
+                />
+              </div>
             ) : (
               <div className="p-8 max-w-4xl mx-auto">
+                {heroImage && (
+                  <div className="mb-6 border rounded-lg overflow-hidden bg-card shadow-sm">
+                    <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-96 object-cover" />
+                    {heroImage.caption && (
+                      <div className="px-4 py-2 text-sm text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
+                    )}
+                  </div>
+                )}
                 <article className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed">
                   <ReactMarkdown>{markdownContent}</ReactMarkdown>
                 </article>
