@@ -79,6 +79,7 @@ const Workspace = () => {
   const [markingReady, setMarkingReady] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
@@ -861,78 +862,95 @@ const Workspace = () => {
         rightPath={`/publish/${projectId}`}
       />
 
+      {/* Project name (under banner title) */}
+      <div className="border-b bg-card/60">
+        <div className="container mx-auto px-4 py-1.5 text-center">
+          <Input
+            value={projectTitle}
+            onChange={(e) => setProjectTitle(e.target.value)}
+            placeholder="Project title"
+            className="font-medium text-sm max-w-md mx-auto text-center border-transparent hover:border-input focus-visible:border-input bg-transparent h-7"
+          />
+        </div>
+      </div>
+
       {/* Top Bar */}
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <Input
-              value={projectTitle}
-              onChange={(e) => setProjectTitle(e.target.value)}
-              placeholder="Project title"
-              className="font-semibold text-lg max-w-xs border-transparent hover:border-input focus-visible:border-input bg-transparent"
-            />
+          <div className="flex items-center justify-end gap-3 flex-wrap">
+            <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Saving..." : "Save Project"}
+            </Button>
 
-            <div className="flex items-center gap-3">
-              <Button onClick={handleSaveCurrentVersion} disabled={saving} className="gap-2">
-                <Save className="h-4 w-4" />
-                {saving ? "Saving..." : "Save Project"}
-              </Button>
+            <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
-              <AssignDialog projectId={project.id} versionId={currentVersionId} />
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleNotifyReviewers}
+              disabled={notifyingReviewers}
+            >
+              <Send className="h-4 w-4" />
+              {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
+            </Button>
 
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={handleNotifyReviewers}
-                disabled={notifyingReviewers}
-              >
-                <Send className="h-4 w-4" />
-                {notifyingReviewers ? "Notifying..." : "Notify Reviewers"}
-              </Button>
+            {showPublishButton && (
+              <>
+                <Button onClick={() => navigate(`/publish/${projectId}`)} variant="outline" className="gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Export
+                </Button>
+                <Button
+                  onClick={handleReadyForPublishing}
+                  disabled={markingReady || currentStatus === "approved" || currentStatus === "published"}
+                  variant="default"
+                  className="gap-2"
+                >
+                  <FileCheck2 className="h-4 w-4" />
+                  {currentStatus === "approved" || currentStatus === "published"
+                    ? "Complete"
+                    : markingReady
+                      ? "Marking..."
+                      : "Ready for Publishing"}
+                </Button>
+              </>
+            )}
 
-              <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
+            <InviteDialog projectId={project.id} projectOwnerId={project.owner_id} currentUserId={user?.id || ""} />
 
-
-              <Button variant="outline" size="icon" onClick={() => navigate("/settings")}>
-                <Settings className="h-4 w-4" />
-              </Button>
-
-              <Button variant="outline" size="icon" onClick={() => setShowDeleteDialog(true)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-
-              {showPublishButton && (
-                <>
-                  <Button onClick={() => navigate(`/publish/${projectId}`)} variant="outline" className="gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Export
-                  </Button>
-                  <Button
-                    onClick={handleReadyForPublishing}
-                    disabled={markingReady || currentStatus === "approved" || currentStatus === "published"}
-                    variant="default"
-                    className="gap-2"
-                  >
-                    <FileCheck2 className="h-4 w-4" />
-                    {currentStatus === "approved" || currentStatus === "published"
-                      ? "Complete"
-                      : markingReady
-                        ? "Marking..."
-                        : "Ready for Publishing"}
-                  </Button>
-                </>
-              )}
-            </div>
+            <Button variant="outline" size="icon" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Versions + Images */}
-        <div className="w-56 lg:w-64 flex-shrink-0 border-r bg-card overflow-y-auto hidden md:flex flex-col">
-          <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
-          <ProjectImagesSection projectId={project.id} />
+        {/* Left Sidebar - Versions (collapsible, default collapsed) + Images */}
+        <div
+          className={`flex-shrink-0 border-r bg-card overflow-hidden hidden md:flex flex-col transition-all duration-200 ${
+            versionsOpen ? "w-56 lg:w-64" : "w-10"
+          }`}
+        >
+          <button
+            onClick={() => setVersionsOpen((v) => !v)}
+            className="p-2 border-b hover:bg-muted text-muted-foreground flex items-center justify-center"
+            title={versionsOpen ? "Collapse versions" : "Expand versions"}
+          >
+            {versionsOpen ? <PanelRightOpen className="h-4 w-4 rotate-180" /> : <PanelRightClose className="h-4 w-4 rotate-180" />}
+          </button>
+          {versionsOpen ? (
+            <div className="flex-1 overflow-y-auto flex flex-col">
+              <VersionsSidebar projectId={project.id} onVersionSelect={handleVersionSelect} />
+              <ProjectImagesSection projectId={project.id} />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-start justify-center pt-4 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span className="[writing-mode:vertical-rl]">Versions</span>
+            </div>
+          )}
         </div>
 
         {/* Center - Editor/Preview */}

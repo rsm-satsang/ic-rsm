@@ -714,7 +714,7 @@ export default function Tracker() {
                 const projReady = projSt === "approved" || projSt === "published";
                 const buildDone = ["operate_assigned","publish_complete","published"].includes(status) || (planDone && projReady);
                 const opDone = ["publish_complete","published"].includes(status);
-                let headerBg = "bg-gray-50"; // plan not complete → very light grey
+                let headerBg = "bg-gray-300"; // build not in progress → dark grey
                 if (opDone) headerBg = "bg-green-200"; // operate complete → green
                 else if (buildDone) headerBg = "bg-green-50"; // build complete → very light green
                 else if (planDone && (status === "build_in_progress" || entry?.project_id)) headerBg = "bg-yellow-50"; // build in progress → light yellow
