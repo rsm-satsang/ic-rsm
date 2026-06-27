@@ -81,10 +81,8 @@ const Workspace = () => {
   const [markingReady, setMarkingReady] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [versionsOpen, setVersionsOpen] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("base");
+  const [leftPanel, setLeftPanel] = useState<"versions" | "timeline" | "comments" | null>(null);
+  const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("sm");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
