@@ -4,6 +4,7 @@ import GlobalNav from "@/components/GlobalNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
@@ -14,7 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldX, Save } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -29,6 +30,12 @@ interface UserRow {
   rejection_notes: string | null;
   created_at: string;
   content_roles: string[] | null;
+}
+
+interface DraftEdits {
+  name: string;
+  isAdmin: boolean;
+  roles: Set<string>;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -47,9 +54,25 @@ const STATUS_LABEL: Record<string, string> = {
   suspended: "Suspended",
 };
 
+const toDraft = (u: UserRow): DraftEdits => ({
+  name: u.name || "",
+  isAdmin: u.role === "admin",
+  roles: new Set(u.content_roles ?? []),
+});
+
+const draftsEqual = (a: DraftEdits, b: DraftEdits) => {
+  if (a.name !== b.name) return false;
+  if (a.isAdmin !== b.isAdmin) return false;
+  if (a.roles.size !== b.roles.size) return false;
+  for (const r of a.roles) if (!b.roles.has(r)) return false;
+  return true;
+};
+
 export default function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, DraftEdits>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [me, setMe] = useState<{ id: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [rejectNotes, setRejectNotes] = useState("");
@@ -78,25 +101,53 @@ export default function AdminUsers() {
       .select("id, name, email, role, approval_status, approved_by, approved_at, rejection_notes, created_at, content_roles")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-    else setUsers((data || []) as UserRow[]);
+    else {
+      const list = (data || []) as UserRow[];
+      setUsers(list);
+      const d: Record<string, DraftEdits> = {};
+      list.forEach((u) => { d[u.id] = toDraft(u); });
+      setDrafts(d);
+    }
     setLoading(false);
   };
 
-  const toggleAdmin = async (u: UserRow, checked: boolean) => {
-    const newRole = checked ? "admin" : "user";
-    const { error } = await supabase.from("users").update({ role: newRole as any }).eq("id", u.id);
-    if (error) return toast.error(error.message);
-    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, role: newRole } : x)));
-    toast.success(`Admin ${checked ? "granted" : "revoked"}`);
+  const updateDraft = (id: string, patch: Partial<DraftEdits>) => {
+    setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   };
 
-  const toggleContentRole = async (u: UserRow, role: "planner" | "builder" | "operator", checked: boolean) => {
-    const current = new Set(u.content_roles ?? []);
-    if (checked) current.add(role); else current.delete(role);
-    const next = Array.from(current);
-    const { error } = await supabase.from("users").update({ content_roles: next } as any).eq("id", u.id);
-    if (error) return toast.error(error.message);
-    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, content_roles: next } : x)));
+  const toggleRole = (id: string, role: string, checked: boolean) => {
+    setDrafts((prev) => {
+      const next = new Set(prev[id]?.roles ?? []);
+      if (checked) next.add(role); else next.delete(role);
+      return { ...prev, [id]: { ...prev[id], roles: next } };
+    });
+  };
+
+  const saveRow = async (u: UserRow) => {
+    const draft = drafts[u.id];
+    if (!draft) return;
+    const trimmedName = draft.name.trim();
+    if (!trimmedName) { toast.error("Name cannot be empty"); return; }
+    setSavingId(u.id);
+    try {
+      const { error } = await supabase.from("users").update({
+        name: trimmedName,
+        role: (draft.isAdmin ? "admin" : "user") as any,
+        content_roles: Array.from(draft.roles),
+      } as any).eq("id", u.id);
+      if (error) throw error;
+      setUsers((prev) => prev.map((x) => x.id === u.id ? {
+        ...x,
+        name: trimmedName,
+        role: draft.isAdmin ? "admin" : "user",
+        content_roles: Array.from(draft.roles),
+      } : x));
+      toast.success("Saved");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const setStatus = async (u: UserRow, status: string, notes?: string) => {
@@ -127,22 +178,30 @@ export default function AdminUsers() {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
+          <TableHead>Name (Login)</TableHead>
+          <TableHead>Called By</TableHead>
           <TableHead>Email</TableHead>
-          <TableHead>Signup Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Roles</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {list.map((u) => {
-            const cr = u.content_roles ?? [];
-            return (
+          <TableHead>Status</TableHead>
+          <TableHead>Roles</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {list.map((u) => {
+          const draft = drafts[u.id] ?? toDraft(u);
+          const dirty = !draftsEqual(draft, toDraft(u));
+          return (
             <TableRow key={u.id}>
               <TableCell className="font-medium">{u.name}</TableCell>
+              <TableCell>
+                <Input
+                  value={draft.name}
+                  onChange={(e) => updateDraft(u.id, { name: e.target.value })}
+                  className="h-8 min-w-[160px]"
+                  placeholder={u.name}
+                />
+              </TableCell>
               <TableCell>{u.email}</TableCell>
-              <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
               <TableCell>
                 <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
                   {STATUS_LABEL[u.approval_status] || u.approval_status}
@@ -151,64 +210,73 @@ export default function AdminUsers() {
               <TableCell>
                 <div className="flex flex-wrap gap-3 text-xs">
                   <label className="flex items-center gap-1.5 cursor-pointer">
-                    <Checkbox checked={u.role === "admin"} onCheckedChange={(v) => toggleAdmin(u, !!v)} />
+                    <Checkbox checked={draft.isAdmin} onCheckedChange={(v) => updateDraft(u.id, { isAdmin: !!v })} />
                     Admin
                   </label>
                   <label className="flex items-center gap-1.5 cursor-pointer">
-                    <Checkbox checked={cr.includes("planner")} onCheckedChange={(v) => toggleContentRole(u, "planner", !!v)} />
+                    <Checkbox checked={draft.roles.has("planner")} onCheckedChange={(v) => toggleRole(u.id, "planner", !!v)} />
                     Can Plan
                   </label>
                   <label className="flex items-center gap-1.5 cursor-pointer">
-                    <Checkbox checked={cr.includes("builder")} onCheckedChange={(v) => toggleContentRole(u, "builder", !!v)} />
+                    <Checkbox checked={draft.roles.has("builder")} onCheckedChange={(v) => toggleRole(u.id, "builder", !!v)} />
                     Can Build
                   </label>
                   <label className="flex items-center gap-1.5 cursor-pointer">
-                    <Checkbox checked={cr.includes("operator")} onCheckedChange={(v) => toggleContentRole(u, "operator", !!v)} />
+                    <Checkbox checked={draft.roles.has("operator")} onCheckedChange={(v) => toggleRole(u.id, "operator", !!v)} />
                     Can Operate
                   </label>
                 </div>
               </TableCell>
-            <TableCell className="text-right space-x-2">
-              {u.approval_status !== "approved" && (
-                <Button size="sm" variant="outline" onClick={() => setStatus(u, "approved")}>
-                  <ShieldCheck className="h-4 w-4 mr-1" /> Approve
+              <TableCell className="text-right space-x-2 whitespace-nowrap">
+                <Button
+                  size="sm"
+                  variant={dirty ? "default" : "outline"}
+                  disabled={!dirty || savingId === u.id}
+                  onClick={() => saveRow(u)}
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  {savingId === u.id ? "Saving..." : "Save"}
                 </Button>
-              )}
-              {u.approval_status !== "rejected" && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" onClick={() => { setRejectTarget(u); setRejectNotes(""); }}>
-                      <ShieldX className="h-4 w-4 mr-1" /> Reject
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader><DialogTitle>Reject {u.name}?</DialogTitle></DialogHeader>
-                    <Textarea
-                      placeholder="Reason (optional)"
-                      value={rejectNotes}
-                      onChange={(e) => setRejectNotes(e.target.value)}
-                    />
-                    <Button
-                      variant="destructive"
-                      onClick={() => rejectTarget && setStatus(rejectTarget, "rejected", rejectNotes)}
-                    >
-                      Confirm Reject
-                    </Button>
-                  </DialogContent>
-                </Dialog>
-              )}
-              {u.approval_status === "approved" && (
-                <Button size="sm" variant="ghost" onClick={() => setStatus(u, "suspended")}>
-                  Suspend
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
+                {u.approval_status !== "approved" && (
+                  <Button size="sm" variant="outline" onClick={() => setStatus(u, "approved")}>
+                    <ShieldCheck className="h-4 w-4 mr-1" /> Approve
+                  </Button>
+                )}
+                {u.approval_status !== "rejected" && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" onClick={() => { setRejectTarget(u); setRejectNotes(""); }}>
+                        <ShieldX className="h-4 w-4 mr-1" /> Reject
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader><DialogTitle>Reject {u.name}?</DialogTitle></DialogHeader>
+                      <Textarea
+                        placeholder="Reason (optional)"
+                        value={rejectNotes}
+                        onChange={(e) => setRejectNotes(e.target.value)}
+                      />
+                      <Button
+                        variant="destructive"
+                        onClick={() => rejectTarget && setStatus(rejectTarget, "rejected", rejectNotes)}
+                      >
+                        Confirm Reject
+                      </Button>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                {u.approval_status === "approved" && (
+                  <Button size="sm" variant="ghost" onClick={() => setStatus(u, "suspended")}>
+                    Suspend
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
           );
-          })}
-          {list.length === 0 && (
-            <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
-          )}
+        })}
+        {list.length === 0 && (
+          <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
+        )}
       </TableBody>
     </Table>
   );
@@ -218,7 +286,10 @@ export default function AdminUsers() {
       <GlobalNav />
       <div className="pl-14">
         <div className="container mx-auto px-6 py-8 max-w-6xl">
-          <h1 className="text-3xl font-bold mb-6">User Management</h1>
+          <h1 className="text-3xl font-bold mb-2">User Management</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Edit the "Called By" name and role checkboxes, then click Save. The "Called By" name is used across the application.
+          </p>
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (
