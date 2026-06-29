@@ -414,11 +414,11 @@ export default function AdminUsers() {
                 <TabsTrigger value="operators">Operators <Badge variant="secondary" className="ml-2">{operators.length}</Badge></TabsTrigger>
               </TabsList>
               <TabsContent value="pending" className="mt-4">{renderTab(pending)}</TabsContent>
-              <TabsContent value="all" className="mt-4">{renderTab(users, true)}</TabsContent>
-              <TabsContent value="admins" className="mt-4">{renderTab(admins, true)}</TabsContent>
-              <TabsContent value="planners" className="mt-4">{renderTab(planners, true)}</TabsContent>
-              <TabsContent value="builders" className="mt-4">{renderTab(builders, true)}</TabsContent>
-              <TabsContent value="operators" className="mt-4">{renderTab(operators, true)}</TabsContent>
+              <TabsContent value="all" className="mt-4">{renderTab(users, { withSaveAll: true })}</TabsContent>
+              <TabsContent value="admins" className="mt-4">{renderTab(admins, { readOnly: true })}</TabsContent>
+              <TabsContent value="planners" className="mt-4">{renderTab(planners, { readOnly: true })}</TabsContent>
+              <TabsContent value="builders" className="mt-4">{renderTab(builders, { readOnly: true })}</TabsContent>
+              <TabsContent value="operators" className="mt-4">{renderTab(operators, { readOnly: true })}</TabsContent>
             </Tabs>
 
           )}
