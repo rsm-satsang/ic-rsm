@@ -218,11 +218,16 @@ export default function AdminUsers() {
       return d && !draftsEqual(d, toDraft(u));
     }).length;
 
-  const renderTab = (list: UserRow[], withSaveAll = false) => {
+  const renderTab = (list: UserRow[], opts: { withSaveAll?: boolean; readOnly?: boolean } = {}) => {
+    const { withSaveAll = false, readOnly = false } = opts;
     const dc = dirtyCount(list);
     return (
       <Card>
-        {withSaveAll && (
+        {readOnly ? (
+          <div className="px-3 py-2 border-b bg-muted/30 text-xs text-muted-foreground">
+            Read-only · {list.length} user{list.length !== 1 ? "s" : ""} · Edit roles & names in the <span className="font-medium text-foreground">All Users</span> tab
+          </div>
+        ) : withSaveAll && (
           <div className="flex items-center justify-between p-3 border-b bg-muted/30">
             <div className="text-sm text-muted-foreground">
               {list.length} user{list.length !== 1 ? "s" : ""}
@@ -239,10 +244,42 @@ export default function AdminUsers() {
             </Button>
           </div>
         )}
-        {renderRows(list)}
+        {readOnly ? renderReadOnlyRows(list) : renderRows(list)}
       </Card>
     );
   };
+
+
+  const renderReadOnlyRows = (list: UserRow[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Called By</TableHead>
+          <TableHead>Name (Login)</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {list.map((u) => (
+          <TableRow key={u.id}>
+            <TableCell className="font-medium">{u.name}</TableCell>
+            <TableCell className="text-muted-foreground">{u.name}</TableCell>
+            <TableCell>{u.email}</TableCell>
+            <TableCell>
+              <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
+                {STATUS_LABEL[u.approval_status] || u.approval_status}
+              </Badge>
+            </TableCell>
+          </TableRow>
+        ))}
+        {list.length === 0 && (
+          <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+
 
 
 
@@ -377,11 +414,11 @@ export default function AdminUsers() {
                 <TabsTrigger value="operators">Operators <Badge variant="secondary" className="ml-2">{operators.length}</Badge></TabsTrigger>
               </TabsList>
               <TabsContent value="pending" className="mt-4">{renderTab(pending)}</TabsContent>
-              <TabsContent value="all" className="mt-4">{renderTab(users, true)}</TabsContent>
-              <TabsContent value="admins" className="mt-4">{renderTab(admins, true)}</TabsContent>
-              <TabsContent value="planners" className="mt-4">{renderTab(planners, true)}</TabsContent>
-              <TabsContent value="builders" className="mt-4">{renderTab(builders, true)}</TabsContent>
-              <TabsContent value="operators" className="mt-4">{renderTab(operators, true)}</TabsContent>
+              <TabsContent value="all" className="mt-4">{renderTab(users, { withSaveAll: true })}</TabsContent>
+              <TabsContent value="admins" className="mt-4">{renderTab(admins, { readOnly: true })}</TabsContent>
+              <TabsContent value="planners" className="mt-4">{renderTab(planners, { readOnly: true })}</TabsContent>
+              <TabsContent value="builders" className="mt-4">{renderTab(builders, { readOnly: true })}</TabsContent>
+              <TabsContent value="operators" className="mt-4">{renderTab(operators, { readOnly: true })}</TabsContent>
             </Tabs>
 
           )}
