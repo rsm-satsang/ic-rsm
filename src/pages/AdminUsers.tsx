@@ -137,6 +137,7 @@ export default function AdminUsers() {
       } as any).eq("id", u.id);
       if (error) throw error;
       setUsers((prev) => prev.map((x) => x.id === u.id ? {
+
         ...x,
         name: trimmedName,
         role: draft.isAdmin ? "admin" : "user",
@@ -149,6 +150,39 @@ export default function AdminUsers() {
       setSavingId(null);
     }
   };
+
+  const saveAll = async (list: UserRow[]) => {
+    const dirtyUsers = list.filter((u) => {
+      const d = drafts[u.id];
+      return d && !draftsEqual(d, toDraft(u)) && d.name.trim().length > 0;
+    });
+    if (dirtyUsers.length === 0) { toast.info("Nothing to save"); return; }
+    setSavingId("__all__");
+    try {
+      const results = await Promise.allSettled(dirtyUsers.map(async (u) => {
+        const d = drafts[u.id];
+        const trimmedName = d.name.trim();
+        const { error } = await supabase.from("users").update({
+          name: trimmedName,
+          role: (d.isAdmin ? "admin" : "user") as any,
+          content_roles: Array.from(d.roles),
+        } as any).eq("id", u.id);
+        if (error) throw error;
+        return { id: u.id, name: trimmedName, role: d.isAdmin ? "admin" : "user", roles: Array.from(d.roles) };
+      }));
+      const ok = results.filter((r) => r.status === "fulfilled") as PromiseFulfilledResult<any>[];
+      const fail = results.length - ok.length;
+      setUsers((prev) => prev.map((x) => {
+        const upd = ok.find((r) => r.value.id === x.id)?.value;
+        return upd ? { ...x, name: upd.name, role: upd.role, content_roles: upd.roles } : x;
+      }));
+      if (fail === 0) toast.success(`Saved ${ok.length} user${ok.length !== 1 ? "s" : ""}`);
+      else toast.warning(`Saved ${ok.length}, ${fail} failed`);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
 
   const setStatus = async (u: UserRow, status: string, notes?: string) => {
     if (!me) return;
@@ -173,6 +207,44 @@ export default function AdminUsers() {
   };
 
   const pending = users.filter((u) => u.approval_status === "pending_approval");
+  const admins = users.filter((u) => u.role === "admin");
+  const planners = users.filter((u) => (u.content_roles ?? []).includes("planner"));
+  const builders = users.filter((u) => (u.content_roles ?? []).includes("builder"));
+  const operators = users.filter((u) => (u.content_roles ?? []).includes("operator"));
+
+  const dirtyCount = (list: UserRow[]) =>
+    list.filter((u) => {
+      const d = drafts[u.id];
+      return d && !draftsEqual(d, toDraft(u));
+    }).length;
+
+  const renderTab = (list: UserRow[], withSaveAll = false) => {
+    const dc = dirtyCount(list);
+    return (
+      <Card>
+        {withSaveAll && (
+          <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+            <div className="text-sm text-muted-foreground">
+              {list.length} user{list.length !== 1 ? "s" : ""}
+              {dc > 0 && <span className="ml-2 text-foreground font-medium">· {dc} unsaved</span>}
+            </div>
+            <Button
+              size="sm"
+              variant={dc > 0 ? "default" : "outline"}
+              disabled={dc === 0 || savingId === "__all__"}
+              onClick={() => saveAll(list)}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {savingId === "__all__" ? "Saving..." : "Save all"}
+            </Button>
+          </div>
+        )}
+        {renderRows(list)}
+      </Card>
+    );
+  };
+
+
 
   const renderRows = (list: UserRow[]) => (
     <Table>
@@ -294,19 +366,24 @@ export default function AdminUsers() {
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (
             <Tabs defaultValue="pending">
-              <TabsList>
+              <TabsList className="flex-wrap h-auto">
                 <TabsTrigger value="pending">
-                  Pending Approvals {pending.length > 0 && <Badge className="ml-2">{pending.length}</Badge>}
+                  Pending {pending.length > 0 && <Badge className="ml-2">{pending.length}</Badge>}
                 </TabsTrigger>
-                <TabsTrigger value="all">All Users</TabsTrigger>
+                <TabsTrigger value="all">All Users <Badge variant="secondary" className="ml-2">{users.length}</Badge></TabsTrigger>
+                <TabsTrigger value="admins">Admins <Badge variant="secondary" className="ml-2">{admins.length}</Badge></TabsTrigger>
+                <TabsTrigger value="planners">Planners <Badge variant="secondary" className="ml-2">{planners.length}</Badge></TabsTrigger>
+                <TabsTrigger value="builders">Builders <Badge variant="secondary" className="ml-2">{builders.length}</Badge></TabsTrigger>
+                <TabsTrigger value="operators">Operators <Badge variant="secondary" className="ml-2">{operators.length}</Badge></TabsTrigger>
               </TabsList>
-              <TabsContent value="pending" className="mt-4">
-                <Card>{renderRows(pending)}</Card>
-              </TabsContent>
-              <TabsContent value="all" className="mt-4">
-                <Card>{renderRows(users)}</Card>
-              </TabsContent>
+              <TabsContent value="pending" className="mt-4">{renderTab(pending)}</TabsContent>
+              <TabsContent value="all" className="mt-4">{renderTab(users, true)}</TabsContent>
+              <TabsContent value="admins" className="mt-4">{renderTab(admins, true)}</TabsContent>
+              <TabsContent value="planners" className="mt-4">{renderTab(planners, true)}</TabsContent>
+              <TabsContent value="builders" className="mt-4">{renderTab(builders, true)}</TabsContent>
+              <TabsContent value="operators" className="mt-4">{renderTab(operators, true)}</TabsContent>
             </Tabs>
+
           )}
         </div>
       </div>
