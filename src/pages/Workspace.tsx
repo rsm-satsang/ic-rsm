@@ -1167,9 +1167,6 @@ const Workspace = () => {
                       >
                         <Trash2 className="h-4 w-4 mr-1" /> Delete image
                       </Button>
-                      {heroImage.caption && (
-                        <div className="px-3 py-2 text-xs text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -1198,9 +1195,6 @@ const Workspace = () => {
                     >
                       <Trash2 className="h-4 w-4 mr-1" /> Delete image
                     </Button>
-                    {heroImage.caption && (
-                      <div className="px-4 py-2 text-sm text-muted-foreground border-t bg-muted/30">{heroImage.caption}</div>
-                    )}
                   </div>
                 )}
                 <article className={`prose max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed ${fontSize === "sm" ? "prose-sm" : fontSize === "lg" ? "prose-lg" : fontSize === "xl" ? "prose-xl" : "prose-base"}`}>
