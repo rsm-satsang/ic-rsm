@@ -137,6 +137,7 @@ export default function AdminUsers() {
       } as any).eq("id", u.id);
       if (error) throw error;
       setUsers((prev) => prev.map((x) => x.id === u.id ? {
+
         ...x,
         name: trimmedName,
         role: draft.isAdmin ? "admin" : "user",
