@@ -207,6 +207,44 @@ export default function AdminUsers() {
   };
 
   const pending = users.filter((u) => u.approval_status === "pending_approval");
+  const admins = users.filter((u) => u.role === "admin");
+  const planners = users.filter((u) => (u.content_roles ?? []).includes("planner"));
+  const builders = users.filter((u) => (u.content_roles ?? []).includes("builder"));
+  const operators = users.filter((u) => (u.content_roles ?? []).includes("operator"));
+
+  const dirtyCount = (list: UserRow[]) =>
+    list.filter((u) => {
+      const d = drafts[u.id];
+      return d && !draftsEqual(d, toDraft(u));
+    }).length;
+
+  const renderTab = (list: UserRow[], withSaveAll = false) => {
+    const dc = dirtyCount(list);
+    return (
+      <Card>
+        {withSaveAll && (
+          <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+            <div className="text-sm text-muted-foreground">
+              {list.length} user{list.length !== 1 ? "s" : ""}
+              {dc > 0 && <span className="ml-2 text-foreground font-medium">· {dc} unsaved</span>}
+            </div>
+            <Button
+              size="sm"
+              variant={dc > 0 ? "default" : "outline"}
+              disabled={dc === 0 || savingId === "__all__"}
+              onClick={() => saveAll(list)}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {savingId === "__all__" ? "Saving..." : "Save all"}
+            </Button>
+          </div>
+        )}
+        {renderRows(list)}
+      </Card>
+    );
+  };
+
+
 
   const renderRows = (list: UserRow[]) => (
     <Table>
