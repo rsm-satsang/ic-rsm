@@ -218,11 +218,16 @@ export default function AdminUsers() {
       return d && !draftsEqual(d, toDraft(u));
     }).length;
 
-  const renderTab = (list: UserRow[], withSaveAll = false) => {
+  const renderTab = (list: UserRow[], opts: { withSaveAll?: boolean; readOnly?: boolean } = {}) => {
+    const { withSaveAll = false, readOnly = false } = opts;
     const dc = dirtyCount(list);
     return (
       <Card>
-        {withSaveAll && (
+        {readOnly ? (
+          <div className="px-3 py-2 border-b bg-muted/30 text-xs text-muted-foreground">
+            Read-only · {list.length} user{list.length !== 1 ? "s" : ""} · Edit roles & names in the <span className="font-medium text-foreground">All Users</span> tab
+          </div>
+        ) : withSaveAll && (
           <div className="flex items-center justify-between p-3 border-b bg-muted/30">
             <div className="text-sm text-muted-foreground">
               {list.length} user{list.length !== 1 ? "s" : ""}
@@ -239,10 +244,11 @@ export default function AdminUsers() {
             </Button>
           </div>
         )}
-        {renderRows(list)}
+        {readOnly ? renderReadOnlyRows(list) : renderRows(list)}
       </Card>
     );
   };
+
 
   const renderReadOnlyRows = (list: UserRow[]) => (
     <Table>
