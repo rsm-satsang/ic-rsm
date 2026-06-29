@@ -366,19 +366,24 @@ export default function AdminUsers() {
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (
             <Tabs defaultValue="pending">
-              <TabsList>
+              <TabsList className="flex-wrap h-auto">
                 <TabsTrigger value="pending">
-                  Pending Approvals {pending.length > 0 && <Badge className="ml-2">{pending.length}</Badge>}
+                  Pending {pending.length > 0 && <Badge className="ml-2">{pending.length}</Badge>}
                 </TabsTrigger>
-                <TabsTrigger value="all">All Users</TabsTrigger>
+                <TabsTrigger value="all">All Users <Badge variant="secondary" className="ml-2">{users.length}</Badge></TabsTrigger>
+                <TabsTrigger value="admins">Admins <Badge variant="secondary" className="ml-2">{admins.length}</Badge></TabsTrigger>
+                <TabsTrigger value="planners">Planners <Badge variant="secondary" className="ml-2">{planners.length}</Badge></TabsTrigger>
+                <TabsTrigger value="builders">Builders <Badge variant="secondary" className="ml-2">{builders.length}</Badge></TabsTrigger>
+                <TabsTrigger value="operators">Operators <Badge variant="secondary" className="ml-2">{operators.length}</Badge></TabsTrigger>
               </TabsList>
-              <TabsContent value="pending" className="mt-4">
-                <Card>{renderRows(pending)}</Card>
-              </TabsContent>
-              <TabsContent value="all" className="mt-4">
-                <Card>{renderRows(users)}</Card>
-              </TabsContent>
+              <TabsContent value="pending" className="mt-4">{renderTab(pending)}</TabsContent>
+              <TabsContent value="all" className="mt-4">{renderTab(users, true)}</TabsContent>
+              <TabsContent value="admins" className="mt-4">{renderTab(admins, true)}</TabsContent>
+              <TabsContent value="planners" className="mt-4">{renderTab(planners, true)}</TabsContent>
+              <TabsContent value="builders" className="mt-4">{renderTab(builders, true)}</TabsContent>
+              <TabsContent value="operators" className="mt-4">{renderTab(operators, true)}</TabsContent>
             </Tabs>
+
           )}
         </div>
       </div>
