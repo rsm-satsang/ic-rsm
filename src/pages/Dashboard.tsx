@@ -284,6 +284,19 @@ const Dashboard = () => {
               </CardHeader>
             </Card>
           )}
+          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewProject}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-accent rounded-xl">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle>New Project</CardTitle>
+                  <CardDescription>Create a full project with settings</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
           <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={() => setFeedbackOpen(true)}>
             <CardHeader>
               <div className="flex items-center gap-3">
