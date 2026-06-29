@@ -151,6 +151,39 @@ export default function AdminUsers() {
     }
   };
 
+  const saveAll = async (list: UserRow[]) => {
+    const dirtyUsers = list.filter((u) => {
+      const d = drafts[u.id];
+      return d && !draftsEqual(d, toDraft(u)) && d.name.trim().length > 0;
+    });
+    if (dirtyUsers.length === 0) { toast.info("Nothing to save"); return; }
+    setSavingId("__all__");
+    try {
+      const results = await Promise.allSettled(dirtyUsers.map(async (u) => {
+        const d = drafts[u.id];
+        const trimmedName = d.name.trim();
+        const { error } = await supabase.from("users").update({
+          name: trimmedName,
+          role: (d.isAdmin ? "admin" : "user") as any,
+          content_roles: Array.from(d.roles),
+        } as any).eq("id", u.id);
+        if (error) throw error;
+        return { id: u.id, name: trimmedName, role: d.isAdmin ? "admin" : "user", roles: Array.from(d.roles) };
+      }));
+      const ok = results.filter((r) => r.status === "fulfilled") as PromiseFulfilledResult<any>[];
+      const fail = results.length - ok.length;
+      setUsers((prev) => prev.map((x) => {
+        const upd = ok.find((r) => r.value.id === x.id)?.value;
+        return upd ? { ...x, name: upd.name, role: upd.role, content_roles: upd.roles } : x;
+      }));
+      if (fail === 0) toast.success(`Saved ${ok.length} user${ok.length !== 1 ? "s" : ""}`);
+      else toast.warning(`Saved ${ok.length}, ${fail} failed`);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+
   const setStatus = async (u: UserRow, status: string, notes?: string) => {
     if (!me) return;
     const { error } = await supabase
