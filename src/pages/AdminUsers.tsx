@@ -244,6 +244,37 @@ export default function AdminUsers() {
     );
   };
 
+  const renderReadOnlyRows = (list: UserRow[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Called By</TableHead>
+          <TableHead>Name (Login)</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {list.map((u) => (
+          <TableRow key={u.id}>
+            <TableCell className="font-medium">{u.name}</TableCell>
+            <TableCell className="text-muted-foreground">{u.name}</TableCell>
+            <TableCell>{u.email}</TableCell>
+            <TableCell>
+              <Badge variant="outline" className={STATUS_BADGE[u.approval_status] || ""}>
+                {STATUS_LABEL[u.approval_status] || u.approval_status}
+              </Badge>
+            </TableCell>
+          </TableRow>
+        ))}
+        {list.length === 0 && (
+          <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No users</TableCell></TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+
+
 
 
   const renderRows = (list: UserRow[]) => (
