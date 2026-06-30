@@ -802,7 +802,7 @@ export default function Tracker() {
                     const { error } = await supabase.functions.invoke("notify-week-assignees", {
                       body: {
                         contentId,
-                        weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+                        weekLabel: `Week ${weekNum} · ${fmtWeekRange(week)}`,
                         title: entry?.title || entry?.theme_text || `Week of ${week}`,
                         status: meta?.label ?? status,
                         recipients,
