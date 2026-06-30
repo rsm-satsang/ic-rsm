@@ -11,8 +11,46 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Pencil, Lock, History, RotateCcw } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { ChevronDown, Pencil, Lock, History, RotateCcw, Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+function DatePicker({ value, onChange, min }: { value?: string; onChange: (iso: string) => void; min?: string }) {
+  const selected = value ? new Date(value + "T00:00:00") : undefined;
+  const minDate = min ? new Date(min + "T00:00:00") : undefined;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal h-10", !selected && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selected
+            ? selected.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+            : "Pick a date"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(d) => {
+            if (!d) return;
+            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            onChange(iso);
+          }}
+          disabled={minDate ? (d) => d < minDate : undefined}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
 
