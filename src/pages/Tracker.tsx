@@ -98,7 +98,15 @@ function weeksOfYear(year: number): string[] {
 
 function fmtWeek(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric", timeZone: "UTC" });
+}
+
+function fmtWeekRange(iso: string): string {
+  const start = new Date(iso + "T00:00:00Z");
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 6);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "2-digit", year: "numeric", timeZone: "UTC" };
+  return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}`;
 }
 
 function monthOf(iso: string): number {
@@ -109,8 +117,7 @@ const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = 
   { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
   { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
   { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
-  { key: "workshop", label: "Workshop", sub: ["newsletter"] },
-  { key: "daily_quote", label: "Daily Inspirational Quote", sub: ["newsletter"] },
+  { key: "daily_quote", label: "Daily Inspirations", sub: ["newsletter"] },
 ];
 
 const SUB_LABEL: Record<SubChannel, string> = {
@@ -330,19 +337,25 @@ export default function Tracker() {
   }, []);
 
   const stats = useMemo(() => {
-    let published = 0, missing = 0, total = 0;
+    let missing = 0, total = 0;
     for (const w of weeks) {
       if (monthOf(w) > ytdMaxMonth) continue;
       total++;
       const list = entriesByWeek.get(w) || [];
       const top = list[0];
-      // Published/Missing only based on actual Substack publish (or status published)
       const isPub = !!top?.substack_published || top?.status === "published";
-      if (isPub) published++;
-      else missing++;
+      if (!isPub) missing++;
     }
+    // Published count = total published newsletters YTD (not per-week)
+    const published = channelEntries.filter((e) => {
+      if (!e.publish_date) return false;
+      const d = new Date(e.publish_date + "T00:00:00Z");
+      if (d.getUTCFullYear() !== YEAR) return false;
+      if (d.getUTCMonth() > ytdMaxMonth) return false;
+      return !!e.substack_published || e.status === "published";
+    }).length;
     return { total, published, missing };
-  }, [weeks, entriesByWeek, ytdMaxMonth]);
+  }, [weeks, entriesByWeek, ytdMaxMonth, channelEntries]);
 
   // Phase-bucket metrics (YTD scope)
   const phaseStats = useMemo(() => {
@@ -505,7 +518,7 @@ export default function Tracker() {
 
           {/* Channel tabs */}
           <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-5 w-full h-auto">
+            <TabsList className="grid grid-cols-4 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
                 <TabsTrigger
                   key={c.key}
@@ -630,15 +643,16 @@ export default function Tracker() {
 
           {(() => {
             const monthWeeks = visibleWeeks;
-            let mPublished = 0, mMissing = 0;
+            let mMissing = 0;
             const missingWeeks: string[] = [];
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
               const isPub = !!top?.substack_published || top?.status === "published";
-              if (isPub) mPublished++;
-              else { mMissing++; missingWeeks.push(w); }
+              if (!isPub) { mMissing++; missingWeeks.push(w); }
             }
+            // Published posts in month = number of published newsletters, irrespective of weeks
+            const mPublished = monthPublishedPosts.length;
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
@@ -788,7 +802,7 @@ export default function Tracker() {
                     const { error } = await supabase.functions.invoke("notify-week-assignees", {
                       body: {
                         contentId,
-                        weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+                        weekLabel: `Week ${weekNum} · ${fmtWeekRange(week)}`,
                         title: entry?.title || entry?.theme_text || `Week of ${week}`,
                         status: meta?.label ?? status,
                         recipients,
@@ -810,7 +824,7 @@ export default function Tracker() {
                     <div className={`px-4 py-3 ${headerBg} border-b`}>
                       <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
                       <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
-                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
+                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeekRange(week)}</div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
                           {isAdmin && (
