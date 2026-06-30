@@ -1,1 +1,0 @@
-ALTER TABLE public.tracker_entries ADD COLUMN IF NOT EXISTS topic_text text;
