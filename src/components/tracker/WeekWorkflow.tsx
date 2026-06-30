@@ -427,7 +427,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     const name = users.find((u) => u.id === assigneeId)?.name ?? "—";
     return (
       <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
-        <span>Assigned to <b>{name}</b>{due ? ` · due ${due}` : ""}</span>
+        <span>Assigned to <b>{name}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onEdit}>
           <Pencil className="h-3 w-3 mr-1" />
           {editing ? "Close" : "Reassign / Edit Due date"}
