@@ -643,15 +643,16 @@ export default function Tracker() {
 
           {(() => {
             const monthWeeks = visibleWeeks;
-            let mPublished = 0, mMissing = 0;
+            let mMissing = 0;
             const missingWeeks: string[] = [];
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
               const isPub = !!top?.substack_published || top?.status === "published";
-              if (isPub) mPublished++;
-              else { mMissing++; missingWeeks.push(w); }
+              if (!isPub) { mMissing++; missingWeeks.push(w); }
             }
+            // Published posts in month = number of published newsletters, irrespective of weeks
+            const mPublished = monthPublishedPosts.length;
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
