@@ -467,7 +467,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={planDue} min={todayISO()} onChange={(e) => setPlanDue(e.target.value)} />
+              <DatePicker value={planDue} min={todayISO()} onChange={setPlanDue} />
               <label className="text-xs font-medium">Planner</label>
               {userSelect(planAssignee, setPlanAssignee, planners)}
               <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
@@ -495,17 +495,28 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {panel === "see_plan" && planDone && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2 text-xs">
-              <div><b>Theme:</b> {entry?.theme_text || "—"}</div>
+              <div><b>Topic:</b> {entry?.theme_text || "—"}</div>
               <div><b>Plan comments:</b> {entry?.plan_comments || "—"}</div>
+              {entry?.project_id && (
+                <div><b>Linked project:</b> {entry?.title || entry.project_id}</div>
+              )}
             </div>
           )}
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Theme</label>
-              <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Theme" />
+              <label className="text-xs font-medium">Topic <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Topic" />
               <label className="text-xs font-medium">Plan comments</label>
               <Textarea value={planComments} onChange={(e) => setPlanComments(e.target.value)} className="min-h-[60px] resize-none" />
+              <label className="text-xs font-medium">Link a project <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <Select value={planLinkProjectId} onValueChange={setPlanLinkProjectId}>
+                <SelectTrigger><SelectValue placeholder="Select a project (optional)" /></SelectTrigger>
+                <SelectContent>
+                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
+                  {draftProjects.filter((p) => p.id !== entry?.project_id).map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button size="sm" className="w-full" onClick={submitCompletePlan}>Submit Plan</Button>
             </div>
           )}
