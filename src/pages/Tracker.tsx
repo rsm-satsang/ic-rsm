@@ -512,7 +512,7 @@ export default function Tracker() {
 
           {/* Channel tabs */}
           <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-5 w-full h-auto">
+            <TabsList className="grid grid-cols-4 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
                 <TabsTrigger
                   key={c.key}
