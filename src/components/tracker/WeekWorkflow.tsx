@@ -224,7 +224,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
-    if (panel !== "link_build") return;
+    if (panel !== "link_build" && panel !== "complete_plan") return;
     (async () => {
       const { data } = await supabase
         .from("projects")
