@@ -536,7 +536,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_build" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={buildDue} min={todayISO()} onChange={(e) => setBuildDue(e.target.value)} />
+              <DatePicker value={buildDue} min={todayISO()} onChange={setBuildDue} />
               <label className="text-xs font-medium">Builder</label>
               {userSelect(buildAssignee, setBuildAssignee, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
@@ -626,7 +626,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_op" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={opDue} onChange={(e) => setOpDue(e.target.value)} />
+              <DatePicker value={opDue} onChange={setOpDue} />
               <label className="text-xs font-medium">Operator</label>
               {userSelect(opAssignee, setOpAssignee, operators)}
               <Button size="sm" className="w-full" onClick={submitEditOp}>Save</Button>
