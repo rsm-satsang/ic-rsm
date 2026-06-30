@@ -147,6 +147,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [buildDue, setBuildDue] = useState<string>(entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1));
   const [draftProjects, setDraftProjects] = useState<Array<{ id: string; title: string }>>([]);
   const [linkProjectId, setLinkProjectId] = useState<string>("");
+  const [planLinkProjectId, setPlanLinkProjectId] = useState<string>("");
 
   // Operate
   const [opAssignee, setOpAssignee] = useState<string>(entry?.operate_assignee_id ?? "");
@@ -249,10 +250,9 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitCompletePlan = async () => {
-    if (!theme.trim()) return toast.error("Enter a theme");
     const autoBuilder = pickByWeek(builders, week);
     const patch: any = {
-      theme_text: theme.trim(),
+      theme_text: theme.trim() || null,
       plan_comments: planComments.trim() || null,
       status: "plan_complete",
     };
@@ -261,9 +261,16 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
       patch.status = "build_assigned";
     }
+    let linkedTitle: string | null = null;
+    if (planLinkProjectId) {
+      const proj = draftProjects.find((p) => p.id === planLinkProjectId);
+      patch.project_id = planLinkProjectId;
+      if (proj?.title) { patch.title = proj.title; linkedTitle = proj.title; }
+      patch.status = "build_in_progress";
+    }
     await upsert(week, patch);
-    await logActivity("plan_completed", { theme: theme.trim(), auto_builder: autoBuilder?.name ?? null });
-    toast.success(autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
+    await logActivity("plan_completed", { topic: theme.trim() || null, auto_builder: autoBuilder?.name ?? null, linked_project: linkedTitle });
+    toast.success(linkedTitle ? `Plan complete — Project linked: ${linkedTitle}` : autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
     setOpenPlan(false);
     setOpenBuild(true);
     close();
