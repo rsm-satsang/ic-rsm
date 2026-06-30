@@ -862,6 +862,7 @@ export type Database = {
           theme_id: string | null
           theme_text: string | null
           title: string | null
+          topic_text: string | null
           updated_at: string
           week_start_date: string
           youtube_published: boolean
@@ -892,6 +893,7 @@ export type Database = {
           theme_id?: string | null
           theme_text?: string | null
           title?: string | null
+          topic_text?: string | null
           updated_at?: string
           week_start_date: string
           youtube_published?: boolean
@@ -922,6 +924,7 @@ export type Database = {
           theme_id?: string | null
           theme_text?: string | null
           title?: string | null
+          topic_text?: string | null
           updated_at?: string
           week_start_date?: string
           youtube_published?: boolean
