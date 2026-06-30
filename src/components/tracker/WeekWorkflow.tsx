@@ -146,6 +146,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [planAssignee, setPlanAssignee] = useState<string>(entry?.plan_assignee_id ?? "");
   const [planDue, setPlanDue] = useState<string>(entry?.plan_due_date ?? defaultDueNotBeforeToday(week, 2));
   const [theme, setTheme] = useState<string>(entry?.theme_text ?? "");
+  const [topic, setTopic] = useState<string>((entry as any)?.topic_text ?? "");
+  const [planLinkProjectId, setPlanLinkProjectId] = useState<string>("");
   const [planComments, setPlanComments] = useState<string>(entry?.plan_comments ?? "");
 
   // Build
