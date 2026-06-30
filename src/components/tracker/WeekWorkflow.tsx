@@ -479,7 +479,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={planDue} min={todayISO()} onChange={(e) => setPlanDue(e.target.value)} />
+              <DatePickerField value={planDue} onChange={setPlanDue} minIso={todayISO()} />
               <label className="text-xs font-medium">Planner</label>
               {userSelect(planAssignee, setPlanAssignee, planners)}
               <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
