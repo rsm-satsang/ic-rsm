@@ -55,11 +55,11 @@ function pickByWeek<T>(arr: T[], weekIso: string): T | null {
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 function fmtDateTime(iso?: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 type Panel =
@@ -389,7 +389,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     const name = users.find((u) => u.id === assigneeId)?.name ?? "—";
     return (
       <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
-        <span>Assigned to <b>{name}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
+        <span>Assigned to <b>{name}</b>{due ? ` · due ${due}` : ""}</span>
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onEdit}>
           <Pencil className="h-3 w-3 mr-1" />
           {editing ? "Close" : "Reassign / Edit Due date"}
