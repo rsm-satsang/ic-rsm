@@ -231,7 +231,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
-    if (panel !== "link_build") return;
+    if (panel !== "link_build" && panel !== "complete_plan") return;
     (async () => {
       const { data } = await supabase
         .from("projects")
@@ -257,21 +257,32 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitCompletePlan = async () => {
-    if (!theme.trim()) return toast.error("Enter a theme");
     const autoBuilder = pickByWeek(builders, week);
+    const linkedProj = planLinkProjectId ? draftProjects.find((p) => p.id === planLinkProjectId) : null;
     const patch: any = {
-      theme_text: theme.trim(),
+      theme_text: theme.trim() || null,
+      topic_text: topic.trim() || null,
       plan_comments: planComments.trim() || null,
       status: "plan_complete",
     };
+    if (linkedProj) {
+      patch.project_id = linkedProj.id;
+      if (linkedProj.title) patch.title = linkedProj.title;
+      patch.status = "build_in_progress";
+    }
     if (autoBuilder) {
       patch.build_assignee_id = entry?.build_assignee_id ?? autoBuilder.id;
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
-      patch.status = "build_assigned";
+      if (!linkedProj) patch.status = "build_assigned";
     }
     await upsert(week, patch);
-    await logActivity("plan_completed", { theme: theme.trim(), auto_builder: autoBuilder?.name ?? null });
-    toast.success(autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
+    await logActivity("plan_completed", {
+      topic: topic.trim() || null,
+      theme: theme.trim() || null,
+      linked_project: linkedProj?.title ?? null,
+      auto_builder: autoBuilder?.name ?? null,
+    });
+    toast.success(linkedProj ? `Plan complete — linked to ${linkedProj.title}` : autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
     setOpenPlan(false);
     setOpenBuild(true);
     close();
