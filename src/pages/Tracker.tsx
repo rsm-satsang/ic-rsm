@@ -109,8 +109,7 @@ const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = 
   { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
   { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
   { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
-  { key: "workshop", label: "Workshop", sub: ["newsletter"] },
-  { key: "daily_quote", label: "Daily Inspirational Quote", sub: ["newsletter"] },
+  { key: "daily_quote", label: "Daily Inspirations", sub: ["newsletter"] },
 ];
 
 const SUB_LABEL: Record<SubChannel, string> = {
@@ -505,7 +504,7 @@ export default function Tracker() {
 
           {/* Channel tabs */}
           <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-5 w-full h-auto">
+            <TabsList className="grid grid-cols-4 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
                 <TabsTrigger
                   key={c.key}

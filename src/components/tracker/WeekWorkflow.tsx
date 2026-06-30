@@ -11,8 +11,46 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Pencil, Lock, History, RotateCcw } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { ChevronDown, Pencil, Lock, History, RotateCcw, Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+function DatePicker({ value, onChange, min }: { value?: string; onChange: (iso: string) => void; min?: string }) {
+  const selected = value ? new Date(value + "T00:00:00") : undefined;
+  const minDate = min ? new Date(min + "T00:00:00") : undefined;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal h-10", !selected && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selected
+            ? selected.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+            : "Pick a date"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(d) => {
+            if (!d) return;
+            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            onChange(iso);
+          }}
+          disabled={minDate ? (d) => d < minDate : undefined}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
 
@@ -109,6 +147,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [buildDue, setBuildDue] = useState<string>(entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1));
   const [draftProjects, setDraftProjects] = useState<Array<{ id: string; title: string }>>([]);
   const [linkProjectId, setLinkProjectId] = useState<string>("");
+  const [planLinkProjectId, setPlanLinkProjectId] = useState<string>("");
 
   // Operate
   const [opAssignee, setOpAssignee] = useState<string>(entry?.operate_assignee_id ?? "");
@@ -185,7 +224,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
-    if (panel !== "link_build") return;
+    if (panel !== "link_build" && panel !== "complete_plan") return;
     (async () => {
       const { data } = await supabase
         .from("projects")
@@ -211,10 +250,9 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitCompletePlan = async () => {
-    if (!theme.trim()) return toast.error("Enter a theme");
     const autoBuilder = pickByWeek(builders, week);
     const patch: any = {
-      theme_text: theme.trim(),
+      theme_text: theme.trim() || null,
       plan_comments: planComments.trim() || null,
       status: "plan_complete",
     };
@@ -223,9 +261,16 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
       patch.status = "build_assigned";
     }
+    let linkedTitle: string | null = null;
+    if (planLinkProjectId) {
+      const proj = draftProjects.find((p) => p.id === planLinkProjectId);
+      patch.project_id = planLinkProjectId;
+      if (proj?.title) { patch.title = proj.title; linkedTitle = proj.title; }
+      patch.status = "build_in_progress";
+    }
     await upsert(week, patch);
-    await logActivity("plan_completed", { theme: theme.trim(), auto_builder: autoBuilder?.name ?? null });
-    toast.success(autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
+    await logActivity("plan_completed", { topic: theme.trim() || null, auto_builder: autoBuilder?.name ?? null, linked_project: linkedTitle });
+    toast.success(linkedTitle ? `Plan complete — Project linked: ${linkedTitle}` : autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
     setOpenPlan(false);
     setOpenBuild(true);
     close();
@@ -389,7 +434,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     const name = users.find((u) => u.id === assigneeId)?.name ?? "—";
     return (
       <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
-        <span>Assigned to <b>{name}</b>{due ? ` · due ${due}` : ""}</span>
+        <span>Assigned to <b>{name}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onEdit}>
           <Pencil className="h-3 w-3 mr-1" />
           {editing ? "Close" : "Reassign / Edit Due date"}
@@ -422,7 +467,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={planDue} min={todayISO()} onChange={(e) => setPlanDue(e.target.value)} />
+              <DatePicker value={planDue} min={todayISO()} onChange={setPlanDue} />
               <label className="text-xs font-medium">Planner</label>
               {userSelect(planAssignee, setPlanAssignee, planners)}
               <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
@@ -450,17 +495,28 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {panel === "see_plan" && planDone && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2 text-xs">
-              <div><b>Theme:</b> {entry?.theme_text || "—"}</div>
+              <div><b>Topic:</b> {entry?.theme_text || "—"}</div>
               <div><b>Plan comments:</b> {entry?.plan_comments || "—"}</div>
+              {entry?.project_id && (
+                <div><b>Linked project:</b> {entry?.title || entry.project_id}</div>
+              )}
             </div>
           )}
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Theme</label>
-              <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Theme" />
+              <label className="text-xs font-medium">Topic <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Topic" />
               <label className="text-xs font-medium">Plan comments</label>
               <Textarea value={planComments} onChange={(e) => setPlanComments(e.target.value)} className="min-h-[60px] resize-none" />
+              <label className="text-xs font-medium">Link a project <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <Select value={planLinkProjectId} onValueChange={setPlanLinkProjectId}>
+                <SelectTrigger><SelectValue placeholder="Select a project (optional)" /></SelectTrigger>
+                <SelectContent>
+                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
+                  {draftProjects.filter((p) => p.id !== entry?.project_id).map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button size="sm" className="w-full" onClick={submitCompletePlan}>Submit Plan</Button>
             </div>
           )}
@@ -480,7 +536,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_build" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={buildDue} min={todayISO()} onChange={(e) => setBuildDue(e.target.value)} />
+              <DatePicker value={buildDue} min={todayISO()} onChange={setBuildDue} />
               <label className="text-xs font-medium">Builder</label>
               {userSelect(buildAssignee, setBuildAssignee, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
@@ -570,7 +626,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_op" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={opDue} onChange={(e) => setOpDue(e.target.value)} />
+              <DatePicker value={opDue} onChange={setOpDue} />
               <label className="text-xs font-medium">Operator</label>
               {userSelect(opAssignee, setOpAssignee, operators)}
               <Button size="sm" className="w-full" onClick={submitEditOp}>Save</Button>
