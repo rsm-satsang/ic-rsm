@@ -824,7 +824,7 @@ export default function Tracker() {
                     <div className={`px-4 py-3 ${headerBg} border-b`}>
                       <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
                       <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
-                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
+                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeekRange(week)}</div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
                           {isAdmin && (
