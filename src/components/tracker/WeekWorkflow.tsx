@@ -507,16 +507,28 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {panel === "see_plan" && planDone && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2 text-xs">
+              <div><b>Topic:</b> {(entry as any)?.topic_text || "—"}</div>
               <div><b>Theme:</b> {entry?.theme_text || "—"}</div>
               <div><b>Plan comments:</b> {entry?.plan_comments || "—"}</div>
+              {entry?.project_id && <div><b>Linked project:</b> {entry?.title || entry.project_id}</div>}
             </div>
           )}
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Theme</label>
+              <label className="text-xs font-medium">Topic <span className="text-muted-foreground">(optional)</span></label>
+              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic for this week" />
+              <label className="text-xs font-medium">Theme <span className="text-muted-foreground">(optional)</span></label>
               <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Theme" />
-              <label className="text-xs font-medium">Plan comments</label>
+              <label className="text-xs font-medium">Link a project <span className="text-muted-foreground">(optional)</span></label>
+              <Select value={planLinkProjectId || "__none__"} onValueChange={(v) => setPlanLinkProjectId(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="No project linked" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No project linked</SelectItem>
+                  {draftProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <label className="text-xs font-medium">Plan comments <span className="text-muted-foreground">(optional)</span></label>
               <Textarea value={planComments} onChange={(e) => setPlanComments(e.target.value)} className="min-h-[60px] resize-none" />
               <Button size="sm" className="w-full" onClick={submitCompletePlan}>Submit Plan</Button>
             </div>
