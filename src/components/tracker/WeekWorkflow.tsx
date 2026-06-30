@@ -11,7 +11,10 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Pencil, Lock, History, RotateCcw } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { ChevronDown, Pencil, Lock, History, RotateCcw, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
@@ -61,6 +64,47 @@ function fmtDateTime(iso?: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
+function isoToDate(iso?: string): Date | undefined {
+  if (!iso) return undefined;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+function dateToIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function DatePickerField({ value, onChange, minIso }: { value: string; onChange: (iso: string) => void; minIso?: string }) {
+  const selected = isoToDate(value);
+  const minDate = isoToDate(minIso);
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn("w-full justify-start text-left font-normal", !selected && "text-muted-foreground")}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selected ? selected.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(d) => d && onChange(dateToIso(d))}
+          disabled={minDate ? { before: minDate } : undefined}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 type Panel =
   | null
@@ -102,6 +146,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [planAssignee, setPlanAssignee] = useState<string>(entry?.plan_assignee_id ?? "");
   const [planDue, setPlanDue] = useState<string>(entry?.plan_due_date ?? defaultDueNotBeforeToday(week, 2));
   const [theme, setTheme] = useState<string>(entry?.theme_text ?? "");
+  const [topic, setTopic] = useState<string>((entry as any)?.topic_text ?? "");
+  const [planLinkProjectId, setPlanLinkProjectId] = useState<string>("");
   const [planComments, setPlanComments] = useState<string>(entry?.plan_comments ?? "");
 
   // Build
@@ -185,7 +231,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
-    if (panel !== "link_build") return;
+    if (panel !== "link_build" && panel !== "complete_plan") return;
     (async () => {
       const { data } = await supabase
         .from("projects")
@@ -211,21 +257,32 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitCompletePlan = async () => {
-    if (!theme.trim()) return toast.error("Enter a theme");
     const autoBuilder = pickByWeek(builders, week);
+    const linkedProj = planLinkProjectId ? draftProjects.find((p) => p.id === planLinkProjectId) : null;
     const patch: any = {
-      theme_text: theme.trim(),
+      theme_text: theme.trim() || null,
+      topic_text: topic.trim() || null,
       plan_comments: planComments.trim() || null,
       status: "plan_complete",
     };
+    if (linkedProj) {
+      patch.project_id = linkedProj.id;
+      if (linkedProj.title) patch.title = linkedProj.title;
+      patch.status = "build_in_progress";
+    }
     if (autoBuilder) {
       patch.build_assignee_id = entry?.build_assignee_id ?? autoBuilder.id;
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
-      patch.status = "build_assigned";
+      if (!linkedProj) patch.status = "build_assigned";
     }
     await upsert(week, patch);
-    await logActivity("plan_completed", { theme: theme.trim(), auto_builder: autoBuilder?.name ?? null });
-    toast.success(autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
+    await logActivity("plan_completed", {
+      topic: topic.trim() || null,
+      theme: theme.trim() || null,
+      linked_project: linkedProj?.title ?? null,
+      auto_builder: autoBuilder?.name ?? null,
+    });
+    toast.success(linkedProj ? `Plan complete — linked to ${linkedProj.title}` : autoBuilder ? `Plan complete — Build assigned to ${autoBuilder.name}` : "Plan completed");
     setOpenPlan(false);
     setOpenBuild(true);
     close();
@@ -422,7 +479,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={planDue} min={todayISO()} onChange={(e) => setPlanDue(e.target.value)} />
+              <DatePickerField value={planDue} onChange={setPlanDue} minIso={todayISO()} />
               <label className="text-xs font-medium">Planner</label>
               {userSelect(planAssignee, setPlanAssignee, planners)}
               <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
@@ -450,16 +507,28 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {panel === "see_plan" && planDone && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2 text-xs">
+              <div><b>Topic:</b> {(entry as any)?.topic_text || "—"}</div>
               <div><b>Theme:</b> {entry?.theme_text || "—"}</div>
               <div><b>Plan comments:</b> {entry?.plan_comments || "—"}</div>
+              {entry?.project_id && <div><b>Linked project:</b> {entry?.title || entry.project_id}</div>}
             </div>
           )}
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
-              <label className="text-xs font-medium">Theme</label>
+              <label className="text-xs font-medium">Topic <span className="text-muted-foreground">(optional)</span></label>
+              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic for this week" />
+              <label className="text-xs font-medium">Theme <span className="text-muted-foreground">(optional)</span></label>
               <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Theme" />
-              <label className="text-xs font-medium">Plan comments</label>
+              <label className="text-xs font-medium">Link a project <span className="text-muted-foreground">(optional)</span></label>
+              <Select value={planLinkProjectId || "__none__"} onValueChange={(v) => setPlanLinkProjectId(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="No project linked" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No project linked</SelectItem>
+                  {draftProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <label className="text-xs font-medium">Plan comments <span className="text-muted-foreground">(optional)</span></label>
               <Textarea value={planComments} onChange={(e) => setPlanComments(e.target.value)} className="min-h-[60px] resize-none" />
               <Button size="sm" className="w-full" onClick={submitCompletePlan}>Submit Plan</Button>
             </div>
@@ -480,7 +549,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_build" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={buildDue} min={todayISO()} onChange={(e) => setBuildDue(e.target.value)} />
+              <DatePickerField value={buildDue} onChange={setBuildDue} minIso={todayISO()} />
               <label className="text-xs font-medium">Builder</label>
               {userSelect(buildAssignee, setBuildAssignee, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
@@ -570,7 +639,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_op" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={opDue} onChange={(e) => setOpDue(e.target.value)} />
+              <DatePickerField value={opDue} onChange={setOpDue} />
               <label className="text-xs font-medium">Operator</label>
               {userSelect(opAssignee, setOpAssignee, operators)}
               <Button size="sm" className="w-full" onClick={submitEditOp}>Save</Button>
