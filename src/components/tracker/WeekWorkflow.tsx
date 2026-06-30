@@ -549,7 +549,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_build" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <Input type="date" value={buildDue} min={todayISO()} onChange={(e) => setBuildDue(e.target.value)} />
+              <DatePickerField value={buildDue} onChange={setBuildDue} minIso={todayISO()} />
               <label className="text-xs font-medium">Builder</label>
               {userSelect(buildAssignee, setBuildAssignee, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
