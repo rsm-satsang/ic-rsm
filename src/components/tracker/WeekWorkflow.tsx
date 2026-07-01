@@ -224,16 +224,20 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
-    if (panel !== "link_build" && panel !== "complete_plan") return;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("projects")
-        .select("id,title")
+        .select("id,title,status")
         .order("updated_at", { ascending: false })
         .limit(500);
+      if (error) {
+        console.error("[WeekWorkflow] projects fetch failed", error);
+        return;
+      }
       setDraftProjects((data as any[]) ?? []);
     })();
-  }, [panel]);
+  }, []);
+
 
   const close = () => setPanel(null);
 
@@ -428,20 +432,24 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const operateLabel = ps.operate === "done" ? "Complete" : ps.operate === "active" ? "Assigned" : "Awaiting Build";
 
   const AssignmentLine = ({
-    assigneeId, due, onEdit, editing,
-  }: { assigneeId?: string | null; due?: string | null; onEdit: () => void; editing: boolean }) => {
-    if (!assigneeId) return null;
-    const name = users.find((u) => u.id === assigneeId)?.name ?? "—";
+    assigneeId, due, onEdit, editing, label = "Assigned",
+  }: { assigneeId?: string | null; due?: string | null; onEdit: () => void; editing: boolean; label?: string }) => {
+    const name = assigneeId ? (users.find((u) => u.id === assigneeId)?.name ?? "—") : null;
     return (
       <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
-        <span>Assigned to <b>{name}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
+        {name ? (
+          <span>{label} to <b>{name}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
+        ) : (
+          <span className="italic">Not yet assigned</span>
+        )}
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onEdit}>
           <Pencil className="h-3 w-3 mr-1" />
-          {editing ? "Close" : "Reassign / Edit Due date"}
+          {editing ? "Close" : name ? "Reassign / Edit Due date" : "Assign / Set due date"}
         </Button>
       </div>
     );
   };
+
 
   return (
     <div className="border-t pt-2 space-y-1">
