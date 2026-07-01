@@ -224,16 +224,20 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   }, [channel, subChannel, week, entry?.id, users, loadActivity]);
 
   useEffect(() => {
-    if (panel !== "link_build" && panel !== "complete_plan") return;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("projects")
-        .select("id,title")
+        .select("id,title,status")
         .order("updated_at", { ascending: false })
         .limit(500);
+      if (error) {
+        console.error("[WeekWorkflow] projects fetch failed", error);
+        return;
+      }
       setDraftProjects((data as any[]) ?? []);
     })();
-  }, [panel]);
+  }, []);
+
 
   const close = () => setPanel(null);
 
