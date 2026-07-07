@@ -576,7 +576,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} stateLabel={buildLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
-            assigneeId={entry?.build_assignee_id}
+            assigneeIds={buildAssigneeIds}
             due={entry?.build_due_date}
             editing={panel === "edit_build"}
             onEdit={() => setPanel(panel === "edit_build" ? null : "edit_build")}
@@ -585,8 +585,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <DatePicker value={buildDue} min={todayISO()} onChange={setBuildDue} />
-              <label className="text-xs font-medium">Builder</label>
-              {userSelect(buildAssignee, setBuildAssignee, builders)}
+              <label className="text-xs font-medium">Builder(s)</label>
+              {multiUserSelect(buildAssignees, setBuildAssignees, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
             </div>
           )}
