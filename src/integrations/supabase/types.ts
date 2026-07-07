@@ -839,6 +839,7 @@ export type Database = {
         Row: {
           assignee_id: string | null
           build_assignee_id: string | null
+          build_assignee_ids: string[]
           build_due_date: string | null
           channel: Database["public"]["Enums"]["tracker_channel"]
           created_at: string
@@ -848,8 +849,10 @@ export type Database = {
           id: string
           notes: string | null
           operate_assignee_id: string | null
+          operate_assignee_ids: string[]
           operate_due_date: string | null
           plan_assignee_id: string | null
+          plan_assignee_ids: string[]
           plan_comments: string | null
           plan_due_date: string | null
           project_id: string | null
@@ -870,6 +873,7 @@ export type Database = {
         Insert: {
           assignee_id?: string | null
           build_assignee_id?: string | null
+          build_assignee_ids?: string[]
           build_due_date?: string | null
           channel: Database["public"]["Enums"]["tracker_channel"]
           created_at?: string
@@ -879,8 +883,10 @@ export type Database = {
           id?: string
           notes?: string | null
           operate_assignee_id?: string | null
+          operate_assignee_ids?: string[]
           operate_due_date?: string | null
           plan_assignee_id?: string | null
+          plan_assignee_ids?: string[]
           plan_comments?: string | null
           plan_due_date?: string | null
           project_id?: string | null
@@ -901,6 +907,7 @@ export type Database = {
         Update: {
           assignee_id?: string | null
           build_assignee_id?: string | null
+          build_assignee_ids?: string[]
           build_due_date?: string | null
           channel?: Database["public"]["Enums"]["tracker_channel"]
           created_at?: string
@@ -910,8 +917,10 @@ export type Database = {
           id?: string
           notes?: string | null
           operate_assignee_id?: string | null
+          operate_assignee_ids?: string[]
           operate_due_date?: string | null
           plan_assignee_id?: string | null
+          plan_assignee_ids?: string[]
           plan_comments?: string | null
           plan_due_date?: string | null
           project_id?: string | null

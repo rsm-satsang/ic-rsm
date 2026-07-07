@@ -137,20 +137,26 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [openActivity, setOpenActivity] = useState(false);
 
   // Plan
-  const [planAssignee, setPlanAssignee] = useState<string>(entry?.plan_assignee_id ?? "");
+  const [planAssignees, setPlanAssignees] = useState<string[]>(
+    ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : [])
+  );
   const [planDue, setPlanDue] = useState<string>(entry?.plan_due_date ?? defaultDueNotBeforeToday(week, 2));
   const [theme, setTheme] = useState<string>(entry?.theme_text ?? "");
   const [planComments, setPlanComments] = useState<string>(entry?.plan_comments ?? "");
 
   // Build
-  const [buildAssignee, setBuildAssignee] = useState<string>(entry?.build_assignee_id ?? "");
+  const [buildAssignees, setBuildAssignees] = useState<string[]>(
+    ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : [])
+  );
   const [buildDue, setBuildDue] = useState<string>(entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1));
   const [draftProjects, setDraftProjects] = useState<Array<{ id: string; title: string }>>([]);
   const [linkProjectId, setLinkProjectId] = useState<string>("");
   const [planLinkProjectId, setPlanLinkProjectId] = useState<string>("");
 
   // Operate
-  const [opAssignee, setOpAssignee] = useState<string>(entry?.operate_assignee_id ?? "");
+  const [opAssignees, setOpAssignees] = useState<string[]>(
+    ((entry as any)?.operate_assignee_ids as string[] | null) ?? (entry?.operate_assignee_id ? [entry.operate_assignee_id] : [])
+  );
   const [opDue, setOpDue] = useState<string>(entry?.operate_due_date ?? wednesdayOf(week));
   const [subPub, setSubPub] = useState<boolean>(!!entry?.substack_published);
   const [ytPub, setYtPub] = useState<boolean>(!!entry?.youtube_published);
@@ -242,27 +248,32 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const close = () => setPanel(null);
 
   const submitEditPlan = async () => {
-    if (!planAssignee) return toast.error("Select an assignee");
+    if (planAssignees.length === 0) return toast.error("Select at least one assignee");
     await upsert(week, {
-      plan_assignee_id: planAssignee,
+      plan_assignee_ids: planAssignees,
+      plan_assignee_id: planAssignees[0], // legacy mirror
       plan_due_date: planDue || null,
       ...(entry?.status ? {} : { status: "planning_assigned" }),
     });
-    await logActivity("plan_assigned", { assignee: users.find(u => u.id === planAssignee)?.name, due: planDue });
+    await logActivity("plan_assigned", { assignees: planAssignees.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(", "), due: planDue });
     toast.success("Planning updated");
     close();
   };
 
   const submitCompletePlan = async () => {
     const autoBuilder = pickByWeek(builders, week);
+    const existingBuild = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
     const patch: any = {
       theme_text: theme.trim() || null,
       plan_comments: planComments.trim() || null,
       status: "plan_complete",
     };
-    if (autoBuilder) {
-      patch.build_assignee_id = entry?.build_assignee_id ?? autoBuilder.id;
+    if (existingBuild.length === 0 && autoBuilder) {
+      patch.build_assignee_ids = [autoBuilder.id];
+      patch.build_assignee_id = autoBuilder.id;
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
+      patch.status = "build_assigned";
+    } else if (existingBuild.length > 0) {
       patch.status = "build_assigned";
     }
     let linkedTitle: string | null = null;
@@ -281,12 +292,13 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitEditBuild = async () => {
-    if (!buildAssignee) return toast.error("Select an assignee");
+    if (buildAssignees.length === 0) return toast.error("Select at least one assignee");
     await upsert(week, {
-      build_assignee_id: buildAssignee,
+      build_assignee_ids: buildAssignees,
+      build_assignee_id: buildAssignees[0], // legacy mirror
       build_due_date: buildDue || null,
     });
-    await logActivity("build_assigned", { assignee: users.find(u => u.id === buildAssignee)?.name, due: buildDue });
+    await logActivity("build_assigned", { assignees: buildAssignees.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(", "), due: buildDue });
     toast.success("Build updated");
     close();
   };
@@ -360,12 +372,13 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
 
   const submitEditOp = async () => {
-    if (!opAssignee) return toast.error("Select an assignee");
+    if (opAssignees.length === 0) return toast.error("Select at least one assignee");
     await upsert(week, {
-      operate_assignee_id: opAssignee,
+      operate_assignee_ids: opAssignees,
+      operate_assignee_id: opAssignees[0], // legacy mirror
       operate_due_date: opDue || null,
     });
-    await logActivity("operate_assigned", { assignee: users.find(u => u.id === opAssignee)?.name, due: opDue });
+    await logActivity("operate_assigned", { assignees: opAssignees.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(", "), due: opDue });
     toast.success("Operate/Publish updated");
     close();
   };
@@ -390,18 +403,41 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     toast.success("Week reset");
   };
 
-  const userSelect = (val: string, onChange: (v: string) => void, opts: UserOpt[]) => (
-    <Select value={val} onValueChange={onChange}>
-      <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
-      <SelectContent>
-        {opts.length === 0 ? (
-          <div className="p-2 text-xs text-muted-foreground">No eligible users — assign the role in Users.</div>
-        ) : (
-          opts.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)
-        )}
-      </SelectContent>
-    </Select>
-  );
+  const multiUserSelect = (values: string[], onChange: (v: string[]) => void, opts: UserOpt[]) => {
+    const toggle = (id: string) => {
+      onChange(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
+    };
+    const selectedNames = values
+      .map((id) => opts.find((u) => u.id === id)?.name || users.find((u) => u.id === id)?.name)
+      .filter(Boolean) as string[];
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" className="w-full justify-start text-left font-normal h-auto min-h-10 py-2">
+            {selectedNames.length === 0 ? (
+              <span className="text-muted-foreground">Select assignee(s)</span>
+            ) : (
+              <span className="text-sm">{selectedNames.join(", ")}</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-2" align="start">
+          {opts.length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">No eligible users — assign the role in Users.</div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {opts.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                  <Checkbox checked={values.includes(u.id)} onCheckedChange={() => toggle(u.id)} />
+                  <span className="flex-1 truncate">{u.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   const SectionHeader = ({
     title, state, open, onToggle, disabled, stateLabel,
@@ -432,23 +468,29 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const operateLabel = ps.operate === "done" ? "Complete" : ps.operate === "active" ? "Assigned" : "Awaiting Build";
 
   const AssignmentLine = ({
-    assigneeId, due, onEdit, editing, label = "Assigned",
-  }: { assigneeId?: string | null; due?: string | null; onEdit: () => void; editing: boolean; label?: string }) => {
-    const name = assigneeId ? (users.find((u) => u.id === assigneeId)?.name ?? "—") : null;
+    assigneeIds, due, onEdit, editing, label = "Assigned",
+  }: { assigneeIds?: (string | null | undefined)[] | null; due?: string | null; onEdit: () => void; editing: boolean; label?: string }) => {
+    const names = (assigneeIds || [])
+      .filter(Boolean)
+      .map((id) => users.find((u) => u.id === id)?.name ?? "—");
     return (
       <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
-        {name ? (
-          <span>{label} to <b>{name}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
+        {names.length > 0 ? (
+          <span>{label} to <b>{names.join(", ")}</b>{due ? ` · due ${fmtDate(due)}` : ""}</span>
         ) : (
           <span className="italic">Not yet assigned</span>
         )}
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onEdit}>
           <Pencil className="h-3 w-3 mr-1" />
-          {editing ? "Close" : name ? "Reassign / Edit Due date" : "Assign / Set due date"}
+          {editing ? "Close" : names.length > 0 ? "Reassign / Edit Due date" : "Assign / Set due date"}
         </Button>
       </div>
     );
   };
+
+  const planAssigneeIds = ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : []);
+  const buildAssigneeIds = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
+  const operateAssigneeIds = ((entry as any)?.operate_assignee_ids as string[] | null) ?? (entry?.operate_assignee_id ? [entry.operate_assignee_id] : []);
 
 
   return (
@@ -465,7 +507,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
-            assigneeId={entry?.plan_assignee_id}
+            assigneeIds={planAssigneeIds}
             due={entry?.plan_due_date}
             editing={panel === "edit_plan"}
             onEdit={() => setPanel(panel === "edit_plan" ? null : "edit_plan")}
@@ -476,21 +518,28 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <DatePicker value={planDue} min={todayISO()} onChange={setPlanDue} />
-              <label className="text-xs font-medium">Planner</label>
-              {userSelect(planAssignee, setPlanAssignee, planners)}
+              <label className="text-xs font-medium">Planner(s)</label>
+              {multiUserSelect(planAssignees, setPlanAssignees, planners)}
               <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
+            </div>
+          )}
+
+          {/* Plan details — always visible when planning is done */}
+          {planDone && (
+            <div className="mb-2 space-y-1 rounded-md border bg-muted/30 p-2 text-xs">
+              <div><b>Topic:</b> {entry?.theme_text || "—"}</div>
+              <div><b>Plan notes:</b> {entry?.plan_comments || "—"}</div>
+              {entry?.project_id && (
+                <div><b>Linked project:</b> {entry?.title || entry.project_id}</div>
+              )}
             </div>
           )}
 
           {planDone ? (
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <span>
-                Plan completed by <b>{users.find((u) => u.id === entry?.plan_assignee_id)?.name ?? "—"}</b>
-                {entry?.updated_at ? ` on ${fmtDate(entry.updated_at)}` : ""}
+              <span className="text-muted-foreground">
+                Plan completed{entry?.updated_at ? ` on ${fmtDate(entry.updated_at)}` : ""}
               </span>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(panel === "see_plan" ? null : "see_plan")}>
-                See Plan
-              </Button>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setPanel(panel === "complete_plan" ? null : "complete_plan")}>
                 Redo planning
               </Button>
@@ -501,15 +550,6 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             </Button>
           )}
 
-          {panel === "see_plan" && planDone && (
-            <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2 text-xs">
-              <div><b>Topic:</b> {entry?.theme_text || "—"}</div>
-              <div><b>Plan comments:</b> {entry?.plan_comments || "—"}</div>
-              {entry?.project_id && (
-                <div><b>Linked project:</b> {entry?.title || entry.project_id}</div>
-              )}
-            </div>
-          )}
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
@@ -536,7 +576,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} stateLabel={buildLabel} />
         <CollapsibleContent className="px-2 pb-2">
           <AssignmentLine
-            assigneeId={entry?.build_assignee_id}
+            assigneeIds={buildAssigneeIds}
             due={entry?.build_due_date}
             editing={panel === "edit_build"}
             onEdit={() => setPanel(panel === "edit_build" ? null : "edit_build")}
@@ -545,8 +585,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <DatePicker value={buildDue} min={todayISO()} onChange={setBuildDue} />
-              <label className="text-xs font-medium">Builder</label>
-              {userSelect(buildAssignee, setBuildAssignee, builders)}
+              <label className="text-xs font-medium">Builder(s)</label>
+              {multiUserSelect(buildAssignees, setBuildAssignees, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
             </div>
           )}
@@ -626,7 +666,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         <CollapsibleContent className="px-2 pb-2">
 
           <AssignmentLine
-            assigneeId={entry?.operate_assignee_id}
+            assigneeIds={operateAssigneeIds}
             due={entry?.operate_due_date}
             editing={panel === "edit_op"}
             onEdit={() => setPanel(panel === "edit_op" ? null : "edit_op")}
@@ -635,8 +675,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <DatePicker value={opDue} onChange={setOpDue} />
-              <label className="text-xs font-medium">Operator</label>
-              {userSelect(opAssignee, setOpAssignee, operators)}
+              <label className="text-xs font-medium">Operator(s)</label>
+              {multiUserSelect(opAssignees, setOpAssignees, operators)}
               <Button size="sm" className="w-full" onClick={submitEditOp}>Save</Button>
             </div>
           )}
