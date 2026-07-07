@@ -407,37 +407,29 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     const toggle = (id: string) => {
       onChange(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
     };
-    const selectedNames = values
-      .map((id) => opts.find((u) => u.id === id)?.name || users.find((u) => u.id === id)?.name)
-      .filter(Boolean) as string[];
+    // Fallback: if no users have the role assigned, show all users so the tracker isn't blocked.
+    const effective = opts.length > 0 ? opts : users;
     return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button type="button" variant="outline" className="w-full justify-start text-left font-normal h-auto min-h-10 py-2">
-            {selectedNames.length === 0 ? (
-              <span className="text-muted-foreground">Select assignee(s)</span>
-            ) : (
-              <span className="text-sm">{selectedNames.join(", ")}</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 p-2" align="start">
-          {opts.length === 0 ? (
-            <div className="p-2 text-xs text-muted-foreground">No eligible users — assign the role in Users.</div>
-          ) : (
-            <div className="max-h-64 overflow-y-auto space-y-1">
-              {opts.map((u) => (
-                <label key={u.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                  <Checkbox checked={values.includes(u.id)} onCheckedChange={() => toggle(u.id)} />
-                  <span className="flex-1 truncate">{u.name}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+      <div className="rounded-md border bg-background p-2 max-h-56 overflow-y-auto space-y-0.5">
+        {opts.length === 0 && (
+          <div className="mb-1 text-[11px] italic text-muted-foreground px-1">
+            No users have this content role assigned — showing all users. Set roles in Users tab.
+          </div>
+        )}
+        {effective.length === 0 ? (
+          <div className="p-2 text-xs text-muted-foreground">No users found.</div>
+        ) : (
+          effective.map((u) => (
+            <label key={u.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+              <Checkbox checked={values.includes(u.id)} onCheckedChange={() => toggle(u.id)} />
+              <span className="flex-1 truncate">{u.name}</span>
+            </label>
+          ))
+        )}
+      </div>
     );
   };
+
 
   const SectionHeader = ({
     title, state, open, onToggle, disabled, stateLabel,
