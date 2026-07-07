@@ -248,27 +248,32 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const close = () => setPanel(null);
 
   const submitEditPlan = async () => {
-    if (!planAssignee) return toast.error("Select an assignee");
+    if (planAssignees.length === 0) return toast.error("Select at least one assignee");
     await upsert(week, {
-      plan_assignee_id: planAssignee,
+      plan_assignee_ids: planAssignees,
+      plan_assignee_id: planAssignees[0], // legacy mirror
       plan_due_date: planDue || null,
       ...(entry?.status ? {} : { status: "planning_assigned" }),
     });
-    await logActivity("plan_assigned", { assignee: users.find(u => u.id === planAssignee)?.name, due: planDue });
+    await logActivity("plan_assigned", { assignees: planAssignees.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(", "), due: planDue });
     toast.success("Planning updated");
     close();
   };
 
   const submitCompletePlan = async () => {
     const autoBuilder = pickByWeek(builders, week);
+    const existingBuild = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
     const patch: any = {
       theme_text: theme.trim() || null,
       plan_comments: planComments.trim() || null,
       status: "plan_complete",
     };
-    if (autoBuilder) {
-      patch.build_assignee_id = entry?.build_assignee_id ?? autoBuilder.id;
+    if (existingBuild.length === 0 && autoBuilder) {
+      patch.build_assignee_ids = [autoBuilder.id];
+      patch.build_assignee_id = autoBuilder.id;
       patch.build_due_date = entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1);
+      patch.status = "build_assigned";
+    } else if (existingBuild.length > 0) {
       patch.status = "build_assigned";
     }
     let linkedTitle: string | null = null;
@@ -287,12 +292,13 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitEditBuild = async () => {
-    if (!buildAssignee) return toast.error("Select an assignee");
+    if (buildAssignees.length === 0) return toast.error("Select at least one assignee");
     await upsert(week, {
-      build_assignee_id: buildAssignee,
+      build_assignee_ids: buildAssignees,
+      build_assignee_id: buildAssignees[0], // legacy mirror
       build_due_date: buildDue || null,
     });
-    await logActivity("build_assigned", { assignee: users.find(u => u.id === buildAssignee)?.name, due: buildDue });
+    await logActivity("build_assigned", { assignees: buildAssignees.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(", "), due: buildDue });
     toast.success("Build updated");
     close();
   };
