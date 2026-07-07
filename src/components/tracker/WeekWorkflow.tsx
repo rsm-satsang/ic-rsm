@@ -372,12 +372,13 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
 
   const submitEditOp = async () => {
-    if (!opAssignee) return toast.error("Select an assignee");
+    if (opAssignees.length === 0) return toast.error("Select at least one assignee");
     await upsert(week, {
-      operate_assignee_id: opAssignee,
+      operate_assignee_ids: opAssignees,
+      operate_assignee_id: opAssignees[0], // legacy mirror
       operate_due_date: opDue || null,
     });
-    await logActivity("operate_assigned", { assignee: users.find(u => u.id === opAssignee)?.name, due: opDue });
+    await logActivity("operate_assigned", { assignees: opAssignees.map(id => users.find(u => u.id === id)?.name).filter(Boolean).join(", "), due: opDue });
     toast.success("Operate/Publish updated");
     close();
   };
@@ -402,18 +403,41 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     toast.success("Week reset");
   };
 
-  const userSelect = (val: string, onChange: (v: string) => void, opts: UserOpt[]) => (
-    <Select value={val} onValueChange={onChange}>
-      <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
-      <SelectContent>
-        {opts.length === 0 ? (
-          <div className="p-2 text-xs text-muted-foreground">No eligible users — assign the role in Users.</div>
-        ) : (
-          opts.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)
-        )}
-      </SelectContent>
-    </Select>
-  );
+  const multiUserSelect = (values: string[], onChange: (v: string[]) => void, opts: UserOpt[]) => {
+    const toggle = (id: string) => {
+      onChange(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
+    };
+    const selectedNames = values
+      .map((id) => opts.find((u) => u.id === id)?.name || users.find((u) => u.id === id)?.name)
+      .filter(Boolean) as string[];
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" className="w-full justify-start text-left font-normal h-auto min-h-10 py-2">
+            {selectedNames.length === 0 ? (
+              <span className="text-muted-foreground">Select assignee(s)</span>
+            ) : (
+              <span className="text-sm">{selectedNames.join(", ")}</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-2" align="start">
+          {opts.length === 0 ? (
+            <div className="p-2 text-xs text-muted-foreground">No eligible users — assign the role in Users.</div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {opts.map((u) => (
+                <label key={u.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                  <Checkbox checked={values.includes(u.id)} onCheckedChange={() => toggle(u.id)} />
+                  <span className="flex-1 truncate">{u.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   const SectionHeader = ({
     title, state, open, onToggle, disabled, stateLabel,
