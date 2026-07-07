@@ -666,7 +666,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         <CollapsibleContent className="px-2 pb-2">
 
           <AssignmentLine
-            assigneeId={entry?.operate_assignee_id}
+            assigneeIds={operateAssigneeIds}
             due={entry?.operate_due_date}
             editing={panel === "edit_op"}
             onEdit={() => setPanel(panel === "edit_op" ? null : "edit_op")}
@@ -675,8 +675,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
               <DatePicker value={opDue} onChange={setOpDue} />
-              <label className="text-xs font-medium">Operator</label>
-              {userSelect(opAssignee, setOpAssignee, operators)}
+              <label className="text-xs font-medium">Operator(s)</label>
+              {multiUserSelect(opAssignees, setOpAssignees, operators)}
               <Button size="sm" className="w-full" onClick={submitEditOp}>Save</Button>
             </div>
           )}
