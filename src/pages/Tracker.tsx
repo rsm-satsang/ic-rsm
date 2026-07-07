@@ -756,7 +756,6 @@ export default function Tracker() {
                 const notifyAssignees = async () => {
                   try {
                     // Only notify the assignee(s) of the current in-progress phase.
-                    // Plan in progress → plan; plan done & build not done → build; build done & operate not done → operate.
                     let activePhase: "plan" | "build" | "operate" | null = null;
                     if (!planDone) activePhase = "plan";
                     else if (!buildDone) activePhase = "build";
@@ -766,23 +765,40 @@ export default function Tracker() {
                       return toast.error("All phases are complete — nothing to remind");
                     }
 
-                    const activeAssigneeId =
-                      activePhase === "plan" ? entry?.plan_assignee_id
-                      : activePhase === "build" ? entry?.build_assignee_id
-                      : entry?.operate_assignee_id;
+                    const planIds: string[] = ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : []);
+                    const buildIds: string[] = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
+                    const opIds: string[] = ((entry as any)?.operate_assignee_ids as string[] | null) ?? (entry?.operate_assignee_id ? [entry.operate_assignee_id] : []);
 
-                    if (!activeAssigneeId) {
+                    const activeAssigneeIds =
+                      activePhase === "plan" ? planIds
+                      : activePhase === "build" ? buildIds
+                      : opIds;
+
+                    if (activeAssigneeIds.length === 0) {
                       return toast.error(`No assignee on the current ${activePhase} phase`);
                     }
 
                     const recipients = users
-                      .filter((u) => u.id === activeAssigneeId)
+                      .filter((u) => activeAssigneeIds.includes(u.id))
                       .map((u) => ({ name: u.name, email: u.email, id: u.id }));
 
                     const phaseDescription =
                       activePhase === "plan" ? "Plan the weekly content theme and brief."
                       : activePhase === "build" ? "Build the draft / produce the content."
                       : "Publish on Substack/YouTube.";
+
+                    // Look up linked project title for build phase context
+                    let linkedProjectTitle: string | null = null;
+                    if (entry?.project_id) {
+                      linkedProjectTitle = entry?.title || null;
+                    }
+
+                    const planContext = activePhase === "build" ? {
+                      topic: entry?.theme_text || null,
+                      plan_comments: entry?.plan_comments || null,
+                      linked_project_title: linkedProjectTitle,
+                      linked_project_id: entry?.project_id || null,
+                    } : null;
 
                     const { error } = await supabase.functions.invoke("notify-week-assignees", {
                       body: {
@@ -791,10 +807,10 @@ export default function Tracker() {
                         title: entry?.title || entry?.theme_text || `Week of ${week}`,
                         status: meta?.label ?? status,
                         recipients,
-                        // Only include the active phase in the email table.
-                        plan: activePhase === "plan" ? { assignee_id: entry?.plan_assignee_id, due: entry?.plan_due_date, description: phaseDescription } : {},
-                        build: activePhase === "build" ? { assignee_id: entry?.build_assignee_id, due: entry?.build_due_date, description: phaseDescription } : {},
-                        operate: activePhase === "operate" ? { assignee_id: entry?.operate_assignee_id, due: entry?.operate_due_date, description: phaseDescription } : {},
+                        planContext,
+                        plan: activePhase === "plan" ? { assignee_ids: planIds, due: entry?.plan_due_date, description: phaseDescription } : {},
+                        build: activePhase === "build" ? { assignee_ids: buildIds, due: entry?.build_due_date, description: phaseDescription } : {},
+                        operate: activePhase === "operate" ? { assignee_ids: opIds, due: entry?.operate_due_date, description: phaseDescription } : {},
                       },
                     });
                     if (error) throw error;
