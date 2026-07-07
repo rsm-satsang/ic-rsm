@@ -23,10 +23,22 @@ function createRawEmail(from: string, to: string, subject: string, html: string)
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+}
+
 interface Phase {
-  assignee_id?: string | null;
+  assignee_id?: string | null;      // legacy single
+  assignee_ids?: string[] | null;   // new multi
   due?: string | null;
   description?: string | null;
+}
+
+interface PlanContext {
+  topic?: string | null;
+  plan_comments?: string | null;
+  linked_project_title?: string | null;
+  linked_project_id?: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -42,6 +54,7 @@ Deno.serve(async (req) => {
       plan = {} as Phase,
       build = {} as Phase,
       operate = {} as Phase,
+      planContext = null as PlanContext | null,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -71,14 +84,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Resolve assignee names
-    const ids = [plan.assignee_id, build.assignee_id, operate.assignee_id].filter(Boolean) as string[];
+    // Collect assignee ids across phases (both new array + legacy single)
+    const phaseIds = (p: Phase) => {
+      const list: string[] = [];
+      if (Array.isArray(p.assignee_ids)) list.push(...p.assignee_ids.filter(Boolean) as string[]);
+      if (p.assignee_id) list.push(p.assignee_id);
+      return Array.from(new Set(list));
+    };
+    const allIds = Array.from(new Set([...phaseIds(plan), ...phaseIds(build), ...phaseIds(operate)]));
     let nameMap = new Map<string, string>();
-    if (ids.length) {
-      const { data: us } = await supabase.from("users").select("id, name, email").in("id", ids);
+    if (allIds.length) {
+      const { data: us } = await supabase.from("users").select("id, name, email").in("id", allIds);
       for (const u of us || []) nameMap.set(u.id, u.name || u.email || "—");
     }
-    const nm = (id?: string | null) => (id ? nameMap.get(id) || "—" : "—");
+    const namesFor = (p: Phase) => {
+      const ids = phaseIds(p);
+      if (ids.length === 0) return "—";
+      return ids.map((id) => nameMap.get(id) || "—").join(", ");
+    };
 
     const APP_URL = Deno.env.get("APP_URL") || "https://rsm-srijan.lovable.app";
     const link = `${APP_URL}/tracker`;
@@ -86,15 +109,25 @@ Deno.serve(async (req) => {
     const subject = `Reminder: ${title} (${weekLabel})`;
 
     const phaseRow = (label: string, p: Phase) => {
-      if (!p || (!p.assignee_id && !p.due && !p.description)) return "";
+      const ids = phaseIds(p);
+      if (ids.length === 0 && !p.due && !p.description) return "";
       return `
       <tr>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;"><b>${label}</b></td>
-        <td style="padding:8px 12px;border:1px solid #e5e7eb;">${nm(p.assignee_id)}</td>
+        <td style="padding:8px 12px;border:1px solid #e5e7eb;">${namesFor(p)}</td>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;">${p.due || "—"}</td>
         <td style="padding:8px 12px;border:1px solid #e5e7eb;">${p.description || "—"}</td>
       </tr>`;
     };
+
+    // Build additional plan context block (for Build-phase reminders)
+    const planContextBlock = planContext && (planContext.topic || planContext.plan_comments || planContext.linked_project_title) ? `
+      <div style="margin:16px 0;padding:12px 16px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;">
+        <div style="font-weight:bold;color:#92400e;margin-bottom:6px;">📋 Context from the Planner</div>
+        ${planContext.topic ? `<div style="margin:4px 0;"><b>Topic:</b> ${escapeHtml(planContext.topic)}</div>` : ""}
+        ${planContext.plan_comments ? `<div style="margin:4px 0;"><b>Plan notes:</b><br/><span style="white-space:pre-wrap;">${escapeHtml(planContext.plan_comments)}</span></div>` : ""}
+        ${planContext.linked_project_title ? `<div style="margin:4px 0;"><b>Linked project:</b> ${escapeHtml(planContext.linked_project_title)}${planContext.linked_project_id ? ` — <a href="${APP_URL}/workspace/${planContext.linked_project_id}">Open</a>` : ""}</div>` : ""}
+      </div>` : "";
 
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;padding:24px;">
@@ -107,11 +140,13 @@ Deno.serve(async (req) => {
           <tr><td style="padding:6px 12px;color:#555;"><b>Current Status</b></td><td style="padding:6px 12px;"><b>${status}</b></td></tr>
         </table>
 
+        ${planContextBlock}
+
         <table style="border-collapse:collapse;width:100%;margin:12px 0;">
           <thead>
             <tr style="background:#f0f9ff;">
               <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Phase</th>
-              <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Assignee</th>
+              <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Assignee(s)</th>
               <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Due</th>
               <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Description</th>
             </tr>
