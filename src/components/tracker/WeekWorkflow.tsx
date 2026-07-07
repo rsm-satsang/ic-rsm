@@ -137,20 +137,26 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [openActivity, setOpenActivity] = useState(false);
 
   // Plan
-  const [planAssignee, setPlanAssignee] = useState<string>(entry?.plan_assignee_id ?? "");
+  const [planAssignees, setPlanAssignees] = useState<string[]>(
+    ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : [])
+  );
   const [planDue, setPlanDue] = useState<string>(entry?.plan_due_date ?? defaultDueNotBeforeToday(week, 2));
   const [theme, setTheme] = useState<string>(entry?.theme_text ?? "");
   const [planComments, setPlanComments] = useState<string>(entry?.plan_comments ?? "");
 
   // Build
-  const [buildAssignee, setBuildAssignee] = useState<string>(entry?.build_assignee_id ?? "");
+  const [buildAssignees, setBuildAssignees] = useState<string[]>(
+    ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : [])
+  );
   const [buildDue, setBuildDue] = useState<string>(entry?.build_due_date ?? defaultDueNotBeforeToday(week, 1));
   const [draftProjects, setDraftProjects] = useState<Array<{ id: string; title: string }>>([]);
   const [linkProjectId, setLinkProjectId] = useState<string>("");
   const [planLinkProjectId, setPlanLinkProjectId] = useState<string>("");
 
   // Operate
-  const [opAssignee, setOpAssignee] = useState<string>(entry?.operate_assignee_id ?? "");
+  const [opAssignees, setOpAssignees] = useState<string[]>(
+    ((entry as any)?.operate_assignee_ids as string[] | null) ?? (entry?.operate_assignee_id ? [entry.operate_assignee_id] : [])
+  );
   const [opDue, setOpDue] = useState<string>(entry?.operate_due_date ?? wednesdayOf(week));
   const [subPub, setSubPub] = useState<boolean>(!!entry?.substack_published);
   const [ytPub, setYtPub] = useState<boolean>(!!entry?.youtube_published);
