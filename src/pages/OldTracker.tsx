@@ -1,5 +1,5 @@
-// Reconstruction of the June 16-22, 2026 Tracker: 52 weekly cards per channel
-// with the Plan / Build / Operate (Publish) workflow. Uses the same
+// Reconstruction of the June 16-22, 2026 Tracker: rolling weekly cards per
+// channel with the Plan / Build / Operate (Publish) workflow. Uses the same
 // tracker_entries table and WeekWorkflow component as the current Tracker.
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,10 +41,21 @@ function firstMondayOfYear(year: number): Date {
   return d;
 }
 
-function build52Weeks(year: number): string[] {
-  const start = firstMondayOfYear(year);
+const WEEKS_TO_SHOW = 10;
+
+function currentWeekMondayUTC(): Date {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = d.getUTCDay();
+  const offset = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + offset);
+  return d;
+}
+
+function buildRollingWeeks(count: number): string[] {
+  const start = currentWeekMondayUTC();
   const weeks: string[] = [];
-  for (let i = 0; i < 52; i++) {
+  for (let i = 0; i < count; i++) {
     const d = new Date(start);
     d.setUTCDate(d.getUTCDate() + i * 7);
     weeks.push(d.toISOString().slice(0, 10));
@@ -87,7 +98,7 @@ const OldTracker = () => {
   const [syncing, setSyncing] = useState(false);
   const [activeKey, setActiveKey] = useState<string>("satsang");
 
-  const weeks = useMemo(() => build52Weeks(YEAR), []);
+  const weeks = useMemo(() => buildRollingWeeks(WEEKS_TO_SHOW), []);
   const planners = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("planner")), [users]);
   const builders = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("builder")), [users]);
   const operators = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("operator")), [users]);
@@ -206,7 +217,7 @@ const OldTracker = () => {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="p-3"><div className="text-xs text-muted-foreground">Total weeks</div><div className="text-2xl font-bold">52</div></Card>
+          <Card className="p-3"><div className="text-xs text-muted-foreground">Weeks shown</div><div className="text-2xl font-bold">{WEEKS_TO_SHOW}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Published items</div><div className="text-2xl font-bold text-green-700">{totalPublished}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Entries total</div><div className="text-2xl font-bold">{filtered.length}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Weeks with no content</div><div className="text-2xl font-bold text-red-700">{missingWeeks}</div></Card>
@@ -214,32 +225,47 @@ const OldTracker = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {weeks.map((week, idx) => {
-            const entry = (entriesByWeek.get(week) || [])[0] || null;
-            const meta = statusMeta(entry?.status || "tbd");
+            const items = entriesByWeek.get(week) || [];
+            const primary = items[0] || null;
+            const meta = statusMeta(primary?.status || "tbd");
             const weekNum = idx + 1;
             return (
               <Card key={week} className="space-y-3 w-full overflow-hidden">
                 <div className="px-4 py-3 bg-muted/40 border-b">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
-                    <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+                    <div className="flex items-center gap-2">
+                      {items.length > 1 && (
+                        <Badge variant="secondary" className="text-[10px]">{items.length} entries</Badge>
+                      )}
+                      <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+                    </div>
                   </div>
                 </div>
-                <div className="px-4 pb-4">
-                  <WeekWorkflow
-                    week={week}
-                    channel={active.channel}
-                    subChannel={active.sub}
-                    entry={entry}
-                    users={users as any}
-                    planners={planners as any}
-                    builders={builders as any}
-                    operators={operators as any}
-                    isAdmin={isAdmin}
-                    projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
-                    upsert={upsert as any}
-                    onReset={resetWeek as any}
-                  />
+                <div className="px-4 pb-4 space-y-4">
+                  {(items.length ? items : [null]).map((entry, i) => (
+                    <div key={entry?.id || `empty-${i}`} className={i > 0 ? "pt-4 border-t" : ""}>
+                      {items.length > 1 && entry && (
+                        <div className="text-xs font-semibold text-muted-foreground mb-2">
+                          Entry {i + 1}{entry.title ? ` · ${entry.title}` : ""}
+                        </div>
+                      )}
+                      <WeekWorkflow
+                        week={week}
+                        channel={active.channel}
+                        subChannel={active.sub}
+                        entry={entry}
+                        users={users as any}
+                        planners={planners as any}
+                        builders={builders as any}
+                        operators={operators as any}
+                        isAdmin={isAdmin}
+                        projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
+                        upsert={upsert as any}
+                        onReset={resetWeek as any}
+                      />
+                    </div>
+                  ))}
                 </div>
               </Card>
             );
@@ -258,7 +284,7 @@ const OldTracker = () => {
             <div>
               <h1 className="text-2xl font-bold">Old Tracker (June 16 version)</h1>
               <p className="text-sm text-muted-foreground">
-                52 weekly cards for {YEAR} with the Plan / Build / Operate (Publish) workflow.
+                Next {WEEKS_TO_SHOW} weeks with the Plan / Build / Operate (Publish) workflow. Weeks with multiple entries show every entry.
               </p>
             </div>
             <div className="flex items-center gap-2">
