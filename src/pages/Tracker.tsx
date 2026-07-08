@@ -338,19 +338,25 @@ export default function Tracker() {
   }, []);
 
   const stats = useMemo(() => {
-    let published = 0, missing = 0, total = 0;
+    let missing = 0, total = 0;
     for (const w of weeks) {
       if (monthOf(w) > ytdMaxMonth) continue;
       total++;
       const list = entriesByWeek.get(w) || [];
       const top = list[0];
-      // Published/Missing only based on actual Substack publish (or status published)
       const isPub = !!top?.substack_published || top?.status === "published";
-      if (isPub) published++;
-      else missing++;
+      if (!isPub) missing++;
     }
+    // Count all published newsletters YTD (not just one per week)
+    const published = channelEntries.filter((e) => {
+      if (!e.publish_date) return false;
+      const d = new Date(e.publish_date + "T00:00:00Z");
+      if (d.getUTCFullYear() !== YEAR) return false;
+      if (d.getUTCMonth() > ytdMaxMonth) return false;
+      return !!e.substack_published || e.status === "published" || e.source === "substack";
+    }).length;
     return { total, published, missing };
-  }, [weeks, entriesByWeek, ytdMaxMonth]);
+  }, [weeks, entriesByWeek, ytdMaxMonth, channelEntries]);
 
   // Phase-bucket metrics (YTD scope)
   const phaseStats = useMemo(() => {
