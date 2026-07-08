@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, ShieldCheck, Bell, BarChart3 } from "lucide-react";
+import { Home, Calendar, ShieldCheck, Bell, BarChart3, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,8 @@ const GlobalNav = () => {
           </TooltipTrigger>
           <TooltipContent side="right">Feedback</TooltipContent>
         </Tooltip>
+
+        <NavButton icon={History} label="Old Tracker" to="/old-tracker" />
       </div>
 
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
