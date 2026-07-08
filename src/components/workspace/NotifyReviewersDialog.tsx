@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Send } from "lucide-react";
+import { RefreshCw, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,36 +24,51 @@ interface UserRow {
 export default function NotifyReviewersDialog({ projectId, versionId, requesterId, projectTitle }: Props) {
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [admins, setAdmins] = useState<UserRow[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, name, email, role, approval_status")
+      .eq("approval_status", "approved")
+      .in("role", ["admin", "user"])
+      .order("role", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) {
+      console.error(error);
+      toast.error("Failed to load users");
+    } else {
+      const rows = (data || []) as UserRow[];
+      const adminRows = rows.filter((u) => u.role === "admin");
+      const builderRows = rows.filter((u) => u.role === "user");
+      setAdmins(adminRows);
+      setUsers(builderRows);
+      // Default-check builders; admins are always included implicitly
+      const def: Record<string, boolean> = {};
+      builderRows.forEach((u) => { def[u.id] = true; });
+      setSelected(def);
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, name, email, role, approval_status")
-        .eq("approval_status", "approved")
-        .order("role", { ascending: true })
-        .order("name", { ascending: true });
-      if (error) {
-        console.error(error);
-        toast.error("Failed to load users");
-      } else {
-        const rows = (data || []) as UserRow[];
-        setUsers(rows);
-        // Default-check admins and builders (role='user')
-        const def: Record<string, boolean> = {};
-        rows.forEach((u) => {
-          if (u.role === "admin" || u.role === "user") def[u.id] = true;
-        });
-        setSelected(def);
-      }
-      setLoading(false);
-    })();
-  }, [open]);
+    loadUsers();
+    // Refresh list when any user's role/approval changes
+    const channel = supabase
+      .channel(`notify-reviewers-users-${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "users" },
+        () => { loadUsers(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [open, loadUsers, projectId]);
 
   const toggle = (id: string) =>
     setSelected((s) => ({ ...s, [id]: !s[id] }));
