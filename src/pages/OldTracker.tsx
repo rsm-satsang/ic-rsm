@@ -41,21 +41,10 @@ function firstMondayOfYear(year: number): Date {
   return d;
 }
 
-const WEEKS_TO_SHOW = 10;
-
-function currentWeekMondayUTC(): Date {
-  const now = new Date();
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const day = d.getUTCDay();
-  const offset = day === 0 ? -6 : 1 - day;
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-}
-
-function buildRollingWeeks(count: number): string[] {
-  const start = currentWeekMondayUTC();
+function build52Weeks(year: number): string[] {
+  const start = firstMondayOfYear(year);
   const weeks: string[] = [];
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 52; i++) {
     const d = new Date(start);
     d.setUTCDate(d.getUTCDate() + i * 7);
     weeks.push(d.toISOString().slice(0, 10));
