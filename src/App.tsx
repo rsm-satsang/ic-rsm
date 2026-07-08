@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import Tracker from "./pages/Tracker";
 import PublishingStats from "./pages/PublishingStats";
 import AdminUsers from "./pages/AdminUsers";
+import OldTracker from "./pages/OldTracker";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/tracker" element={<Tracker />} />
           <Route path="/publishing-stats" element={<PublishingStats />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/old-tracker" element={<OldTracker />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
