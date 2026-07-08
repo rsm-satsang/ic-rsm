@@ -15,6 +15,7 @@ import Notifications from "./pages/Notifications";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Tracker from "./pages/Tracker";
+import PublishingStats from "./pages/PublishingStats";
 import AdminUsers from "./pages/AdminUsers";
 import GlobalNav from "./components/GlobalNav";
 
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tracker" element={<Tracker />} />
+          <Route path="/publishing-stats" element={<PublishingStats />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

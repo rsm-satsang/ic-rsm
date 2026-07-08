@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, ShieldCheck, Bell } from "lucide-react";
+import { Home, Calendar, ShieldCheck, Bell, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +57,7 @@ const GlobalNav = () => {
       <div className="fixed top-0 left-0 z-50 h-full w-14 flex flex-col items-center pt-4 gap-4 bg-sidebar border-r border-sidebar-border shadow-md">
         <NavButton icon={Home} label="Home" to="/dashboard" />
         <NavButton icon={Calendar} label="Tracker" to="/tracker" />
+        <NavButton icon={BarChart3} label="Stats" to="/publishing-stats" />
         <NavButton icon={Bell} label="Alerts" to="/notifications" badge={unread || null} />
         {isAdmin && <NavButton icon={ShieldCheck} label="Users" to="/admin/users" />}
 
