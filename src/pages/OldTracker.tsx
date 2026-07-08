@@ -200,13 +200,13 @@ const OldTracker = () => {
 
   const renderTab = () => {
     const filtered = entries.filter(e => e.channel === active.channel && e.sub_channel === active.sub);
-    const totalPublished = filtered.filter(e => e.status === "published" || e.status === "publish_complete").length;
+    const totalPublished = filtered.filter(e => !!e.publish_date).length;
     const missingWeeks = weeks.filter(w => (entriesByWeek.get(w) || []).length === 0).length;
 
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="p-3"><div className="text-xs text-muted-foreground">Weeks shown</div><div className="text-2xl font-bold">{WEEKS_TO_SHOW}</div></Card>
+          <Card className="p-3"><div className="text-xs text-muted-foreground">Total weeks</div><div className="text-2xl font-bold">52</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Published items</div><div className="text-2xl font-bold text-green-700">{totalPublished}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Entries total</div><div className="text-2xl font-bold">{filtered.length}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Weeks with no content</div><div className="text-2xl font-bold text-red-700">{missingWeeks}</div></Card>
