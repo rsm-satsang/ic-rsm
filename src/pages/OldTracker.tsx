@@ -273,7 +273,7 @@ const OldTracker = () => {
             <div>
               <h1 className="text-2xl font-bold">Old Tracker (June 16 version)</h1>
               <p className="text-sm text-muted-foreground">
-                Next {WEEKS_TO_SHOW} weeks with the Plan / Build / Operate (Publish) workflow. Weeks with multiple entries show every entry.
+                52 weekly cards for {YEAR} with the Plan / Build / Operate (Publish) workflow. Weeks with multiple entries show every entry.
               </p>
             </div>
             <div className="flex items-center gap-2">
