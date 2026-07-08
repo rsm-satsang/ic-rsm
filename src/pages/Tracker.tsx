@@ -306,10 +306,19 @@ export default function Tracker() {
           plan_due_date: defaultDue(w),
         };
       });
-      const { data, error } = await supabase
-        .from("tracker_entries")
-        .upsert(rows as any, { onConflict: "channel,sub_channel,week_start_date", ignoreDuplicates: true })
-        .select();
+      // Insert planning slots one-by-one so a duplicate on the (channel,sub,week,source_url)
+      // slot index doesn't abort the whole batch.
+      const inserted: any[] = [];
+      for (const row of rows) {
+        const { data: r, error: insErr } = await supabase
+          .from("tracker_entries")
+          .insert(row as any)
+          .select()
+          .maybeSingle();
+        if (!insErr && r) inserted.push(r);
+      }
+      const data = inserted;
+      const error = null as any;
       if (!error && data) setEntries((prev) => {
         const ids = new Set(prev.map((p: any) => p.id));
         const fresh = (data as Entry[]).filter((d: any) => !ids.has(d.id));
@@ -329,19 +338,25 @@ export default function Tracker() {
   }, []);
 
   const stats = useMemo(() => {
-    let published = 0, missing = 0, total = 0;
+    let missing = 0, total = 0;
     for (const w of weeks) {
       if (monthOf(w) > ytdMaxMonth) continue;
       total++;
       const list = entriesByWeek.get(w) || [];
       const top = list[0];
-      // Published/Missing only based on actual Substack publish (or status published)
       const isPub = !!top?.substack_published || top?.status === "published";
-      if (isPub) published++;
-      else missing++;
+      if (!isPub) missing++;
     }
+    // Count all published newsletters YTD (not just one per week)
+    const published = channelEntries.filter((e) => {
+      if (!e.publish_date) return false;
+      const d = new Date(e.publish_date + "T00:00:00Z");
+      if (d.getUTCFullYear() !== YEAR) return false;
+      if (d.getUTCMonth() > ytdMaxMonth) return false;
+      return !!e.substack_published || e.status === "published" || e.source === "substack";
+    }).length;
     return { total, published, missing };
-  }, [weeks, entriesByWeek, ytdMaxMonth]);
+  }, [weeks, entriesByWeek, ytdMaxMonth, channelEntries]);
 
   // Phase-bucket metrics (YTD scope)
   const phaseStats = useMemo(() => {
@@ -629,15 +644,21 @@ export default function Tracker() {
 
           {(() => {
             const monthWeeks = visibleWeeks;
-            let mPublished = 0, mMissing = 0;
+            let mMissing = 0;
             const missingWeeks: string[] = [];
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
               const isPub = !!top?.substack_published || top?.status === "published";
-              if (isPub) mPublished++;
-              else { mMissing++; missingWeeks.push(w); }
+              if (!isPub) { mMissing++; missingWeeks.push(w); }
             }
+            // Count actual published newsletters (not weeks) in this month
+            const mPublished = channelEntries.filter((e) => {
+              if (!e.publish_date) return false;
+              const d = new Date(e.publish_date + "T00:00:00Z");
+              if (d.getUTCFullYear() !== YEAR || d.getUTCMonth() !== selectedMonth) return false;
+              return !!e.substack_published || e.status === "published" || e.source === "substack";
+            }).length;
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
