@@ -511,7 +511,7 @@ export default function Tracker() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
-                <CalendarIcon className="h-7 w-7" /> Content Production Tracker
+                <CalendarIcon className="h-7 w-7" /> Content Production using Plan-Build-Operate
               </h1>
               <p className="text-muted-foreground mt-1">Weekly publishing calendar for {YEAR}</p>
             </div>
@@ -611,10 +611,6 @@ export default function Tracker() {
                 <Button onClick={syncSubstack} disabled={!!syncing} variant="outline" className="gap-2">
                   {syncing === activeChannel ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   Sync Substack
-                </Button>
-                <Button onClick={syncGDrive} disabled={!!syncing} variant="outline" className="gap-2">
-                  {syncing === ("gdrive" as any) ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Sync Google Drive
                 </Button>
               </div>
             )}
