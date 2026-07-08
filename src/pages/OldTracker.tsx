@@ -1,5 +1,5 @@
-// Reconstruction of the June 16-22, 2026 Tracker: 52 weekly cards per channel
-// with the Plan / Build / Operate (Publish) workflow. Uses the same
+// Reconstruction of the June 16-22, 2026 Tracker: rolling weekly cards per
+// channel with the Plan / Build / Operate (Publish) workflow. Uses the same
 // tracker_entries table and WeekWorkflow component as the current Tracker.
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
