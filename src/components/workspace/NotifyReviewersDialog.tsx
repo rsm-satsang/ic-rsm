@@ -19,6 +19,7 @@ interface UserRow {
   name: string | null;
   email: string;
   role: string;
+  content_roles: string[] | null;
 }
 
 export default function NotifyReviewersDialog({ projectId, versionId, requesterId, projectTitle }: Props) {
