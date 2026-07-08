@@ -19,6 +19,7 @@ interface UserRow {
   name: string | null;
   email: string;
   role: string;
+  content_roles: string[] | null;
 }
 
 export default function NotifyReviewersDialog({ projectId, versionId, requesterId, projectTitle }: Props) {
@@ -33,7 +34,7 @@ export default function NotifyReviewersDialog({ projectId, versionId, requesterI
     setLoading(true);
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, role, approval_status")
+      .select("id, name, email, role, approval_status, content_roles")
       .eq("approval_status", "approved")
       .in("role", ["admin", "user"])
       .order("role", { ascending: true })
@@ -42,9 +43,9 @@ export default function NotifyReviewersDialog({ projectId, versionId, requesterI
       console.error(error);
       toast.error("Failed to load users");
     } else {
-      const rows = (data || []) as UserRow[];
+      const rows = (data || []) as unknown as UserRow[];
       const adminRows = rows.filter((u) => u.role === "admin");
-      const builderRows = rows.filter((u) => u.role === "user");
+      const builderRows = rows.filter((u) => u.role === "user" && (u.content_roles ?? []).includes("builder"));
       setAdmins(adminRows);
       setUsers(builderRows);
       // Default-check builders; admins are always included implicitly
