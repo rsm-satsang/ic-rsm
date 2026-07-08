@@ -66,12 +66,6 @@ export default function NotifyReviewersDialog({ projectId, versionId, requesterI
     }
     setSending(true);
     try {
-      let versionLabel = "Latest";
-      if (versionId) {
-        const { data: v } = await supabase
-          .from("versions").select("title, version_number").eq("id", versionId).maybeSingle();
-        if (v) versionLabel = `${v.title || "Untitled"} (v${v.version_number ?? "?"})`;
-      }
       const { data, error } = await supabase.functions.invoke("notify-reviewers", {
         body: { projectId, versionId, requesterId, recipientEmails: emails },
       });
