@@ -77,20 +77,6 @@ export default function NotifyReviewersDialog({ projectId, versionId, requesterI
       });
       if (error) throw error;
 
-      const { data: userData } = await supabase.from("users").select("name").eq("id", requesterId).maybeSingle();
-      await supabase.from("timeline").insert({
-        project_id: projectId,
-        event_type: "review_requested" as any,
-        event_details: {
-          version: versionLabel,
-          recipients: (data as any)?.sent ?? emails.length,
-          recipientEmails: emails,
-          project_title: projectTitle,
-        },
-        user_id: requesterId,
-        user_name: userData?.name || "Unknown User",
-      } as any);
-
       toast.success(`Notified ${(data as any)?.sent ?? emails.length} reviewer(s)`);
       setOpen(false);
     } catch (e: any) {
