@@ -202,7 +202,7 @@ export default function PublishingStats() {
         <div className="container mx-auto px-6 py-8 max-w-7xl">
           <div className="mb-6">
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-7 w-7" /> Publishing Stats
+              <BarChart3 className="h-7 w-7" /> Publishing Tracker
             </h1>
             <p className="text-muted-foreground mt-1">Weekly publishing history for {YEAR}</p>
           </div>
@@ -259,10 +259,6 @@ export default function PublishingStats() {
               <Button onClick={syncSubstack} disabled={!!syncing} variant="outline" className="gap-2">
                 {syncing === activeChannel ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Sync Substack
-              </Button>
-              <Button onClick={syncGDrive} disabled={!!syncing} variant="outline" className="gap-2">
-                {syncing === "gdrive" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Sync Google Drive
               </Button>
             </div>
           )}
