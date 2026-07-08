@@ -87,7 +87,7 @@ const OldTracker = () => {
   const [syncing, setSyncing] = useState(false);
   const [activeKey, setActiveKey] = useState<string>("satsang");
 
-  const weeks = useMemo(() => buildRollingWeeks(WEEKS_TO_SHOW), []);
+  const weeks = useMemo(() => build52Weeks(YEAR), []);
   const planners = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("planner")), [users]);
   const builders = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("builder")), [users]);
   const operators = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("operator")), [users]);
