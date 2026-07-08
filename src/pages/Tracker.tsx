@@ -638,15 +638,21 @@ export default function Tracker() {
 
           {(() => {
             const monthWeeks = visibleWeeks;
-            let mPublished = 0, mMissing = 0;
+            let mMissing = 0;
             const missingWeeks: string[] = [];
             for (const w of monthWeeks) {
               const list = entriesByWeek.get(w) || [];
               const top = list[0];
               const isPub = !!top?.substack_published || top?.status === "published";
-              if (isPub) mPublished++;
-              else { mMissing++; missingWeeks.push(w); }
+              if (!isPub) { mMissing++; missingWeeks.push(w); }
             }
+            // Count actual published newsletters (not weeks) in this month
+            const mPublished = channelEntries.filter((e) => {
+              if (!e.publish_date) return false;
+              const d = new Date(e.publish_date + "T00:00:00Z");
+              if (d.getUTCFullYear() !== YEAR || d.getUTCMonth() !== selectedMonth) return false;
+              return !!e.substack_published || e.status === "published" || e.source === "substack";
+            }).length;
             const monthName = new Date(YEAR, selectedMonth, 1).toLocaleString("en-US", { month: "long" });
             return (
               <Card className="p-4 mb-6">
