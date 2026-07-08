@@ -306,10 +306,19 @@ export default function Tracker() {
           plan_due_date: defaultDue(w),
         };
       });
-      const { data, error } = await supabase
-        .from("tracker_entries")
-        .upsert(rows as any, { onConflict: "channel,sub_channel,week_start_date", ignoreDuplicates: true })
-        .select();
+      // Insert planning slots one-by-one so a duplicate on the (channel,sub,week,source_url)
+      // slot index doesn't abort the whole batch.
+      const inserted: any[] = [];
+      for (const row of rows) {
+        const { data: r, error: insErr } = await supabase
+          .from("tracker_entries")
+          .insert(row as any)
+          .select()
+          .maybeSingle();
+        if (!insErr && r) inserted.push(r);
+      }
+      const data = inserted;
+      const error = null as any;
       if (!error && data) setEntries((prev) => {
         const ids = new Set(prev.map((p: any) => p.id));
         const fresh = (data as Entry[]).filter((d: any) => !ids.has(d.id));

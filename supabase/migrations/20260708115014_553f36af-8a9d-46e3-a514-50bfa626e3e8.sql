@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.tracker_entries_unique_week;
