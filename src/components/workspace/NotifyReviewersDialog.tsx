@@ -66,10 +66,30 @@ export default function NotifyReviewersDialog({ projectId, versionId, requesterI
     }
     setSending(true);
     try {
+      let versionLabel = "Latest";
+      if (versionId) {
+        const { data: v } = await supabase
+          .from("versions").select("title, version_number").eq("id", versionId).maybeSingle();
+        if (v) versionLabel = `${v.title || "Untitled"} (v${v.version_number ?? "?"})`;
+      }
       const { data, error } = await supabase.functions.invoke("notify-reviewers", {
         body: { projectId, versionId, requesterId, recipientEmails: emails },
       });
       if (error) throw error;
+
+      const { data: userData } = await supabase.from("users").select("name").eq("id", requesterId).maybeSingle();
+      await supabase.from("timeline").insert({
+        project_id: projectId,
+        event_type: "review_requested" as any,
+        event_details: {
+          version: versionLabel,
+          recipients: (data as any)?.sent ?? emails.length,
+          recipientEmails: emails,
+          project_title: projectTitle,
+        },
+        user_id: requesterId,
+        user_name: userData?.name || "Unknown User",
+      } as any);
 
       toast.success(`Notified ${(data as any)?.sent ?? emails.length} reviewer(s)`);
       setOpen(false);
