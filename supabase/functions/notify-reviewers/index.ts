@@ -153,6 +153,25 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert(notifRows);
     }
 
+    // Always insert a review_requested timeline event (service role bypasses RLS).
+    // The tracker "Build progress" reads this to display "Reviewers notified: Yes".
+    try {
+      await supabase.from("timeline").insert({
+        project_id: projectId,
+        event_type: "review_requested",
+        event_details: {
+          version: versionLabel,
+          recipients: sent,
+          recipientEmails: emails,
+          project_title: project?.title || null,
+        },
+        user_id: requesterId || null,
+        user_name: requesterName,
+      } as any);
+    } catch (err) {
+      console.error("timeline insert failed", err);
+    }
+
     return new Response(JSON.stringify({ ok: true, sent, recipients: emails, errors, notified: notifRows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
