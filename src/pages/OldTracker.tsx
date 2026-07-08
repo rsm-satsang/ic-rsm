@@ -41,21 +41,10 @@ function firstMondayOfYear(year: number): Date {
   return d;
 }
 
-const WEEKS_TO_SHOW = 10;
-
-function currentWeekMondayUTC(): Date {
-  const now = new Date();
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const day = d.getUTCDay();
-  const offset = day === 0 ? -6 : 1 - day;
-  d.setUTCDate(d.getUTCDate() + offset);
-  return d;
-}
-
-function buildRollingWeeks(count: number): string[] {
-  const start = currentWeekMondayUTC();
+function build52Weeks(year: number): string[] {
+  const start = firstMondayOfYear(year);
   const weeks: string[] = [];
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 52; i++) {
     const d = new Date(start);
     d.setUTCDate(d.getUTCDate() + i * 7);
     weeks.push(d.toISOString().slice(0, 10));
@@ -98,7 +87,7 @@ const OldTracker = () => {
   const [syncing, setSyncing] = useState(false);
   const [activeKey, setActiveKey] = useState<string>("satsang");
 
-  const weeks = useMemo(() => buildRollingWeeks(WEEKS_TO_SHOW), []);
+  const weeks = useMemo(() => build52Weeks(YEAR), []);
   const planners = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("planner")), [users]);
   const builders = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("builder")), [users]);
   const operators = useMemo(() => users.filter(u => (u.content_roles ?? []).includes("operator")), [users]);
@@ -211,13 +200,13 @@ const OldTracker = () => {
 
   const renderTab = () => {
     const filtered = entries.filter(e => e.channel === active.channel && e.sub_channel === active.sub);
-    const totalPublished = filtered.filter(e => e.status === "published" || e.status === "publish_complete").length;
+    const totalPublished = filtered.filter(e => !!e.publish_date).length;
     const missingWeeks = weeks.filter(w => (entriesByWeek.get(w) || []).length === 0).length;
 
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="p-3"><div className="text-xs text-muted-foreground">Weeks shown</div><div className="text-2xl font-bold">{WEEKS_TO_SHOW}</div></Card>
+          <Card className="p-3"><div className="text-xs text-muted-foreground">Total weeks</div><div className="text-2xl font-bold">52</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Published items</div><div className="text-2xl font-bold text-green-700">{totalPublished}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Entries total</div><div className="text-2xl font-bold">{filtered.length}</div></Card>
           <Card className="p-3"><div className="text-xs text-muted-foreground">Weeks with no content</div><div className="text-2xl font-bold text-red-700">{missingWeeks}</div></Card>
@@ -284,7 +273,7 @@ const OldTracker = () => {
             <div>
               <h1 className="text-2xl font-bold">Old Tracker (June 16 version)</h1>
               <p className="text-sm text-muted-foreground">
-                Next {WEEKS_TO_SHOW} weeks with the Plan / Build / Operate (Publish) workflow. Weeks with multiple entries show every entry.
+                52 weekly cards for {YEAR} with the Plan / Build / Operate (Publish) workflow. Weeks with multiple entries show every entry.
               </p>
             </div>
             <div className="flex items-center gap-2">
