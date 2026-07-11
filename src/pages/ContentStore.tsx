@@ -312,6 +312,7 @@ export default function ContentStore() {
               </div>
             )}
           </Card>
+          )}
 
           {/* Filters */}
           <Card className="p-4 mb-4">
