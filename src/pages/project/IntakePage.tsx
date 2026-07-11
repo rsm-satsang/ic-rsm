@@ -993,6 +993,9 @@ FORMAT RULES:
                     <SelectValue placeholder="Select content type" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="daily_inspiration">Daily Inspiration (byte-sized)</SelectItem>
+                    <SelectItem value="shorts_reels_video">Shorts / Reels Video Script</SelectItem>
+                    <SelectItem value="longform_video_script">Long-form Video Script (spoken)</SelectItem>
                     <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
                     <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
                     <SelectItem value="note">Note</SelectItem>
