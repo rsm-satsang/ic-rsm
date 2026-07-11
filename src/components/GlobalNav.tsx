@@ -58,6 +58,8 @@ const GlobalNav = () => {
         <NavButton icon={Home} label="Home" to="/dashboard" />
         <NavButton icon={Calendar} label="Plan - Build - Operate (Publish)" to="/tracker" />
         <NavButton icon={BarChart3} label="Publishing Tracker" to="/publishing-stats" />
+        <NavButton icon={Database} label="Content Store" to="/content-store" />
+        <NavButton icon={BookOpen} label="Content SOPs" to="/content-sops" />
         <NavButton icon={Bell} label="Alerts" to="/notifications" badge={unread || null} />
         {isAdmin && <NavButton icon={ShieldCheck} label="Users" to="/admin/users" />}
 
