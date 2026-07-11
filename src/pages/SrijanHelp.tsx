@@ -128,76 +128,6 @@ export default function SrijanHelp() {
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* FAQs */}
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">FAQs</h2>
-                  {isAdmin && (
-                    <Button size="sm" onClick={() => setShowNewFaq((v) => !v)} className="gap-1 bg-sky-500 hover:bg-sky-600">
-                      <Plus className="h-4 w-4" /> Add FAQ
-                    </Button>
-                  )}
-                </div>
-
-                {showNewFaq && isAdmin && (
-                  <Card className="p-3 mb-3 border-sky-300">
-                    <Label className="text-xs">Question</Label>
-                    <Input value={newFaq.question} onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })} />
-                    <Label className="text-xs mt-2 block">Answer</Label>
-                    <Textarea rows={4} value={newFaq.answer} onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })} />
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" onClick={addFaq} className="bg-sky-500 hover:bg-sky-600">Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowNewFaq(false)}>Cancel</Button>
-                    </div>
-                  </Card>
-                )}
-
-                <div className="space-y-2">
-                  {faqs.length === 0 ? (
-                    <Card className="p-6 text-center text-muted-foreground text-sm">No FAQs yet.</Card>
-                  ) : faqs.map((f) => {
-                    const open = !!expanded[`f:${f.id}`];
-                    return (
-                      <Card key={f.id} className="p-3">
-                        {editFaqId === f.id ? (
-                          <div className="space-y-2">
-                            <Input value={faqDraft.question} onChange={(e) => setFaqDraft({ ...faqDraft, question: e.target.value })} />
-                            <Textarea rows={4} value={faqDraft.answer} onChange={(e) => setFaqDraft({ ...faqDraft, answer: e.target.value })} />
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={() => saveFaq(f.id)} className="bg-sky-500 hover:bg-sky-600">Save</Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditFaqId(null)}>Cancel</Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-start gap-2">
-                              <button
-                                onClick={() => setExpanded((e) => ({ ...e, [`f:${f.id}`]: !open }))}
-                                className="flex-1 text-left flex items-start gap-2"
-                              >
-                                {open ? <ChevronDown className="h-4 w-4 mt-0.5 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 mt-0.5 flex-shrink-0" />}
-                                <span className="font-medium text-sm">{f.question}</span>
-                              </button>
-                              {isAdmin && (
-                                <div className="flex gap-1">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditFaqId(f.id); setFaqDraft({ question: f.question, answer: f.answer }); }}>
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteFaq(f.id)}>
-                                    <Trash2 className="h-3 w-3 text-destructive" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            {open && <p className="text-sm mt-2 pl-6 whitespace-pre-wrap text-foreground/90">{f.answer}</p>}
-                          </>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Videos */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
@@ -252,6 +182,76 @@ export default function SrijanHelp() {
                         </div>
                         {open && signedUrls[v.id] && (
                           <video src={signedUrls[v.id]} controls className="w-full mt-2 rounded" />
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* FAQs */}
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">FAQs</h2>
+                  {isAdmin && (
+                    <Button size="sm" onClick={() => setShowNewFaq((v) => !v)} className="gap-1 bg-sky-500 hover:bg-sky-600">
+                      <Plus className="h-4 w-4" /> Add FAQ
+                    </Button>
+                  )}
+                </div>
+
+                {showNewFaq && isAdmin && (
+                  <Card className="p-3 mb-3 border-sky-300">
+                    <Label className="text-xs">Question</Label>
+                    <Input value={newFaq.question} onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })} />
+                    <Label className="text-xs mt-2 block">Answer</Label>
+                    <Textarea rows={4} value={newFaq.answer} onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })} />
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" onClick={addFaq} className="bg-sky-500 hover:bg-sky-600">Add</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowNewFaq(false)}>Cancel</Button>
+                    </div>
+                  </Card>
+                )}
+
+                <div className="space-y-2">
+                  {faqs.length === 0 ? (
+                    <Card className="p-6 text-center text-muted-foreground text-sm">No FAQs yet.</Card>
+                  ) : faqs.map((f) => {
+                    const open = !!expanded[`f:${f.id}`];
+                    return (
+                      <Card key={f.id} className="p-3">
+                        {editFaqId === f.id ? (
+                          <div className="space-y-2">
+                            <Input value={faqDraft.question} onChange={(e) => setFaqDraft({ ...faqDraft, question: e.target.value })} />
+                            <Textarea rows={4} value={faqDraft.answer} onChange={(e) => setFaqDraft({ ...faqDraft, answer: e.target.value })} />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => saveFaq(f.id)} className="bg-sky-500 hover:bg-sky-600">Save</Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditFaqId(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-start gap-2">
+                              <button
+                                onClick={() => setExpanded((e) => ({ ...e, [`f:${f.id}`]: !open }))}
+                                className="flex-1 text-left flex items-start gap-2"
+                              >
+                                {open ? <ChevronDown className="h-4 w-4 mt-0.5 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                                <span className="font-medium text-sm">{f.question}</span>
+                              </button>
+                              {isAdmin && (
+                                <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditFaqId(f.id); setFaqDraft({ question: f253, answer: f.answer }); }}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteFaq(f.id)}>
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            {open && <p className="text-sm mt-2 pl-6 whitespace-pre-wrap text-foreground/90">{f.answer}</p>}
+                          </>
                         )}
                       </Card>
                     );
