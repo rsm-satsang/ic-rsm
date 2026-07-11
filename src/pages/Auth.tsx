@@ -92,7 +92,7 @@ const Auth = () => {
       }
 
       toast.success("Signed in successfully!");
-      navigate("/dashboard");
+      navigate("/home");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
     } finally {
@@ -108,7 +108,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/home`,
         },
       });
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
   Plus,
@@ -13,6 +14,7 @@ import {
   BookOpen,
   Sparkles,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
 import { Mail } from "lucide-react";
@@ -352,24 +354,35 @@ const Dashboard = () => {
             </CardHeader>
           </Card>
           {isAdmin && (
-            <Card className="lg:col-span-6 md:col-span-3 border-2 border-secondary/20 hover:border-secondary/40 transition-all">
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className="p-3 bg-gradient-accent rounded-xl">
-                    <BookOpen className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle>Exploratory (Admins only )</CardTitle>
-                    <CardDescription className="mb-2">Not ready for production usage</CardDescription>
+            <Collapsible defaultOpen={false} className="lg:col-span-6 md:col-span-3">
+              <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <div className="p-3 bg-gradient-accent rounded-xl">
+                        <BookOpen className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <CardTitle>Exploratory (Admins only )</CardTitle>
+                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 [[data-state=open]>div>&]:rotate-180" />
+                        </div>
+                        <CardDescription className="mb-2">Not ready for production usage</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="px-6 pb-6">
                     <div className="flex flex-wrap gap-2 mt-2">
                       <Button size="sm" variant="outline" disabled onClick={createNewSahityaProject}>
                         <BookOpen className="h-3 w-3 mr-1" /> Hindi Sahitya (coming soon)
                       </Button>
                     </div>
                   </div>
-                </div>
-              </CardHeader>
-            </Card>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           )}
         </div>
 
