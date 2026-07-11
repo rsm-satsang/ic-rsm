@@ -352,6 +352,9 @@ const Dashboard = () => {
                     <Button size="sm" variant="outline" onClick={createNewVideoProject}>
                       <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
                     </Button>
+                    <Button size="sm" variant="outline" onClick={createShortsScriptProject}>
+                      <FileText className="h-3 w-3 mr-1" /> Create Script for Shorts/Reels
+                    </Button>
                     <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
                       <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration
                     </Button>
