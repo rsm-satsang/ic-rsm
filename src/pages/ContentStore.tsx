@@ -94,6 +94,7 @@ function parseTags(v: any): string[] {
 export default function ContentStore() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<Record<string, any>[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -112,6 +113,14 @@ export default function ContentStore() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("__all__");
+
+  useEffect(() => { (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+      setIsAdmin((data as any)?.role === "admin");
+    }
+  })(); }, []);
 
 
   const load = async () => {
