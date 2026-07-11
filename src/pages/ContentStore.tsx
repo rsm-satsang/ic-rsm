@@ -9,14 +9,28 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Upload, Database, FileSpreadsheet, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Loader2, Upload, Database, FileSpreadsheet, ChevronDown, ChevronRight, ExternalLink, Search, X } from "lucide-react";
 
-type FieldKey = "content_type" | "url" | "publish_date" | "title" | "transcript";
-const FIELDS: { key: FieldKey; label: string }[] = [
+type FieldKey =
+  | "content_type"
+  | "url"
+  | "publish_date"
+  | "title"
+  | "transcript"
+  | "description"
+  | "tags"
+  | "social_clips"
+  | "content_code";
+
+const FIELDS: { key: FieldKey; label: string; extra?: boolean }[] = [
   { key: "content_type", label: "Type (NL / LSW / ...)" },
+  { key: "content_code", label: "Content Code", extra: true },
   { key: "url", label: "URL" },
   { key: "publish_date", label: "Date" },
   { key: "title", label: "Title" },
+  { key: "description", label: "Description", extra: true },
+  { key: "tags", label: "Tags / Themes", extra: true },
+  { key: "social_clips", label: "Social Clips", extra: true },
   { key: "transcript", label: "Transcript" },
 ];
 
@@ -29,6 +43,7 @@ interface Item {
   transcript: string | null;
   source_file_path: string | null;
   created_at: string;
+  extra: any;
 }
 
 function guessMap(headers: string[]): Record<FieldKey, string> {
@@ -42,9 +57,13 @@ function guessMap(headers: string[]): Record<FieldKey, string> {
   };
   return {
     content_type: pick("type", "category"),
+    content_code: pick("code", "id"),
     url: pick("url", "link"),
     publish_date: pick("date", "publish"),
     title: pick("title", "name", "subject"),
+    description: pick("description", "summary", "abstract"),
+    tags: pick("tag", "theme", "topic"),
+    social_clips: pick("social", "clip", "reel", "short"),
     transcript: pick("transcript", "body", "content", "text"),
   };
 }
@@ -63,6 +82,15 @@ function excelDateToISO(v: any): string | null {
   return s || null;
 }
 
+function parseTags(v: any): string[] {
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.map(String).map((s) => s.trim()).filter(Boolean);
+  return String(v)
+    .split(/[,;|]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export default function ContentStore() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,10 +98,20 @@ export default function ContentStore() {
   const [rows, setRows] = useState<Record<string, any>[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<FieldKey, string>>({
-    content_type: "", url: "", publish_date: "", title: "", transcript: "",
+    content_type: "", content_code: "", url: "", publish_date: "", title: "",
+    description: "", tags: "", social_clips: "", transcript: "",
   });
   const [importing, setImporting] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Filters
+  const [titleQuery, setTitleQuery] = useState("");
+  const [transcriptQuery, setTranscriptQuery] = useState("");
+  const [tagQuery, setTagQuery] = useState("");
+  const [codeQuery, setCodeQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("__all__");
 
   const load = async () => {
     setLoading(true);
@@ -105,25 +143,30 @@ export default function ContentStore() {
     setImporting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      // Upload preserved file
       const path = `${user?.id ?? "anon"}/${Date.now()}_${file.name}`;
       const up = await supabase.storage.from("content-store").upload(path, file, { upsert: false });
       if (up.error) throw up.error;
 
-      // Replace all content
       await supabase.from("content_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
-      const payload = rows.map((r) => ({
-        content_type: mapping.content_type ? String(r[mapping.content_type] ?? "").trim() || null : null,
-        url: mapping.url ? String(r[mapping.url] ?? "").trim() || null : null,
-        publish_date: mapping.publish_date ? excelDateToISO(r[mapping.publish_date]) : null,
-        title: mapping.title ? String(r[mapping.title] ?? "").trim() || null : null,
-        transcript: mapping.transcript ? String(r[mapping.transcript] ?? "").trim() || null : null,
-        source_file_path: path,
-        created_by: user?.id ?? null,
-      }));
+      const payload = rows.map((r) => {
+        const extra: Record<string, any> = {};
+        if (mapping.content_code) extra.content_code = String(r[mapping.content_code] ?? "").trim() || null;
+        if (mapping.description) extra.description = String(r[mapping.description] ?? "").trim() || null;
+        if (mapping.tags) extra.tags = parseTags(r[mapping.tags]);
+        if (mapping.social_clips) extra.social_clips = String(r[mapping.social_clips] ?? "").trim() || null;
+        return {
+          content_type: mapping.content_type ? String(r[mapping.content_type] ?? "").trim() || null : null,
+          url: mapping.url ? String(r[mapping.url] ?? "").trim() || null : null,
+          publish_date: mapping.publish_date ? excelDateToISO(r[mapping.publish_date]) : null,
+          title: mapping.title ? String(r[mapping.title] ?? "").trim() || null : null,
+          transcript: mapping.transcript ? String(r[mapping.transcript] ?? "").trim() || null : null,
+          source_file_path: path,
+          created_by: user?.id ?? null,
+          extra: Object.keys(extra).length ? extra : null,
+        };
+      });
 
-      // insert in chunks of 500
       for (let i = 0; i < payload.length; i += 500) {
         const chunk = payload.slice(i, i + 500);
         const { error } = await supabase.from("content_items").insert(chunk);
@@ -147,6 +190,43 @@ export default function ContentStore() {
   };
 
   const latestFile = useMemo(() => items.find((i) => i.source_file_path)?.source_file_path ?? null, [items]);
+
+  const allTypes = useMemo(() => {
+    const s = new Set<string>();
+    items.forEach((i) => i.content_type && s.add(i.content_type));
+    return Array.from(s).sort();
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    const tq = titleQuery.trim().toLowerCase();
+    const trq = transcriptQuery.trim().toLowerCase();
+    const tagq = tagQuery.trim().toLowerCase();
+    const cq = codeQuery.trim().toLowerCase();
+    return items.filter((it) => {
+      if (typeFilter !== "__all__" && it.content_type !== typeFilter) return false;
+      if (dateFrom && (!it.publish_date || it.publish_date < dateFrom)) return false;
+      if (dateTo && (!it.publish_date || it.publish_date > dateTo)) return false;
+      if (tq && !(it.title ?? "").toLowerCase().includes(tq)) return false;
+      if (trq && !(it.transcript ?? "").toLowerCase().includes(trq)) return false;
+      if (cq) {
+        const code = String(it.extra?.content_code ?? "").toLowerCase();
+        if (!code.includes(cq)) return false;
+      }
+      if (tagq) {
+        const tags: string[] = Array.isArray(it.extra?.tags) ? it.extra.tags : [];
+        const hay = [...tags, String(it.extra?.description ?? "")].join(" ").toLowerCase();
+        if (!hay.includes(tagq)) return false;
+      }
+      return true;
+    });
+  }, [items, titleQuery, transcriptQuery, tagQuery, codeQuery, dateFrom, dateTo, typeFilter]);
+
+  const clearFilters = () => {
+    setTitleQuery(""); setTranscriptQuery(""); setTagQuery(""); setCodeQuery("");
+    setDateFrom(""); setDateTo(""); setTypeFilter("__all__");
+  };
+  const hasFilters =
+    titleQuery || transcriptQuery || tagQuery || codeQuery || dateFrom || dateTo || typeFilter !== "__all__";
 
   return (
     <div className="min-h-screen bg-background">
@@ -187,7 +267,10 @@ export default function ContentStore() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {FIELDS.map((f) => (
                     <div key={f.key}>
-                      <Label className="text-xs">{f.label}</Label>
+                      <Label className="text-xs">
+                        {f.label}
+                        {f.extra && <span className="text-muted-foreground ml-1">(extra)</span>}
+                      </Label>
                       <Select
                         value={mapping[f.key] || "__none__"}
                         onValueChange={(v) => setMapping((m) => ({ ...m, [f.key]: v === "__none__" ? "" : v }))}
@@ -214,20 +297,78 @@ export default function ContentStore() {
             )}
           </Card>
 
+          {/* Filters */}
+          <Card className="p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <Search className="h-4 w-4" /> Filters
+              </div>
+              {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                  <X className="h-3 w-3" /> Clear
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <Label className="text-xs">Title contains</Label>
+                <Input value={titleQuery} onChange={(e) => setTitleQuery(e.target.value)} placeholder="e.g. bhakti" />
+              </div>
+              <div>
+                <Label className="text-xs">Transcript keyword</Label>
+                <Input value={transcriptQuery} onChange={(e) => setTranscriptQuery(e.target.value)} placeholder="search transcript…" />
+              </div>
+              <div>
+                <Label className="text-xs">Tag / Theme</Label>
+                <Input value={tagQuery} onChange={(e) => setTagQuery(e.target.value)} placeholder="e.g. meditation" />
+              </div>
+              <div>
+                <Label className="text-xs">Content Code (partial)</Label>
+                <Input value={codeQuery} onChange={(e) => setCodeQuery(e.target.value)} placeholder="e.g. NL-045" />
+              </div>
+              <div>
+                <Label className="text-xs">Type</Label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All types</SelectItem>
+                    {allTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Date from</Label>
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Date to</Label>
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              </div>
+            </div>
+          </Card>
+
           <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
             <h2 className="text-xl font-bold">Content Cards</h2>
-            <span className="text-xs opacity-90">{items.length} rows</span>
+            <span className="text-xs opacity-90">
+              {filtered.length} of {items.length} rows
+            </span>
           </div>
 
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
-          ) : items.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">No content yet — upload a sheet above.</Card>
+          ) : filtered.length === 0 ? (
+            <Card className="p-8 text-center text-muted-foreground">
+              {items.length === 0 ? "No content yet — upload a sheet above." : "No cards match the current filters."}
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {items.map((it) => {
+              {filtered.map((it) => {
                 const open = expanded[it.id];
                 const preview = (it.transcript ?? "").slice(0, 220);
+                const code = it.extra?.content_code as string | undefined;
+                const desc = it.extra?.description as string | undefined;
+                const tags: string[] = Array.isArray(it.extra?.tags) ? it.extra.tags : [];
+                const social = it.extra?.social_clips as string | undefined;
                 return (
                   <Card key={it.id} className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -236,6 +377,9 @@ export default function ContentStore() {
                           {it.content_type && (
                             <Badge variant="secondary" className="text-xs">{it.content_type}</Badge>
                           )}
+                          {code && (
+                            <Badge variant="outline" className="text-xs font-mono">{code}</Badge>
+                          )}
                           {it.publish_date && (
                             <span className="text-xs text-muted-foreground tabular-nums">{it.publish_date}</span>
                           )}
@@ -243,6 +387,22 @@ export default function ContentStore() {
                         <div className="font-semibold text-sm leading-snug">
                           {it.title ?? "(untitled)"}
                         </div>
+                        {desc && (
+                          <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{desc}</div>
+                        )}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {tags.map((t, i) => (
+                              <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
+                            ))}
+                          </div>
+                        )}
+                        {social && (
+                          <div className="text-xs mt-2">
+                            <span className="font-medium text-muted-foreground">Social clips: </span>
+                            <span className="whitespace-pre-wrap">{social}</span>
+                          </div>
+                        )}
                       </div>
                       {it.url && (
                         <a href={it.url} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline shrink-0">

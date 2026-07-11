@@ -11,6 +11,8 @@ import {
   Bell,
   Video,
   BookOpen,
+  Sparkles,
+  FileText,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
 import feedbackIcon from "@/assets/feedback-icon.jpg";
@@ -184,21 +186,67 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("projects")
         .insert({
-          title: `New Video Project - ${new Date().toLocaleDateString()}`,
+          title: `Shorts/Reels - ${new Date().toLocaleDateString()}`,
           type: "video",
           owner_id: user.id,
           status: "in_progress",
-          metadata: { goal: "video_to_youtube_short" },
+          metadata: { goal: "video_to_youtube_short", project_kind: "shorts_reels" },
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Video project created!");
+      toast.success("Shorts/Reels project created!");
       navigate(`/project/${data.id}/video-intake`);
     } catch (error: any) {
-      toast.error("Failed to create video project");
+      toast.error("Failed to create Shorts/Reels project");
+      console.error(error);
+    }
+  };
+
+  const createDailyInspirationProject = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          title: `Daily Inspiration - ${new Date().toLocaleDateString()}`,
+          type: "document",
+          owner_id: user.id,
+          status: "in_progress",
+          metadata: { goal: "daily_inspiration", project_kind: "daily_inspiration" },
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Daily Inspiration project created!");
+      navigate(`/project/${data.id}/daily-inspiration-intake`);
+    } catch (error: any) {
+      toast.error("Failed to create Daily Inspiration project");
+      console.error(error);
+    }
+  };
+
+  const createLongformScriptProject = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          title: `Long-form Video Script - ${new Date().toLocaleDateString()}`,
+          type: "document",
+          owner_id: user.id,
+          status: "in_progress",
+          metadata: { goal: "longform_video_script", project_kind: "longform_script" },
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Long-form Script project created!");
+      navigate(`/project/${data.id}/longform-script-intake`);
+    } catch (error: any) {
+      toast.error("Failed to create Long-form Script project");
       console.error(error);
     }
   };
@@ -302,7 +350,13 @@ const Dashboard = () => {
                         <BookOpen className="h-3 w-3 mr-1" /> Hindi Sahitya
                       </Button>
                       <Button size="sm" variant="outline" onClick={createNewVideoProject}>
-                        <Video className="h-3 w-3 mr-1" /> Video Project
+                        <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
+                        <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={createLongformScriptProject}>
+                        <FileText className="h-3 w-3 mr-1" /> Create Script for Long form Video
                       </Button>
                     </div>
                   </div>
