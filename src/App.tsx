@@ -24,6 +24,7 @@ import ContentStore from "./pages/ContentStore";
 import ContentSOPs from "./pages/ContentSOPs";
 import FoundersCorner from "./pages/FoundersCorner";
 import SrijanHelp from "./pages/SrijanHelp";
+import Home from "./pages/Home";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
@@ -36,7 +37,8 @@ const App = () => (
       <BrowserRouter>
         <GlobalNav />
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />

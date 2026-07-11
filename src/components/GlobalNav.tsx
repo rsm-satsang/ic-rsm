@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, ShieldCheck, Bell, BarChart3, History, Database, BookOpen, Sparkles, HelpCircle } from "lucide-react";
+import { Home, Calendar, ShieldCheck, Bell, BarChart3, History, Database, BookOpen, Sparkles, HelpCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -55,15 +55,15 @@ const GlobalNav = () => {
   return (
     <>
       <div className="fixed top-0 left-0 z-50 h-full w-14 flex flex-col items-center pt-4 gap-4 bg-sidebar border-r border-sidebar-border shadow-md">
-        <NavButton icon={Home} label="Create / Access Drafts" to="/dashboard" />
-        <NavButton icon={Calendar} label="Weekly cards for Plan Build Publish" to="/tracker" />
-        <NavButton icon={BarChart3} label="Publishing Tracker" to="/publishing-stats" />
+        <NavButton icon={Home} label="Home" to="/home" />
+        <NavButton icon={Sparkles} label="Founder's Corner" to="/founders-corner" />
+        <NavButton icon={FileText} label="Create / Access Drafts" to="/dashboard" />
+        <NavButton icon={Calendar} label="Plan Build Publish" to="/tracker" />
+        <NavButton icon={BarChart3} label="Tracker" to="/publishing-stats" />
         <NavButton icon={Database} label="Content Store" to="/content-store" />
         <NavButton icon={BookOpen} label="Content SOPs" to="/content-sops" />
-        <NavButton icon={Sparkles} label="Founder's Corner" to="/founders-corner" />
         <NavButton icon={HelpCircle} label="Srijan Help Videos / FAQs" to="/srijan-help" />
-        <NavButton icon={Bell} label="Alerts" to="/notifications" badge={unread || null} />
-        {isAdmin && <NavButton icon={ShieldCheck} label="Users" to="/admin/users" />}
+        {isAdmin && <NavButton icon={ShieldCheck} label="Team" to="/admin/users" />}
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -79,6 +79,7 @@ const GlobalNav = () => {
         </Tooltip>
 
         <NavButton icon={History} label="Old Tracker" to="/old-tracker" />
+        <NavButton icon={Bell} label="Alerts" to="/notifications" badge={unread || null} />
       </div>
 
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
