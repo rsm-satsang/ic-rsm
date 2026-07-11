@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
+import { Mail } from "lucide-react";
 import feedbackIcon from "@/assets/feedback-icon.jpg";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import MyAssignedTasksSection from "@/components/dashboard/MyAssignedTasksSection";
@@ -137,17 +138,18 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("projects")
         .insert({
-          title: `New Project - ${new Date().toLocaleDateString()}`,
+          title: `Substack Newsletter - ${new Date().toLocaleDateString()}`,
           type: "document",
           owner_id: user.id,
           status: "in_progress",
+          metadata: { goal: "substack_newsletter", project_kind: "substack_newsletter" },
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Project created!");
+      toast.success("Substack Newsletter project created!");
       navigate(`/project/${data.id}/intake`);
     } catch (error: any) {
       toast.error("Failed to create project");
