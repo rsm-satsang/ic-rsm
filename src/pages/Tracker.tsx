@@ -183,8 +183,8 @@ export default function Tracker() {
     if (!pid) return;
     const match = entries.find((e) => e.project_id === pid);
     if (!match) return;
-    setActiveChannel(match.channel);
-    setActiveSub(match.sub_channel);
+    const tk = CHANNEL_TABS.find((c) => c.channel === match.channel && c.sub === match.sub_channel)?.key;
+    if (tk) setActiveTabKey(tk);
     setSelectedMonth(monthOf(match.week_start_date));
     focusedWeekRef.current = match.week_start_date;
     // Clear param after handling so it doesn't re-trigger
