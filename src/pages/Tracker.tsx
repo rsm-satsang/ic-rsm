@@ -237,10 +237,7 @@ export default function Tracker() {
 
 
 
-  useEffect(() => {
-    const tab = CHANNEL_TABS.find((c) => c.key === activeChannel);
-    if (tab && !tab.sub.includes(activeSub)) setActiveSub(tab.sub[0]);
-  }, [activeChannel]);
+  // (sub-channel is now derived from the tab; no reset effect needed)
 
   const channelEntries = useMemo(() => {
     return entries.filter(
