@@ -168,10 +168,6 @@ export default function PublishingStats() {
 
   const stats = useMemo(() => {
     const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
-    let missing = 0;
-    for (const w of ytdWeeks) {
-      if (!(publishedByWeek.get(w) || []).length) missing++;
-    }
     const published = channelEntries.filter((e) => {
       if (!e.publish_date) return false;
       const d = new Date(e.publish_date + "T00:00:00Z");
@@ -179,8 +175,9 @@ export default function PublishingStats() {
       if (d.getUTCMonth() > ytdMaxMonth) return false;
       return isPublished(e);
     }).length;
+    const missing = Math.max(0, ytdWeeks.length - published);
     return { total: ytdWeeks.length, published, missing };
-  }, [weeks, publishedByWeek, ytdMaxMonth, channelEntries]);
+  }, [weeks, ytdMaxMonth, channelEntries]);
 
   const syncSubstack = async () => {
     if (!activeChannelDef) return;
