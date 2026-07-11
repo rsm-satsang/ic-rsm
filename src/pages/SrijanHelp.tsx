@@ -241,7 +241,7 @@ export default function SrijanHelp() {
                               </button>
                               {isAdmin && (
                                 <div className="flex gap-1">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditFaqId(f.id); setFaqDraft({ question: f253, answer: f.answer }); }}>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditFaqId(f.id); setFaqDraft({ question: f.question, answer: f.answer }); }}>
                                     <Pencil className="h-3 w-3" />
                                   </Button>
                                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteFaq(f.id)}>
