@@ -1600,6 +1600,7 @@ export type Database = {
         | "collaborator_added"
         | "file_uploaded"
         | "vocab_added"
+        | "review_requested"
       invitation_status: "pending" | "accepted" | "rejected"
       project_status:
         | "draft"
@@ -1771,6 +1772,7 @@ export const Constants = {
         "collaborator_added",
         "file_uploaded",
         "vocab_added",
+        "review_requested",
       ],
       invitation_status: ["pending", "accepted", "rejected"],
       project_status: [
