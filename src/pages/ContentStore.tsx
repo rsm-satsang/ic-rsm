@@ -311,7 +311,7 @@ export default function ContentStore() {
           <Card className="p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium flex items-center gap-2">
-                <Search className="h-4 w-4" /> Filters
+                <Search className="h-4 w-4" /> Search and Filter
               </div>
               {hasFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
