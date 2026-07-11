@@ -118,7 +118,7 @@ export default function ContentSOPs() {
   return (
     <div className="min-h-screen bg-background">
       <GlobalNav />
-      <div className="pl-14">
+      <div className="pl-16">
         <div className="container mx-auto px-6 py-8 max-w-7xl">
           <div className="mb-6 flex items-center justify-between">
             <div>

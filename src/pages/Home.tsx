@@ -53,12 +53,12 @@ export default function Home() {
       }
       const { data: userRow } = await supabase
         .from("users")
-        .select("full_name, role")
+        .select("name, role")
         .eq("id", user.id)
         .maybeSingle();
       const display =
-        (userRow as any)?.full_name ||
-        (user.user_metadata as any)?.full_name ||
+        (userRow as any)?.name ||
+        (user.user_metadata as any)?.name ||
         (user.email ? user.email.split("@")[0] : "there");
       setName(display);
       setIsAdmin((userRow as any)?.role === "admin");
@@ -77,7 +77,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <GlobalNav />
-      <div className="pl-14">
+      <div className="pl-16">
         <div className="container mx-auto px-6 py-8 max-w-6xl">
           <div className="flex items-center gap-4 mb-8">
             <img src={logoImg} alt="Srijan" className="h-14 w-14 rounded-full" />
