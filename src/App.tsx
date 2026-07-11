@@ -22,6 +22,8 @@ import AdminUsers from "./pages/AdminUsers";
 import OldTracker from "./pages/OldTracker";
 import ContentStore from "./pages/ContentStore";
 import ContentSOPs from "./pages/ContentSOPs";
+import FoundersCorner from "./pages/FoundersCorner";
+import SrijanHelp from "./pages/SrijanHelp";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
