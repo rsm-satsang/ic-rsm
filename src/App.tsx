@@ -24,6 +24,7 @@ import ContentStore from "./pages/ContentStore";
 import ContentSOPs from "./pages/ContentSOPs";
 import FoundersCorner from "./pages/FoundersCorner";
 import SrijanHelp from "./pages/SrijanHelp";
+import Home from "./pages/Home";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
