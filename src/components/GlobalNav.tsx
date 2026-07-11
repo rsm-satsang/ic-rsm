@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, ShieldCheck, Bell, BarChart3, History, Database, BookOpen } from "lucide-react";
+import { Home, Calendar, ShieldCheck, Bell, BarChart3, History, Database, BookOpen, Sparkles, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
