@@ -128,6 +128,67 @@ export default function SrijanHelp() {
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Videos */}
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold flex items-center gap-2"><Video className="h-5 w-5" /> Videos</h2>
+                </div>
+
+                {isAdmin && (
+                  <Card className="p-3 mb-3 border-sky-300">
+                    <Label className="text-xs">Video title</Label>
+                    <Input value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} placeholder="e.g. How to create a new draft" />
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && uploadVideo(e.target.files[0])}
+                    />
+                    <Button
+                      size="sm"
+                      className="mt-2 gap-1 bg-sky-500 hover:bg-sky-600"
+                      onClick={() => videoInputRef.current?.click()}
+                      disabled={uploading || !videoTitle.trim()}
+                    >
+                      {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                      Upload Video
+                    </Button>
+                  </Card>
+                )}
+
+                <div className="space-y-2">
+                  {videos.length === 0 ? (
+                    <Card className="p-6 text-center text-muted-foreground text-sm">No videos yet.</Card>
+                  ) : videos.map((v) => {
+                    const open = !!expanded[`v:${v.id}`];
+                    return (
+                      <Card key={v.id} className="p-3">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-muted-foreground tabular-nums">
+                              {new Date(v.created_at).toLocaleDateString()}
+                            </div>
+                            <div className="font-medium text-sm">{v.title}</div>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => playVideo(v)} className="gap-1">
+                            <Play className="h-3 w-3" /> {open ? "Hide" : "Play"}
+                          </Button>
+                          {isAdmin && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => deleteVideo(v)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                        {open && signedUrls[v.id] && (
+                          <video src={signedUrls[v.id]} controls className="w-full mt-2 rounded" />
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* FAQs */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
@@ -191,67 +252,6 @@ export default function SrijanHelp() {
                             </div>
                             {open && <p className="text-sm mt-2 pl-6 whitespace-pre-wrap text-foreground/90">{f.answer}</p>}
                           </>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Videos */}
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold flex items-center gap-2"><Video className="h-5 w-5" /> Videos</h2>
-                </div>
-
-                {isAdmin && (
-                  <Card className="p-3 mb-3 border-sky-300">
-                    <Label className="text-xs">Video title</Label>
-                    <Input value={videoTitle} onChange={(e) => setVideoTitle(e.target.value)} placeholder="e.g. How to create a new draft" />
-                    <input
-                      ref={videoInputRef}
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && uploadVideo(e.target.files[0])}
-                    />
-                    <Button
-                      size="sm"
-                      className="mt-2 gap-1 bg-sky-500 hover:bg-sky-600"
-                      onClick={() => videoInputRef.current?.click()}
-                      disabled={uploading || !videoTitle.trim()}
-                    >
-                      {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                      Upload Video
-                    </Button>
-                  </Card>
-                )}
-
-                <div className="space-y-2">
-                  {videos.length === 0 ? (
-                    <Card className="p-6 text-center text-muted-foreground text-sm">No videos yet.</Card>
-                  ) : videos.map((v) => {
-                    const open = !!expanded[`v:${v.id}`];
-                    return (
-                      <Card key={v.id} className="p-3">
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs text-muted-foreground tabular-nums">
-                              {new Date(v.created_at).toLocaleDateString()}
-                            </div>
-                            <div className="font-medium text-sm">{v.title}</div>
-                          </div>
-                          <Button size="sm" variant="outline" onClick={() => playVideo(v)} className="gap-1">
-                            <Play className="h-3 w-3" /> {open ? "Hide" : "Play"}
-                          </Button>
-                          {isAdmin && (
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => deleteVideo(v)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                        {open && signedUrls[v.id] && (
-                          <video src={signedUrls[v.id]} controls className="w-full mt-2 rounded" />
                         )}
                       </Card>
                     );
