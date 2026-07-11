@@ -333,14 +333,10 @@ export default function Tracker() {
   }, []);
 
   const stats = useMemo(() => {
-    let missing = 0, total = 0;
+    let total = 0;
     for (const w of weeks) {
       if (monthOf(w) > ytdMaxMonth) continue;
       total++;
-      const list = entriesByWeek.get(w) || [];
-      const top = list[0];
-      const isPub = !!top?.substack_published || top?.status === "published";
-      if (!isPub) missing++;
     }
     // Count all published newsletters YTD (not just one per week)
     const published = channelEntries.filter((e) => {
@@ -350,6 +346,7 @@ export default function Tracker() {
       if (d.getUTCMonth() > ytdMaxMonth) return false;
       return !!e.substack_published || e.status === "published" || e.source === "substack";
     }).length;
+    const missing = Math.max(0, total - published);
     return { total, published, missing };
   }, [weeks, entriesByWeek, ytdMaxMonth, channelEntries]);
 
