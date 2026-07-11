@@ -113,8 +113,6 @@ export default function ContentStore() {
   const [dateTo, setDateTo] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("__all__");
 
-  // Detail dialog for transcript / social clips
-  const [detail, setDetail] = useState<{ title: string; body: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
