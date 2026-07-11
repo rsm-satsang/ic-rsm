@@ -255,6 +255,29 @@ const Dashboard = () => {
     }
   };
 
+  const createShortsScriptProject = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          title: `Shorts/Reels Script - ${new Date().toLocaleDateString()}`,
+          type: "document",
+          owner_id: user.id,
+          status: "in_progress",
+          metadata: { goal: "shorts_reels_script", project_kind: "shorts_reels_script" },
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      toast.success("Shorts/Reels Script project created!");
+      navigate(`/project/${data.id}/shorts-script-intake`);
+    } catch (error: any) {
+      toast.error("Failed to create Shorts/Reels Script project");
+      console.error(error);
+    }
+  };
+
   const handleProjectDeleted = (projectId: string) => {
     setProjects(projects.filter(p => p.id !== projectId));
   };
@@ -328,6 +351,9 @@ const Dashboard = () => {
                     </Button>
                     <Button size="sm" variant="outline" onClick={createNewVideoProject}>
                       <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={createShortsScriptProject}>
+                      <FileText className="h-3 w-3 mr-1" /> Create Script for Shorts/Reels
                     </Button>
                     <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
                       <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration

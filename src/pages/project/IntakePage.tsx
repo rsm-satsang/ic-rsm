@@ -562,6 +562,37 @@ FORMAT RULES:
 • Output ONLY clean Markdown, no HTML, no code blocks, no commentary
 • Do NOT include newsletter sign-offs
 • Every visual/on-screen cue MUST be in [brackets] on its own line so an editor can find it`,
+      shorts_reels_script: `You are a professional scriptwriter creating a **spoken script for a YouTube Short / Instagram Reel (30–60 seconds)** that a real person will read aloud on camera.
+
+You are NOT writing a blog, newsletter, or article. You are writing lines that will be SPOKEN in a vertical short-form video.
+
+STRUCTURE (use clear section markers as Markdown headings):
+## Hook (0:00–0:03)
+A punchy 1–2 sentence opener that stops the scroll instantly. Pattern interrupt, bold claim, or provocative question.
+
+## Body (0:03–0:50)
+The core message delivered in 3–5 tight beats. Each beat is 1–2 spoken sentences. Include:
+- The spoken narration in short, punchy, conversational sentences
+- **[B-roll / visual: ...]** cues in brackets on their own line
+- **[On-screen text: ...]** cues for key phrases that should appear as captions
+- Optional **[Pause]** or **[Emphasize]** direction
+
+## Call to Action (0:50–0:60)
+One clear, single ask (follow, comment, save, try a practice).
+
+VOICE & STYLE:
+• First-person, conversational, energetic — not academic
+• Very short sentences — every word earns its place
+• Contractions ("you're", "don't") welcome
+• Total spoken length: roughly 120–180 words (30–60 sec at natural pace)
+• No throat-clearing intros — get to the point in the first line
+• Use ALL of the provided reference material as source truth; don't invent facts
+
+FORMAT RULES:
+• Output ONLY clean Markdown, no HTML, no code blocks, no commentary
+• Do NOT include newsletter sign-offs or long intros
+• Every visual/on-screen cue MUST be in [brackets] on its own line so an editor can find it
+• Optimize for vertical 9:16 short-form platforms (YouTube Shorts, Reels, TikTok)`,
       other: customGoalText
         ? `Please create content based on the following instructions: ${customGoalText}. Use the below reference text. Each reference article has instructions and context around the file.`
         : "Please create content using the below reference text. Each reference article has instructions and context around the file.",
@@ -998,6 +1029,7 @@ FORMAT RULES:
                     <SelectItem value="daily_inspiration">Daily Inspiration (byte-sized)</SelectItem>
                     <SelectItem value="shorts_reels_video">Shorts / Reels Video Script</SelectItem>
                     <SelectItem value="longform_video_script">Long-form Video Script (spoken)</SelectItem>
+                    <SelectItem value="shorts_reels_script">Shorts/Reels Script (spoken)</SelectItem>
                     <SelectItem value="substack_newsletter">Substack newsletter</SelectItem>
                     <SelectItem value="wordpress_blog">Wordpress Blog</SelectItem>
                     <SelectItem value="note">Note</SelectItem>

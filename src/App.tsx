@@ -11,6 +11,7 @@ import VideoIntakePage from "./pages/project/VideoIntakePage";
 import SahityaIntakePage from "./pages/project/SahityaIntakePage";
 import DailyInspirationIntakePage from "./pages/project/DailyInspirationIntakePage";
 import LongformScriptIntakePage from "./pages/project/LongformScriptIntakePage";
+import ShortsScriptIntakePage from "./pages/project/ShortsScriptIntakePage";
 import PublishPreview from "./pages/PublishPreview";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/project/:projectId/sahitya-intake" element={<SahityaIntakePage />} />
           <Route path="/project/:projectId/daily-inspiration-intake" element={<DailyInspirationIntakePage />} />
           <Route path="/project/:projectId/longform-script-intake" element={<LongformScriptIntakePage />} />
+          <Route path="/project/:projectId/shorts-script-intake" element={<ShortsScriptIntakePage />} />
           <Route path="/workspace/:projectId" element={<Workspace />} />
           <Route path="/publish/:projectId" element={<PublishPreview />} />
           <Route path="/settings" element={<Settings />} />
