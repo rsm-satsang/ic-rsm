@@ -79,6 +79,7 @@ const GlobalNav = () => {
         </Tooltip>
 
         <NavButton icon={History} label="Old Tracker" to="/old-tracker" />
+        <NavButton icon={Bell} label="Alerts" to="/notifications" badge={unread || null} />
       </div>
 
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
