@@ -373,7 +373,10 @@ export default function ContentStore() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filtered.map((it) => {
-                const open = expanded[it.id];
+                const descOpen = !!expanded[`${it.id}:desc`];
+                const txOpen = !!expanded[`${it.id}:tx`];
+                const scOpen = !!expanded[`${it.id}:sc`];
+                const toggle = (key: string) => setExpanded((e) => ({ ...e, [key]: !e[key] }));
                 const code = it.extra?.content_code as string | undefined;
                 const desc = (it.extra?.description as string | undefined) || "";
                 const tags: string[] = Array.isArray(it.extra?.tags) ? it.extra.tags : [];
