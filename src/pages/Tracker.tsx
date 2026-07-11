@@ -105,18 +105,14 @@ function monthOf(iso: string): number {
   return new Date(iso + "T00:00:00Z").getUTCMonth();
 }
 
-const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = [
-  { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
-  { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
-  { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
-  { key: "daily_quote", label: "Daily Inspirations", sub: ["newsletter"] },
+type TabKey = "substack_satsang" | "substack_lifequest" | "youtube_long" | "youtube_shorts" | "daily_quote";
+const CHANNEL_TABS: Array<{ key: TabKey; label: string; channel: Channel; sub: SubChannel }> = [
+  { key: "substack_satsang", label: "Substack Newsletter (Satsang)", channel: "substack_satsang", sub: "newsletter" },
+  { key: "substack_lifequest", label: "LifeQuest Newsletter", channel: "substack_lifequest", sub: "newsletter" },
+  { key: "youtube_long", label: "Long form Videos", channel: "youtube", sub: "long_form" },
+  { key: "youtube_shorts", label: "Shorts / Reels Videos", channel: "youtube", sub: "shorts" },
+  { key: "daily_quote", label: "Daily Inspirations", channel: "daily_quote", sub: "newsletter" },
 ];
-
-const SUB_LABEL: Record<SubChannel, string> = {
-  newsletter: "Newsletter",
-  long_form: "Long-form",
-  shorts: "Shorts",
-};
 
 const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
   substack_satsang: "https://satsang.substack.com",
