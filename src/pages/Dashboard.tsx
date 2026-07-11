@@ -375,8 +375,8 @@ const Dashboard = () => {
                 <CollapsibleContent>
                   <div className="px-6 pb-6">
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <Button size="sm" variant="outline" onClick={createNewSahityaProject}>
-                        <BookOpen className="h-3 w-3 mr-1" /> Experimentations
+                      <Button size="sm" variant="outline" disabled>
+                        <BookOpen className="h-3 w-3 mr-1" /> Experimentations (coming soon)
                       </Button>
                     </div>
                   </div>
