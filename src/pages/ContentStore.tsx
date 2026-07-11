@@ -257,6 +257,7 @@ export default function ContentStore() {
             )}
           </div>
 
+          {isAdmin && (
           <Card className="p-4 mb-6">
             <Label className="text-sm font-medium">Upload Excel (.xlsx / .xls / .csv)</Label>
             <div className="mt-2 flex items-center gap-3 flex-wrap">
