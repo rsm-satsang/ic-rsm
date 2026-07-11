@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
+import { Mail } from "lucide-react";
 import feedbackIcon from "@/assets/feedback-icon.jpg";
 import ProjectsTable from "@/components/dashboard/ProjectsTable";
 import MyAssignedTasksSection from "@/components/dashboard/MyAssignedTasksSection";
@@ -137,17 +138,18 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("projects")
         .insert({
-          title: `New Project - ${new Date().toLocaleDateString()}`,
+          title: `Substack Newsletter - ${new Date().toLocaleDateString()}`,
           type: "document",
           owner_id: user.id,
           status: "in_progress",
+          metadata: { goal: "substack_newsletter", project_kind: "substack_newsletter" },
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Project created!");
+      toast.success("Substack Newsletter project created!");
       navigate(`/project/${data.id}/intake`);
     } catch (error: any) {
       toast.error("Failed to create project");
@@ -308,21 +310,35 @@ const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={createNewProject}>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <Card className="lg:col-span-4 md:col-span-2 border-2 border-secondary/20 hover:border-secondary/40 transition-all">
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-accent rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="p-3 bg-gradient-accent rounded-xl shrink-0">
                   <Plus className="h-6 w-6 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <CardTitle>New Project</CardTitle>
-                  <CardDescription>Create a full project with settings</CardDescription>
+                  <CardDescription className="mb-3">Choose the type of project to create</CardDescription>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={createNewProject}>
+                      <Mail className="h-3 w-3 mr-1" /> Create Substack Newsletter
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={createNewVideoProject}>
+                      <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
+                      <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={createLongformScriptProject}>
+                      <FileText className="h-3 w-3 mr-1" /> Create Script for Long form Video
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
           </Card>
-          <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={() => setFeedbackOpen(true)}>
+          <Card className="lg:col-span-2 border-2 border-secondary/20 hover:border-secondary/40 transition-all cursor-pointer" onClick={() => setFeedbackOpen(true)}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-gradient-accent rounded-xl">
@@ -336,7 +352,7 @@ const Dashboard = () => {
             </CardHeader>
           </Card>
           {isAdmin && (
-            <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-all">
+            <Card className="lg:col-span-6 md:col-span-3 border-2 border-secondary/20 hover:border-secondary/40 transition-all">
               <CardHeader>
                 <div className="flex items-start gap-3">
                   <div className="p-3 bg-gradient-accent rounded-xl">
@@ -346,17 +362,8 @@ const Dashboard = () => {
                     <CardTitle>Exploratory (Admins only )</CardTitle>
                     <CardDescription className="mb-2">Not ready for production usage</CardDescription>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <Button size="sm" variant="outline" onClick={createNewSahityaProject}>
-                        <BookOpen className="h-3 w-3 mr-1" /> Hindi Sahitya
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={createNewVideoProject}>
-                        <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
-                        <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={createLongformScriptProject}>
-                        <FileText className="h-3 w-3 mr-1" /> Create Script for Long form Video
+                      <Button size="sm" variant="outline" disabled onClick={createNewSahityaProject}>
+                        <BookOpen className="h-3 w-3 mr-1" /> Hindi Sahitya (coming soon)
                       </Button>
                     </div>
                   </div>
