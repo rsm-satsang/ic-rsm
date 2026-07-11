@@ -14,6 +14,7 @@ import {
   BookOpen,
   Sparkles,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
 import { Mail } from "lucide-react";
