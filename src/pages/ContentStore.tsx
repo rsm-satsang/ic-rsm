@@ -8,8 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Loader2, Upload, Database, FileSpreadsheet, ChevronDown, ChevronRight, ExternalLink, Search, X, FileText, Scissors } from "lucide-react";
 
@@ -115,8 +113,6 @@ export default function ContentStore() {
   const [dateTo, setDateTo] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("__all__");
 
-  // Detail dialog for transcript / social clips
-  const [detail, setDetail] = useState<{ title: string; body: string } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -254,13 +250,18 @@ export default function ContentStore() {
 
           <Card className="p-4 mb-6">
             <Label className="text-sm font-medium">Upload Excel (.xlsx / .xls / .csv)</Label>
-            <div className="mt-2 flex items-center gap-3">
+            <div className="mt-2 flex items-center gap-3 flex-wrap">
               <Input
                 type="file"
                 accept=".xlsx,.xls,.csv"
                 onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-                className="max-w-md"
+                className="max-w-md cursor-pointer file:cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-sky-500 file:px-3 file:py-1.5 file:text-white hover:file:bg-sky-600"
               />
+              {file && (
+                <span className="text-xs text-muted-foreground">
+                  {file.name} · {rows?.length ?? 0} rows detected
+                </span>
+              )}
               <span className="text-xs text-muted-foreground">
                 Uploading replaces existing content. Original file is preserved.
               </span>
@@ -290,9 +291,9 @@ export default function ContentStore() {
                   ))}
                 </div>
                 <div className="mt-4 flex gap-2 items-center">
-                  <Button onClick={doImport} disabled={importing} className="gap-2">
+                  <Button onClick={doImport} disabled={importing} className="gap-2 bg-sky-500 hover:bg-sky-600">
                     {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Import {rows.length} rows (replaces all)
+                    Submit {rows.length} rows (replaces all)
                   </Button>
                   <Button variant="ghost" onClick={() => { setFile(null); setRows(null); setHeaders([]); }}>
                     Cancel
@@ -306,7 +307,7 @@ export default function ContentStore() {
           <Card className="p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium flex items-center gap-2">
-                <Search className="h-4 w-4" /> Filters
+                <Search className="h-4 w-4" /> Search and Filter
               </div>
               {hasFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
@@ -368,7 +369,10 @@ export default function ContentStore() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filtered.map((it) => {
-                const open = expanded[it.id];
+                const descOpen = !!expanded[`${it.id}:desc`];
+                const txOpen = !!expanded[`${it.id}:tx`];
+                const scOpen = !!expanded[`${it.id}:sc`];
+                const toggle = (key: string) => setExpanded((e) => ({ ...e, [key]: !e[key] }));
                 const code = it.extra?.content_code as string | undefined;
                 const desc = (it.extra?.description as string | undefined) || "";
                 const tags: string[] = Array.isArray(it.extra?.tags) ? it.extra.tags : [];
@@ -406,31 +410,28 @@ export default function ContentStore() {
                       )}
                     </div>
 
-                    {desc && (
-                      <div className="mt-2">
-                        <button
-                          onClick={() => setExpanded((e) => ({ ...e, [it.id]: !open }))}
-                          className="text-xs text-sky-700 hover:underline flex items-center gap-1"
-                        >
-                          {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                          Description
-                        </button>
-                        <div className={`text-xs text-muted-foreground mt-1 whitespace-pre-wrap ${open ? "" : "line-clamp-2"}`}>
-                          {desc}
-                        </div>
-                      </div>
-                    )}
-
-                    {(it.transcript || social) && (
+                    {(desc || it.transcript || social) && (
                       <div className="mt-3 flex flex-wrap gap-2">
+                        {desc && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => toggle(`${it.id}:desc`)}
+                          >
+                            {descOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                            Description
+                          </Button>
+                        )}
                         {it.transcript && (
                           <Button
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => setDetail({ title: `Transcript — ${it.title ?? "(untitled)"}`, body: it.transcript! })}
+                            onClick={() => toggle(`${it.id}:tx`)}
                           >
-                            <FileText className="h-3 w-3 mr-1" /> Transcript
+                            {txOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                            Transcript
                           </Button>
                         )}
                         {social && (
@@ -438,11 +439,28 @@ export default function ContentStore() {
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => setDetail({ title: `Social Clips — ${it.title ?? "(untitled)"}`, body: social })}
+                            onClick={() => toggle(`${it.id}:sc`)}
                           >
-                            <Scissors className="h-3 w-3 mr-1" /> Social Clips
+                            {scOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <Scissors className="h-3 w-3 mr-1" />}
+                            Social Clips
                           </Button>
                         )}
+                      </div>
+                    )}
+
+                    {descOpen && desc && (
+                      <div className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap rounded-md border bg-muted/30 p-2">
+                        {desc}
+                      </div>
+                    )}
+                    {txOpen && it.transcript && (
+                      <div className="mt-2 text-xs whitespace-pre-wrap rounded-md border bg-muted/30 p-2 max-h-80 overflow-auto">
+                        {it.transcript}
+                      </div>
+                    )}
+                    {scOpen && social && (
+                      <div className="mt-2 text-xs whitespace-pre-wrap rounded-md border bg-muted/30 p-2 max-h-80 overflow-auto">
+                        {social}
                       </div>
                     )}
                   </Card>
@@ -452,17 +470,6 @@ export default function ContentStore() {
           )}
         </div>
       </div>
-
-      <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{detail?.title}</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh]">
-            <pre className="text-sm whitespace-pre-wrap p-2">{detail?.body}</pre>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

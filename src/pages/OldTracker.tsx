@@ -201,7 +201,7 @@ const OldTracker = () => {
   const renderTab = () => {
     const filtered = entries.filter(e => e.channel === active.channel && e.sub_channel === active.sub);
     const totalPublished = filtered.filter(e => !!e.publish_date).length;
-    const missingWeeks = weeks.filter(w => (entriesByWeek.get(w) || []).length === 0).length;
+    const missingWeeks = Math.max(0, weeks.length - totalPublished);
 
     return (
       <div className="space-y-4">
