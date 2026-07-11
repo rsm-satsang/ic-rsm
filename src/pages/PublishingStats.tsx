@@ -10,6 +10,13 @@ import { Loader2, RefreshCw, BarChart3 } from "lucide-react";
 
 type Channel = "substack_satsang" | "substack_lifequest" | "youtube" | "daily_quote";
 type SubChannel = "newsletter" | "long_form" | "shorts";
+type TabKey =
+  | "all"
+  | "substack_satsang"
+  | "substack_lifequest"
+  | "youtube_long"
+  | "youtube_shorts"
+  | "daily_quote";
 
 interface Entry {
   id: string;
@@ -24,18 +31,27 @@ interface Entry {
   substack_published?: boolean | null;
 }
 
-const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = [
-  { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
-  { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
-  { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
-  { key: "daily_quote", label: "Daily Inspirations", sub: ["newsletter"] },
+interface ChannelDef {
+  key: Exclude<TabKey, "all">;
+  label: string;
+  shortLabel: string;
+  channel: Channel;
+  sub: SubChannel;
+}
+
+const CHANNELS: ChannelDef[] = [
+  { key: "substack_satsang", label: "Substack Newsletter (Satsang)", shortLabel: "Satsang NL", channel: "substack_satsang", sub: "newsletter" },
+  { key: "substack_lifequest", label: "LifeQuest Newsletter", shortLabel: "LifeQuest NL", channel: "substack_lifequest", sub: "newsletter" },
+  { key: "youtube_long", label: "Long form Videos", shortLabel: "Long Videos", channel: "youtube", sub: "long_form" },
+  { key: "youtube_shorts", label: "Shorts / Reels Videos", shortLabel: "Shorts/Reels", channel: "youtube", sub: "shorts" },
+  { key: "daily_quote", label: "Daily Inspirations", shortLabel: "Daily Insp.", channel: "daily_quote", sub: "newsletter" },
 ];
 
-const SUB_LABEL: Record<SubChannel, string> = {
-  newsletter: "Newsletter",
-  long_form: "Long-form",
-  shorts: "Shorts",
-};
+const TAB_ORDER: TabKey[] = ["all", ...CHANNELS.map((c) => c.key)];
+const TAB_LABELS: Record<TabKey, string> = {
+  all: "All Contents",
+  ...Object.fromEntries(CHANNELS.map((c) => [c.key, c.label])),
+} as Record<TabKey, string>;
 
 const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
   substack_satsang: "https://satsang.substack.com",
@@ -71,9 +87,7 @@ function weeksOfYear(year: number): string[] {
   return out;
 }
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", {
-    month: "short", day: "numeric", timeZone: "UTC",
-  });
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 function fmtWeekRange(iso: string): string {
   const start = new Date(iso + "T00:00:00Z");
@@ -85,15 +99,18 @@ function fmtWeekRange(iso: string): string {
 function monthOf(iso: string): number {
   return new Date(iso + "T00:00:00Z").getUTCMonth();
 }
+function isPublished(e: Entry): boolean {
+  return !!e.substack_published || e.status === "published" || e.source === "substack";
+}
 
 export default function PublishingStats() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
-  const [activeChannel, setActiveChannel] = useState<Channel>("substack_satsang");
-  const [activeSub, setActiveSub] = useState<SubChannel>("newsletter");
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
 
   const weeks = useMemo(() => weeksOfYear(YEAR), []);
+  const activeChannelDef = CHANNELS.find((c) => c.key === activeTab);
 
   const load = async () => {
     setLoading(true);
@@ -103,25 +120,20 @@ export default function PublishingStats() {
   };
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    const tab = CHANNEL_TABS.find((c) => c.key === activeChannel);
-    if (tab && !tab.sub.includes(activeSub)) setActiveSub(tab.sub[0]);
-  }, [activeChannel]);
-
-  const channelEntries = useMemo(
-    () => entries.filter((e) => e.channel === activeChannel && e.sub_channel === activeSub),
-    [entries, activeChannel, activeSub]
-  );
+  const channelEntries = useMemo(() => {
+    if (!activeChannelDef) return [];
+    return entries.filter(
+      (e) => e.channel === activeChannelDef.channel && e.sub_channel === activeChannelDef.sub
+    );
+  }, [entries, activeChannelDef]);
 
   const publishedByWeek = useMemo(() => {
     const map = new Map<string, Entry[]>();
     for (const e of channelEntries) {
-      const isPub = !!e.substack_published || e.status === "published" || e.source === "substack";
-      if (!isPub) continue;
-      const w = e.week_start_date;
-      const arr = map.get(w) || [];
+      if (!isPublished(e)) continue;
+      const arr = map.get(e.week_start_date) || [];
       arr.push(e);
-      map.set(w, arr);
+      map.set(e.week_start_date, arr);
     }
     for (const [k, arr] of map) {
       arr.sort((a, b) => (a.publish_date ?? "").localeCompare(b.publish_date ?? ""));
@@ -129,6 +141,23 @@ export default function PublishingStats() {
     }
     return map;
   }, [channelEntries]);
+
+  // For All Contents: per channel per week
+  const allPublishedMatrix = useMemo(() => {
+    const map = new Map<string, Map<string, Entry[]>>(); // channelKey -> week -> entries
+    for (const def of CHANNELS) {
+      const wm = new Map<string, Entry[]>();
+      for (const e of entries) {
+        if (e.channel !== def.channel || e.sub_channel !== def.sub) continue;
+        if (!isPublished(e)) continue;
+        const arr = wm.get(e.week_start_date) || [];
+        arr.push(e);
+        wm.set(e.week_start_date, arr);
+      }
+      map.set(def.key, wm);
+    }
+    return map;
+  }, [entries]);
 
   const ytdMaxMonth = useMemo(() => {
     const n = new Date();
@@ -148,22 +177,23 @@ export default function PublishingStats() {
       const d = new Date(e.publish_date + "T00:00:00Z");
       if (d.getUTCFullYear() !== YEAR) return false;
       if (d.getUTCMonth() > ytdMaxMonth) return false;
-      return !!e.substack_published || e.status === "published" || e.source === "substack";
+      return isPublished(e);
     }).length;
     return { total: ytdWeeks.length, published, missing };
   }, [weeks, publishedByWeek, ytdMaxMonth, channelEntries]);
 
   const syncSubstack = async () => {
-    const feedUrl = SUBSTACK_URLS[activeChannel];
+    if (!activeChannelDef) return;
+    const feedUrl = SUBSTACK_URLS[activeChannelDef.channel];
     if (!feedUrl) {
       const u = window.prompt("Enter Substack URL (e.g. https://yourname.substack.com)");
       if (!u) return;
-      SUBSTACK_URLS[activeChannel] = u;
+      SUBSTACK_URLS[activeChannelDef.channel] = u;
     }
-    setSyncing(activeChannel);
+    setSyncing(activeChannelDef.channel);
     try {
       const { data, error } = await supabase.functions.invoke("tracker-sync-substack", {
-        body: { feedUrl: SUBSTACK_URLS[activeChannel], channel: activeChannel, year: YEAR },
+        body: { feedUrl: SUBSTACK_URLS[activeChannelDef.channel], channel: activeChannelDef.channel, year: YEAR },
       });
       if (error) throw error;
       toast.success(`Imported ${data?.imported ?? 0} posts`);
@@ -175,25 +205,7 @@ export default function PublishingStats() {
     }
   };
 
-  const syncGDrive = async () => {
-    setSyncing("gdrive");
-    try {
-      const { data, error } = await supabase.functions.invoke("tracker-sync-gdrive", {
-        body: { channel: activeChannel, year: YEAR },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Imported ${data?.imported ?? 0} posts from Google Drive`);
-      await load();
-    } catch (e: any) {
-      toast.error(e.message || "Google Drive sync failed");
-    } finally {
-      setSyncing(null);
-    }
-  };
-
-  const currentTab = CHANNEL_TABS.find((c) => c.key === activeChannel)!;
-  const isSubstack = activeChannel === "substack_satsang" || activeChannel === "substack_lifequest";
+  const isSubstack = activeChannelDef?.channel === "substack_satsang" || activeChannelDef?.channel === "substack_lifequest";
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,138 +220,191 @@ export default function PublishingStats() {
           </div>
 
           {/* Channel tabs */}
-          <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-4 w-full h-auto">
-              {CHANNEL_TABS.map((c) => (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="mb-4">
+            <TabsList className="grid grid-cols-6 w-full h-auto">
+              {TAB_ORDER.map((k) => (
                 <TabsTrigger
-                  key={c.key}
-                  value={c.key}
+                  key={k}
+                  value={k}
                   className="data-[state=active]:bg-sky-500 data-[state=active]:text-white whitespace-normal text-xs sm:text-sm"
                 >
-                  {c.label}
+                  {TAB_LABELS[k]}
                 </TabsTrigger>
               ))}
             </TabsList>
-            {CHANNEL_TABS.map((c) => <TabsContent key={c.key} value={c.key} />)}
+            {TAB_ORDER.map((k) => <TabsContent key={k} value={k} />)}
           </Tabs>
 
-          {currentTab.sub.length > 1 && (
-            <Tabs value={activeSub} onValueChange={(v) => setActiveSub(v as SubChannel)} className="mb-4">
-              <TabsList>
-                {currentTab.sub.map((s) => (
-                  <TabsTrigger key={s} value={s}>{SUB_LABEL[s]}</TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          )}
-
-          {/* YTD Overview */}
-          <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
-            <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
-            <span className="text-xs opacity-90">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">Weeks YTD</div>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">🟢 Published</div>
-              <div className="text-2xl font-bold text-green-700">{stats.published}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground">🔴 Missing weeks</div>
-              <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
-            </Card>
-          </div>
-
-          {/* Sync buttons */}
-          {isSubstack && (
-            <div className="flex gap-2 mb-6 justify-end">
-              <Button onClick={syncSubstack} disabled={!!syncing} variant="outline" className="gap-2">
-                {syncing === activeChannel ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Sync Substack
-              </Button>
-            </div>
-          )}
-
-          {/* Weekly table */}
-          <div className="mb-3 flex items-baseline justify-between bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
-            <h2 className="text-lg font-bold text-sky-900">Weekly Publishing History · {YEAR}</h2>
-            <span className="text-xs text-sky-900/80">{weeks.length} weeks</span>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
-          ) : (
-            <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-left">
-                    <tr>
-                      <th className="px-3 py-2 font-semibold w-16">Week #</th>
-                      <th className="px-3 py-2 font-semibold w-48">Week</th>
-                      <th className="px-3 py-2 font-semibold w-20">Month</th>
-                      <th className="px-3 py-2 font-semibold w-24">Status</th>
-                      <th className="px-3 py-2 font-semibold">Published Content</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {weeks.map((w, idx) => {
-                      const posts = publishedByWeek.get(w) || [];
-                      const isFuture = monthOf(w) > ytdMaxMonth;
-                      return (
-                        <tr key={w} className="border-t align-top hover:bg-muted/30">
-                          <td className="px-3 py-2 tabular-nums text-muted-foreground">{idx + 1}</td>
-                          <td className="px-3 py-2 tabular-nums">{fmtWeekRange(w)}</td>
-                          <td className="px-3 py-2">{MONTH_NAMES[monthOf(w)]}</td>
-                          <td className="px-3 py-2">
-                            {posts.length > 0 ? (
-                              <Badge className="bg-green-100 text-green-800 border-green-200">
-                                🟢 {posts.length}
-                              </Badge>
-                            ) : isFuture ? (
-                              <Badge variant="outline" className="text-muted-foreground">—</Badge>
-                            ) : (
-                              <Badge className="bg-red-100 text-red-800 border-red-200">🔴 Missing</Badge>
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            {posts.length === 0 ? (
-                              <span className="text-muted-foreground italic">
-                                {isFuture ? "Upcoming" : "No content published"}
-                              </span>
-                            ) : (
-                              <ul className="space-y-1">
-                                {posts.map((p) => (
-                                  <li key={p.id} className="flex gap-2">
-                                    <span className="text-muted-foreground tabular-nums shrink-0 text-xs pt-0.5">
-                                      {p.publish_date ? fmtDate(p.publish_date) : "—"}
-                                    </span>
-                                    {p.source_url ? (
-                                      <a
-                                        href={p.source_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-blue-700 hover:underline"
-                                      >
-                                        {p.title ?? "(untitled)"}
-                                      </a>
-                                    ) : (
-                                      <span>{p.title ?? "(untitled)"}</span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          {activeTab === "all" ? (
+            <>
+              <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
+                <h2 className="text-xl font-bold">All Contents · Weekly Matrix</h2>
+                <span className="text-xs opacity-90">{YEAR}</span>
               </div>
-            </Card>
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
+              ) : (
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-left">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold w-12">#</th>
+                          <th className="px-3 py-2 font-semibold w-40">Week</th>
+                          {CHANNELS.map((c) => (
+                            <th key={c.key} className="px-3 py-2 font-semibold text-center">
+                              {c.shortLabel}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weeks.map((w, idx) => {
+                          const isFuture = monthOf(w) > ytdMaxMonth;
+                          return (
+                            <tr key={w} className="border-t align-top hover:bg-muted/30">
+                              <td className="px-3 py-2 tabular-nums text-muted-foreground">{idx + 1}</td>
+                              <td className="px-3 py-2 tabular-nums whitespace-nowrap">{fmtWeekRange(w)}</td>
+                              {CHANNELS.map((c) => {
+                                const posts = allPublishedMatrix.get(c.key)?.get(w) || [];
+                                return (
+                                  <td key={c.key} className="px-3 py-2 align-top">
+                                    {posts.length === 0 ? (
+                                      <span className="text-xs text-muted-foreground italic">
+                                        {isFuture ? "—" : "—"}
+                                      </span>
+                                    ) : (
+                                      <ul className="space-y-1">
+                                        {posts.map((p) => (
+                                          <li key={p.id} className="text-xs leading-snug">
+                                            {p.source_url ? (
+                                              <a href={p.source_url} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline">
+                                                {p.title ?? "(untitled)"}
+                                              </a>
+                                            ) : (
+                                              <span>{p.title ?? "(untitled)"}</span>
+                                            )}
+                                            {p.publish_date && (
+                                              <div className="text-[10px] text-muted-foreground tabular-nums">{fmtDate(p.publish_date)}</div>
+                                            )}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+            </>
+          ) : (
+            <>
+              {/* YTD Overview */}
+              <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
+                <h2 className="text-xl font-bold">Year-to-Date Overview</h2>
+                <span className="text-xs opacity-90">Through {MONTH_NAMES[ytdMaxMonth] ?? "—"} {YEAR}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                <Card className="p-4">
+                  <div className="text-xs text-muted-foreground">Weeks YTD</div>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-xs text-muted-foreground">🟢 Published</div>
+                  <div className="text-2xl font-bold text-green-700">{stats.published}</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-xs text-muted-foreground">🔴 Missing weeks</div>
+                  <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
+                </Card>
+              </div>
+
+              {isSubstack && (
+                <div className="flex gap-2 mb-6 justify-end">
+                  <Button onClick={syncSubstack} disabled={!!syncing} variant="outline" className="gap-2">
+                    {syncing === activeChannelDef?.channel ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Sync Substack
+                  </Button>
+                </div>
+              )}
+
+              <div className="mb-3 flex items-baseline justify-between bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+                <h2 className="text-lg font-bold text-sky-900">Weekly Publishing History · {YEAR}</h2>
+                <span className="text-xs text-sky-900/80">{weeks.length} weeks</span>
+              </div>
+
+              {loading ? (
+                <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
+              ) : (
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-left">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold w-16">Week #</th>
+                          <th className="px-3 py-2 font-semibold w-48">Week</th>
+                          <th className="px-3 py-2 font-semibold w-20">Month</th>
+                          <th className="px-3 py-2 font-semibold w-24">Status</th>
+                          <th className="px-3 py-2 font-semibold">Published Content</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weeks.map((w, idx) => {
+                          const posts = publishedByWeek.get(w) || [];
+                          const isFuture = monthOf(w) > ytdMaxMonth;
+                          return (
+                            <tr key={w} className="border-t align-top hover:bg-muted/30">
+                              <td className="px-3 py-2 tabular-nums text-muted-foreground">{idx + 1}</td>
+                              <td className="px-3 py-2 tabular-nums">{fmtWeekRange(w)}</td>
+                              <td className="px-3 py-2">{MONTH_NAMES[monthOf(w)]}</td>
+                              <td className="px-3 py-2">
+                                {posts.length > 0 ? (
+                                  <Badge className="bg-green-100 text-green-800 border-green-200">🟢 {posts.length}</Badge>
+                                ) : isFuture ? (
+                                  <Badge variant="outline" className="text-muted-foreground">—</Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-800 border-red-200">🔴 Missing</Badge>
+                                )}
+                              </td>
+                              <td className="px-3 py-2">
+                                {posts.length === 0 ? (
+                                  <span className="text-muted-foreground italic">
+                                    {isFuture ? "Upcoming" : "No content published"}
+                                  </span>
+                                ) : (
+                                  <ul className="space-y-1">
+                                    {posts.map((p) => (
+                                      <li key={p.id} className="flex gap-2">
+                                        <span className="text-muted-foreground tabular-nums shrink-0 text-xs pt-0.5">
+                                          {p.publish_date ? fmtDate(p.publish_date) : "—"}
+                                        </span>
+                                        {p.source_url ? (
+                                          <a href={p.source_url} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline">
+                                            {p.title ?? "(untitled)"}
+                                          </a>
+                                        ) : (
+                                          <span>{p.title ?? "(untitled)"}</span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </div>
