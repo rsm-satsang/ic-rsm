@@ -400,7 +400,9 @@ export default function ContentStore() {
                             <Badge variant="outline" className="text-xs font-mono">{code}</Badge>
                           )}
                           {it.publish_date && (
-                            <span className="text-xs text-muted-foreground tabular-nums">{it.publish_date}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {new Date(it.publish_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                            </span>
                           )}
                         </div>
                         <div className="font-semibold text-sm leading-snug">
