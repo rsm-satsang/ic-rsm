@@ -18,6 +18,8 @@ import Tracker from "./pages/Tracker";
 import PublishingStats from "./pages/PublishingStats";
 import AdminUsers from "./pages/AdminUsers";
 import OldTracker from "./pages/OldTracker";
+import ContentStore from "./pages/ContentStore";
+import ContentSOPs from "./pages/ContentSOPs";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
