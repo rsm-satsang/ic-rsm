@@ -414,31 +414,28 @@ export default function ContentStore() {
                       )}
                     </div>
 
-                    {desc && (
-                      <div className="mt-2">
-                        <button
-                          onClick={() => setExpanded((e) => ({ ...e, [it.id]: !open }))}
-                          className="text-xs text-sky-700 hover:underline flex items-center gap-1"
-                        >
-                          {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                          Description
-                        </button>
-                        <div className={`text-xs text-muted-foreground mt-1 whitespace-pre-wrap ${open ? "" : "line-clamp-2"}`}>
-                          {desc}
-                        </div>
-                      </div>
-                    )}
-
-                    {(it.transcript || social) && (
+                    {(desc || it.transcript || social) && (
                       <div className="mt-3 flex flex-wrap gap-2">
+                        {desc && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => toggle(`${it.id}:desc`)}
+                          >
+                            {descOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                            Description
+                          </Button>
+                        )}
                         {it.transcript && (
                           <Button
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => setDetail({ title: `Transcript — ${it.title ?? "(untitled)"}`, body: it.transcript! })}
+                            onClick={() => toggle(`${it.id}:tx`)}
                           >
-                            <FileText className="h-3 w-3 mr-1" /> Transcript
+                            {txOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                            Transcript
                           </Button>
                         )}
                         {social && (
@@ -446,11 +443,28 @@ export default function ContentStore() {
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => setDetail({ title: `Social Clips — ${it.title ?? "(untitled)"}`, body: social })}
+                            onClick={() => toggle(`${it.id}:sc`)}
                           >
-                            <Scissors className="h-3 w-3 mr-1" /> Social Clips
+                            {scOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <Scissors className="h-3 w-3 mr-1" />}
+                            Social Clips
                           </Button>
                         )}
+                      </div>
+                    )}
+
+                    {descOpen && desc && (
+                      <div className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap rounded-md border bg-muted/30 p-2">
+                        {desc}
+                      </div>
+                    )}
+                    {txOpen && it.transcript && (
+                      <div className="mt-2 text-xs whitespace-pre-wrap rounded-md border bg-muted/30 p-2 max-h-80 overflow-auto">
+                        {it.transcript}
+                      </div>
+                    )}
+                    {scOpen && social && (
+                      <div className="mt-2 text-xs whitespace-pre-wrap rounded-md border bg-muted/30 p-2 max-h-80 overflow-auto">
+                        {social}
                       </div>
                     )}
                   </Card>
@@ -460,17 +474,6 @@ export default function ContentStore() {
           )}
         </div>
       </div>
-
-      <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{detail?.title}</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[70vh]">
-            <pre className="text-sm whitespace-pre-wrap p-2">{detail?.body}</pre>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
