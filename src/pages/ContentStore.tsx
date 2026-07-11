@@ -369,15 +369,14 @@ export default function ContentStore() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filtered.map((it) => {
                 const open = expanded[it.id];
-                const preview = (it.transcript ?? "").slice(0, 220);
                 const code = it.extra?.content_code as string | undefined;
-                const desc = it.extra?.description as string | undefined;
+                const desc = (it.extra?.description as string | undefined) || "";
                 const tags: string[] = Array.isArray(it.extra?.tags) ? it.extra.tags : [];
                 const social = it.extra?.social_clips as string | undefined;
                 return (
                   <Card key={it.id} className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {it.content_type && (
                             <Badge variant="secondary" className="text-xs">{it.content_type}</Badge>
@@ -392,20 +391,11 @@ export default function ContentStore() {
                         <div className="font-semibold text-sm leading-snug">
                           {it.title ?? "(untitled)"}
                         </div>
-                        {desc && (
-                          <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{desc}</div>
-                        )}
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {tags.map((t, i) => (
                               <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
                             ))}
-                          </div>
-                        )}
-                        {social && (
-                          <div className="text-xs mt-2">
-                            <span className="font-medium text-muted-foreground">Social clips: </span>
-                            <span className="whitespace-pre-wrap">{social}</span>
                           </div>
                         )}
                       </div>
@@ -415,18 +405,44 @@ export default function ContentStore() {
                         </a>
                       )}
                     </div>
-                    {it.transcript && (
+
+                    {desc && (
                       <div className="mt-2">
                         <button
                           onClick={() => setExpanded((e) => ({ ...e, [it.id]: !open }))}
                           className="text-xs text-sky-700 hover:underline flex items-center gap-1"
                         >
                           {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                          Transcript
+                          Description
                         </button>
-                        <div className={`text-xs text-muted-foreground mt-1 whitespace-pre-wrap ${open ? "" : "line-clamp-3"}`}>
-                          {open ? it.transcript : preview + (it.transcript.length > 220 ? "…" : "")}
+                        <div className={`text-xs text-muted-foreground mt-1 whitespace-pre-wrap ${open ? "" : "line-clamp-2"}`}>
+                          {desc}
                         </div>
+                      </div>
+                    )}
+
+                    {(it.transcript || social) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {it.transcript && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => setDetail({ title: `Transcript — ${it.title ?? "(untitled)"}`, body: it.transcript! })}
+                          >
+                            <FileText className="h-3 w-3 mr-1" /> Transcript
+                          </Button>
+                        )}
+                        {social && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => setDetail({ title: `Social Clips — ${it.title ?? "(untitled)"}`, body: social })}
+                          >
+                            <Scissors className="h-3 w-3 mr-1" /> Social Clips
+                          </Button>
+                        )}
                       </div>
                     )}
                   </Card>
@@ -436,6 +452,17 @@ export default function ContentStore() {
           )}
         </div>
       </div>
+
+      <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{detail?.title}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh]">
+            <pre className="text-sm whitespace-pre-wrap p-2">{detail?.body}</pre>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
