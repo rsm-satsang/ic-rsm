@@ -31,6 +31,7 @@ import {
   Plus,
 } from "lucide-react";
 import { GoogleDrivePickerDialog } from "@/components/upload/GoogleDrivePickerDialog";
+import ImportReferenceDialog, { type ImportedRef } from "@/components/workspace/ImportReferenceDialog";
 
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -77,6 +78,7 @@ export default function IntakePage() {
   const [showAddTheme, setShowAddTheme] = useState(false);
   const [newThemeName, setNewThemeName] = useState("");
   const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [draftMode, setDraftMode] = useState<"generate" | "ready">("generate");
   const [usedModel, setUsedModel] = useState<string | null>(() => {
     if (projectId) {
