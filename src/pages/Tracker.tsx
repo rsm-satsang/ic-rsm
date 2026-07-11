@@ -496,8 +496,6 @@ export default function Tracker() {
     }
   };
 
-  const currentTab = CHANNEL_TABS.find((c) => c.key === activeChannel)!;
-
   return (
     <div className="min-h-screen bg-background">
       <GlobalNav />
@@ -513,8 +511,8 @@ export default function Tracker() {
           </div>
 
           {/* Channel tabs */}
-          <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-4 w-full h-auto">
+          <Tabs value={activeTabKey} onValueChange={(v) => setActiveTabKey(v as TabKey)} className="mb-4">
+            <TabsList className="grid grid-cols-5 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
                 <TabsTrigger
                   key={c.key}
@@ -530,16 +528,6 @@ export default function Tracker() {
             ))}
           </Tabs>
 
-          {/* Sub-channel (for YouTube) */}
-          {currentTab.sub.length > 1 && (
-            <Tabs value={activeSub} onValueChange={(v) => setActiveSub(v as SubChannel)} className="mb-4">
-              <TabsList>
-                {currentTab.sub.map((s) => (
-                  <TabsTrigger key={s} value={s}>{SUB_LABEL[s]}</TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          )}
 
           {/* YTD Section */}
           <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
