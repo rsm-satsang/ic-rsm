@@ -105,18 +105,14 @@ function monthOf(iso: string): number {
   return new Date(iso + "T00:00:00Z").getUTCMonth();
 }
 
-const CHANNEL_TABS: Array<{ key: Channel; label: string; sub: SubChannel[] }> = [
-  { key: "substack_satsang", label: "Substack Newsletter (Satsang)", sub: ["newsletter"] },
-  { key: "substack_lifequest", label: "LifeQuest Newsletter", sub: ["newsletter"] },
-  { key: "youtube", label: "YouTube", sub: ["long_form", "shorts"] },
-  { key: "daily_quote", label: "Daily Inspirations", sub: ["newsletter"] },
+type TabKey = "substack_satsang" | "substack_lifequest" | "youtube_long" | "youtube_shorts" | "daily_quote";
+const CHANNEL_TABS: Array<{ key: TabKey; label: string; channel: Channel; sub: SubChannel }> = [
+  { key: "substack_satsang", label: "Substack Newsletter (Satsang)", channel: "substack_satsang", sub: "newsletter" },
+  { key: "substack_lifequest", label: "LifeQuest Newsletter", channel: "substack_lifequest", sub: "newsletter" },
+  { key: "youtube_long", label: "Long form Videos", channel: "youtube", sub: "long_form" },
+  { key: "youtube_shorts", label: "Shorts / Reels Videos", channel: "youtube", sub: "shorts" },
+  { key: "daily_quote", label: "Daily Inspirations", channel: "daily_quote", sub: "newsletter" },
 ];
-
-const SUB_LABEL: Record<SubChannel, string> = {
-  newsletter: "Newsletter",
-  long_form: "Long-form",
-  shorts: "Shorts",
-};
 
 const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
   substack_satsang: "https://satsang.substack.com",
@@ -138,8 +134,10 @@ export default function Tracker() {
   const [themes, setThemes] = useState<ThemeOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<Channel | null>(null);
-  const [activeChannel, setActiveChannel] = useState<Channel>("substack_satsang");
-  const [activeSub, setActiveSub] = useState<SubChannel>("newsletter");
+  const [activeTabKey, setActiveTabKey] = useState<TabKey>("substack_satsang");
+  const activeTab = CHANNEL_TABS.find((c) => c.key === activeTabKey) ?? CHANNEL_TABS[0];
+  const activeChannel = activeTab.channel;
+  const activeSub = activeTab.sub;
   const now = new Date();
   const defaultMonth = now.getUTCFullYear() === YEAR ? now.getUTCMonth() : 0;
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
@@ -185,8 +183,8 @@ export default function Tracker() {
     if (!pid) return;
     const match = entries.find((e) => e.project_id === pid);
     if (!match) return;
-    setActiveChannel(match.channel);
-    setActiveSub(match.sub_channel);
+    const tk = CHANNEL_TABS.find((c) => c.channel === match.channel && c.sub === match.sub_channel)?.key;
+    if (tk) setActiveTabKey(tk);
     setSelectedMonth(monthOf(match.week_start_date));
     focusedWeekRef.current = match.week_start_date;
     // Clear param after handling so it doesn't re-trigger
@@ -239,10 +237,7 @@ export default function Tracker() {
 
 
 
-  useEffect(() => {
-    const tab = CHANNEL_TABS.find((c) => c.key === activeChannel);
-    if (tab && !tab.sub.includes(activeSub)) setActiveSub(tab.sub[0]);
-  }, [activeChannel]);
+  // (sub-channel is now derived from the tab; no reset effect needed)
 
   const channelEntries = useMemo(() => {
     return entries.filter(
@@ -501,8 +496,6 @@ export default function Tracker() {
     }
   };
 
-  const currentTab = CHANNEL_TABS.find((c) => c.key === activeChannel)!;
-
   return (
     <div className="min-h-screen bg-background">
       <GlobalNav />
@@ -518,8 +511,8 @@ export default function Tracker() {
           </div>
 
           {/* Channel tabs */}
-          <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="mb-4">
-            <TabsList className="grid grid-cols-4 w-full h-auto">
+          <Tabs value={activeTabKey} onValueChange={(v) => setActiveTabKey(v as TabKey)} className="mb-4">
+            <TabsList className="grid grid-cols-5 w-full h-auto">
               {CHANNEL_TABS.map((c) => (
                 <TabsTrigger
                   key={c.key}
@@ -535,16 +528,6 @@ export default function Tracker() {
             ))}
           </Tabs>
 
-          {/* Sub-channel (for YouTube) */}
-          {currentTab.sub.length > 1 && (
-            <Tabs value={activeSub} onValueChange={(v) => setActiveSub(v as SubChannel)} className="mb-4">
-              <TabsList>
-                {currentTab.sub.map((s) => (
-                  <TabsTrigger key={s} value={s}>{SUB_LABEL[s]}</TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          )}
 
           {/* YTD Section */}
           <div className="mb-3 flex items-baseline justify-between bg-sky-500 text-white rounded-md px-4 py-2">
