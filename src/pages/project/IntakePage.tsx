@@ -1101,10 +1101,16 @@ FORMAT RULES:
           {draftMode === "generate" && (
           <>
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-2">Add References</h2>
+            <div className="flex items-center justify-between mb-2 gap-4">
+              <h2 className="text-2xl font-bold">Add References</h2>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Import from Content Store / Projects
+              </Button>
+            </div>
             <p className="text-sm text-muted-foreground mb-6">
-              Upload documents, paste text, or add links to articles and videos that will serve as source material for
-              generating your content.
+              Upload documents, paste text, add links, or pull existing content cards or drafts from other projects as
+              source material.
             </p>
 
             <div className="pl-4 space-y-6">
