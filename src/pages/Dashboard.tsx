@@ -350,7 +350,13 @@ const Dashboard = () => {
                         <BookOpen className="h-3 w-3 mr-1" /> Hindi Sahitya
                       </Button>
                       <Button size="sm" variant="outline" onClick={createNewVideoProject}>
-                        <Video className="h-3 w-3 mr-1" /> Video Project
+                        <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
+                        <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={createLongformScriptProject}>
+                        <FileText className="h-3 w-3 mr-1" /> Create Script for Long form Video
                       </Button>
                     </div>
                   </div>
