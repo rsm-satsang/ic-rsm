@@ -394,6 +394,120 @@ export type Database = {
           },
         ]
       }
+      founder_content: {
+        Row: {
+          created_at: string
+          id: string
+          photo_url: string | null
+          updated_at: string
+          updated_by: string | null
+          vision_note: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vision_note?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vision_note?: string | null
+        }
+        Relationships: []
+      }
+      founder_messages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          message_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          message_date?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          message_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          created_by: string | null
+          id: string
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          question?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_videos: {
+        Row: {
+          created_at: string
+          id: string
+          storage_path: string | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       integrations: {
         Row: {
           created_at: string
