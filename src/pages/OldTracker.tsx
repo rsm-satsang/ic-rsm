@@ -267,7 +267,7 @@ const OldTracker = () => {
   return (
     <div className="min-h-screen bg-background">
       <GlobalNav />
-      <div className="pl-14">
+      <div className="pl-16">
         <div className="max-w-7xl mx-auto p-6 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>

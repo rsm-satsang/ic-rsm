@@ -393,7 +393,7 @@ export default function AdminUsers() {
   return (
     <div className="min-h-screen bg-background">
       <GlobalNav />
-      <div className="pl-14">
+      <div className="pl-16">
         <div className="container mx-auto px-6 py-8 max-w-6xl">
           <h1 className="text-3xl font-bold mb-2">User Management</h1>
           <p className="text-sm text-muted-foreground mb-6">

@@ -124,7 +124,7 @@ export default function FoundersCorner() {
   return (
     <div className="min-h-screen bg-background">
       <GlobalNav />
-      <div className="pl-14">
+      <div className="pl-16">
         <div className="container mx-auto px-6 py-8 max-w-4xl">
           <div className="mb-6">
             <h1 className="text-3xl font-bold flex items-center gap-2">
