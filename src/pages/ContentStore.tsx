@@ -254,13 +254,18 @@ export default function ContentStore() {
 
           <Card className="p-4 mb-6">
             <Label className="text-sm font-medium">Upload Excel (.xlsx / .xls / .csv)</Label>
-            <div className="mt-2 flex items-center gap-3">
+            <div className="mt-2 flex items-center gap-3 flex-wrap">
               <Input
                 type="file"
                 accept=".xlsx,.xls,.csv"
                 onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-                className="max-w-md"
+                className="max-w-md cursor-pointer file:cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-sky-500 file:px-3 file:py-1.5 file:text-white hover:file:bg-sky-600"
               />
+              {file && (
+                <span className="text-xs text-muted-foreground">
+                  {file.name} · {rows?.length ?? 0} rows detected
+                </span>
+              )}
               <span className="text-xs text-muted-foreground">
                 Uploading replaces existing content. Original file is preserved.
               </span>
@@ -290,9 +295,9 @@ export default function ContentStore() {
                   ))}
                 </div>
                 <div className="mt-4 flex gap-2 items-center">
-                  <Button onClick={doImport} disabled={importing} className="gap-2">
+                  <Button onClick={doImport} disabled={importing} className="gap-2 bg-sky-500 hover:bg-sky-600">
                     {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Import {rows.length} rows (replaces all)
+                    Submit {rows.length} rows (replaces all)
                   </Button>
                   <Button variant="ghost" onClick={() => { setFile(null); setRows(null); setHeaders([]); }}>
                     Cancel
