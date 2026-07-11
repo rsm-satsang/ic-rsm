@@ -1430,6 +1430,12 @@ FORMAT RULES:
       projectId={projectId!}
       onImported={invalidateJobs}
     />
+    <ImportReferenceDialog
+      open={showImportDialog}
+      onOpenChange={setShowImportDialog}
+      currentProjectId={projectId}
+      onImport={(refs: ImportedRef[]) => setRawTextReferences((prev) => [...prev, ...refs])}
+    />
     </>
   );
 }
