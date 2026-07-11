@@ -198,6 +198,48 @@ export type Database = {
           },
         ]
       }
+      content_items: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          extra: Json | null
+          id: string
+          publish_date: string | null
+          source_file_path: string | null
+          title: string | null
+          transcript: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          extra?: Json | null
+          id?: string
+          publish_date?: string | null
+          source_file_path?: string | null
+          title?: string | null
+          transcript?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          extra?: Json | null
+          id?: string
+          publish_date?: string | null
+          source_file_path?: string | null
+          title?: string | null
+          transcript?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       extraction_jobs: {
         Row: {
           created_at: string | null
@@ -687,6 +729,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sops: {
+        Row: {
+          category: string | null
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_mime: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          owner: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          category?: string | null
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          owner?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          category?: string | null
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          owner?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
       }
       status_history: {
         Row: {
