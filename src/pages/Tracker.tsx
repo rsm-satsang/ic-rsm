@@ -134,8 +134,10 @@ export default function Tracker() {
   const [themes, setThemes] = useState<ThemeOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<Channel | null>(null);
-  const [activeChannel, setActiveChannel] = useState<Channel>("substack_satsang");
-  const [activeSub, setActiveSub] = useState<SubChannel>("newsletter");
+  const [activeTabKey, setActiveTabKey] = useState<TabKey>("substack_satsang");
+  const activeTab = CHANNEL_TABS.find((c) => c.key === activeTabKey) ?? CHANNEL_TABS[0];
+  const activeChannel = activeTab.channel;
+  const activeSub = activeTab.sub;
   const now = new Date();
   const defaultMonth = now.getUTCFullYear() === YEAR ? now.getUTCMonth() : 0;
   const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
