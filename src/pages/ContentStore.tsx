@@ -94,6 +94,7 @@ function parseTags(v: any): string[] {
 export default function ContentStore() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<Record<string, any>[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -112,6 +113,14 @@ export default function ContentStore() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("__all__");
+
+  useEffect(() => { (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+      setIsAdmin((data as any)?.role === "admin");
+    }
+  })(); }, []);
 
 
   const load = async () => {
@@ -248,6 +257,7 @@ export default function ContentStore() {
             )}
           </div>
 
+          {isAdmin && (
           <Card className="p-4 mb-6">
             <Label className="text-sm font-medium">Upload Excel (.xlsx / .xls / .csv)</Label>
             <div className="mt-2 flex items-center gap-3 flex-wrap">
@@ -302,6 +312,7 @@ export default function ContentStore() {
               </div>
             )}
           </Card>
+          )}
 
           {/* Filters */}
           <Card className="p-4 mb-4">

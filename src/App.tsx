@@ -22,6 +22,8 @@ import AdminUsers from "./pages/AdminUsers";
 import OldTracker from "./pages/OldTracker";
 import ContentStore from "./pages/ContentStore";
 import ContentSOPs from "./pages/ContentSOPs";
+import FoundersCorner from "./pages/FoundersCorner";
+import SrijanHelp from "./pages/SrijanHelp";
 import GlobalNav from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,8 @@ const App = () => (
           <Route path="/old-tracker" element={<OldTracker />} />
           <Route path="/content-store" element={<ContentStore />} />
           <Route path="/content-sops" element={<ContentSOPs />} />
+          <Route path="/founders-corner" element={<FoundersCorner />} />
+          <Route path="/srijan-help" element={<SrijanHelp />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
