@@ -364,10 +364,44 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
           onChange={handleTextChange}
           className="min-h-[60px] resize-none"
         />
+        <div className="border rounded-md">
+          <button
+            type="button"
+            onClick={() => setShowRecipients((v) => !v)}
+            className="w-full flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/50"
+          >
+            <span className="flex items-center gap-1">
+              <Mail className="h-3 w-3" /> Email to {selectedRecipients.length} selected
+            </span>
+            <span>{showRecipients ? "Hide" : "Choose"}</span>
+          </button>
+          {showRecipients && (
+            <div className="max-h-40 overflow-y-auto border-t p-2 space-y-1">
+              {candidates.filter((c) => c.id !== me).length === 0 && (
+                <p className="text-xs text-muted-foreground">No reviewers available</p>
+              )}
+              {candidates.filter((c) => c.id !== me).map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedRecipients.includes(c.id)}
+                    onChange={(e) =>
+                      setSelectedRecipients((prev) =>
+                        e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id)
+                      )
+                    }
+                  />
+                  <span className="truncate">{c.name || c.email}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         <Button size="sm" className="w-full" onClick={submit} disabled={!text.trim() || submitting}>
           <Send className="h-3 w-3 mr-1" />
           {submitting ? "Sending…" : replyTo ? "Reply" : "Comment"}
         </Button>
+
       </div>
 
       <Dialog open={emailedDialog.open} onOpenChange={(o) => setEmailedDialog((s) => ({ ...s, open: o }))}>
