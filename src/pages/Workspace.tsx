@@ -911,6 +911,68 @@ const Workspace = () => {
     }
   };
 
+  const persistStage = async (stage: DraftStage, extraMeta?: Record<string, any>) => {
+    if (!project) return;
+    const metadata = { ...(project.metadata || {}), draft_stage: stage, ...(extraMeta || {}) };
+    const { error } = await supabase
+      .from("projects")
+      .update({ metadata, updated_at: new Date().toISOString() } as any)
+      .eq("id", project.id);
+    if (error) throw error;
+    setProject((prev) => (prev ? { ...prev, metadata } : prev));
+    setDraftStage(stage);
+  };
+
+  const handleDraftStageChange = async (stage: DraftStage) => {
+    if (!project || !user) return;
+    setMarkingReady(true);
+    try {
+      if (stage === "ready") {
+        await persistStage(stage);
+        await handleReadyForPublishing();
+      } else {
+        await persistStage(stage);
+        if (currentStatus === "approved" || currentStatus === "published") {
+          await handleStatusChange("in_progress");
+        }
+        if (stage === "concept_review") {
+          setConceptAnswer(conceptNote?.answer ?? "");
+          setConceptDialogOpen(true);
+        }
+        toast.success(`Draft status set to "${DRAFT_STAGES.find((s) => s.value === stage)?.label}"`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to update draft status");
+    } finally {
+      setMarkingReady(false);
+    }
+  };
+
+  const handleSaveConceptNote = async () => {
+    if (!project || !user) return;
+    setSavingConcept(true);
+    try {
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      const note = {
+        question: CONCEPT_QUESTION,
+        answer: conceptAnswer.trim(),
+        by: userData?.name || "Unknown User",
+        at: new Date().toISOString(),
+      };
+      await persistStage("concept_review", { concept_note: note });
+      setConceptNote(note);
+      setConceptDialogOpen(false);
+      toast.success("Concept review note saved");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to save concept note");
+    } finally {
+      setSavingConcept(false);
+    }
+  };
+
+
   // Determine if publish button should be shown
   const showPublishButton =
     project?.type === "article" ||
