@@ -65,6 +65,7 @@ type DraftStage =
   | "s4_concept_approved"
   | "s5_submit_peer"
   | "s6_awaiting_peer"
+  | "s7_peer_done"
   | "s7_awaiting_final"
   | "s8_ready"
   | "s9_published";
@@ -76,9 +77,10 @@ const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
   { value: "s4_concept_approved", label: "Stg 4. Concept Approved, Refinements in Progress" },
   { value: "s5_submit_peer", label: "Stg 5. Submit for Peer Review" },
   { value: "s6_awaiting_peer", label: "Stg 6. Awaiting Peer Review" },
-  { value: "s7_awaiting_final", label: "Stg 7. Awaiting Final Go ahead" },
-  { value: "s8_ready", label: "Stg 8. Ready to Publish" },
-  { value: "s9_published", label: "Stg 9. Published" },
+  { value: "s7_peer_done", label: "Stg 7. Peer Review done, Refinements In Progress" },
+  { value: "s7_awaiting_final", label: "Stg 8. Awaiting Final Go ahead" },
+  { value: "s8_ready", label: "Stg 9. Ready to Publish" },
+  { value: "s9_published", label: "Stg 10. Published" },
 ];
 
 // Map legacy stage values stored before the 9-stage workflow
@@ -91,7 +93,7 @@ const LEGACY_STAGE_MAP: Record<string, DraftStage> = {
 };
 
 const CONCEPT_QUESTION =
-  "What is the core concept, message and angle of this draft that you want the reviewers to evaluate?";
+  "Please write a brief note about the draft answering the following questions - What is the key message you want to convey through this ? How is this relevant ? What reference sources is this based upon ?";
 
 const CONCEPT_OUTCOMES = ["Approved", "Refinements required", "Discard"] as const;
 type ConceptOutcome = (typeof CONCEPT_OUTCOMES)[number];
@@ -1096,9 +1098,7 @@ const Workspace = () => {
       const nextStage: DraftStage =
         review.outcome === "Approved"
           ? "s4_concept_approved"
-          : review.outcome === "Refinements required"
-          ? "s1_preparing"
-          : draftStage;
+          : "s1_preparing";
       await persistStage(nextStage, { concept_review: review });
       setConceptReview(review);
       setReviewDialogOpen(false);
@@ -1443,26 +1443,26 @@ const Workspace = () => {
                       </p>
                     </div>
                   )}
-                </div>
-                <div className="flex flex-col gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
-                  >
-                    {conceptNote?.answer ? "Edit submission" : "Answer"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setReviewComments(conceptReview?.comments ?? "");
-                      setReviewOutcome(conceptReview?.outcome ?? "");
-                      setReviewDialogOpen(true);
-                    }}
-                  >
-                    Review Concept
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                    >
+                      {conceptNote?.answer ? "Edit submission" : "Answer"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setReviewComments(conceptReview?.comments ?? "");
+                        setReviewOutcome(conceptReview?.outcome ?? "");
+                        setReviewDialogOpen(true);
+                      }}
+                    >
+                      Review Concept
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1504,7 +1504,7 @@ const Workspace = () => {
                   className="shrink-0"
                   onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
                 >
-                  Add peer review
+                  Add Peer Review / Respond to review comments
                 </Button>
               </div>
             </div>
@@ -1713,7 +1713,7 @@ const Workspace = () => {
       <Dialog open={peerCommentDialogOpen} onOpenChange={setPeerCommentDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add peer review</DialogTitle>
+            <DialogTitle>Add Peer Review / Respond to review comments</DialogTitle>
             <DialogDescription>Your comments will appear in the Peer Review section.</DialogDescription>
           </DialogHeader>
           <Textarea
