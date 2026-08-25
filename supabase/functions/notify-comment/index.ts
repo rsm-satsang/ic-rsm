@@ -24,7 +24,7 @@ function createRawEmail(from: string, to: string, subject: string, html: string)
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { projectId, commentId, commentText, authorId } = await req.json();
+    const { projectId, commentId, commentText, authorId, recipientIds } = await req.json();
     if (!projectId || !commentText) {
       return new Response(JSON.stringify({ error: "projectId and commentText required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
