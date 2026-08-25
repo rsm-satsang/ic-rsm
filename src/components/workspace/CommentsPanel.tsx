@@ -53,6 +53,10 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [emailedDialog, setEmailedDialog] = useState<{ open: boolean; sentTo: { email: string; name: string | null }[]; errors: string[] }>({ open: false, sentTo: [], errors: [] });
+  const [candidates, setCandidates] = useState<User[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [showRecipients, setShowRecipients] = useState(false);
+
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
