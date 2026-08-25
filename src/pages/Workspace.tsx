@@ -58,7 +58,21 @@ interface Project {
   metadata?: any;
 }
 
+type DraftStage = "preparing" | "concept_review" | "refinements" | "peer_review" | "ready";
+
+const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
+  { value: "preparing", label: "Preparing first draft" },
+  { value: "concept_review", label: "Submit for Concept Review" },
+  { value: "refinements", label: "Ongoing Refinements" },
+  { value: "peer_review", label: "Submit for Peer Review" },
+  { value: "ready", label: "Ready to Publish" },
+];
+
+const CONCEPT_QUESTION =
+  "What is the core concept, message and angle of this draft that you want the reviewers to evaluate?";
+
 const Workspace = () => {
+
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
