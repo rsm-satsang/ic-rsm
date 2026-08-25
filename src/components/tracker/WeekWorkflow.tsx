@@ -90,6 +90,12 @@ function pickByWeek<T>(arr: T[], weekIso: string): T | null {
   const n = parseInt(weekIso.replace(/-/g, ""), 10);
   return arr[n % arr.length];
 }
+// Default planner / publisher (operator) is always Sangeeta ji when available.
+function pickDefaultAssignee<T extends { name?: string | null }>(arr: T[], weekIso: string): T | null {
+  const sangeeta = arr.find((u) => (u.name || "").toLowerCase().includes("sangeeta"));
+  return sangeeta ?? pickByWeek(arr, weekIso);
+}
+
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
