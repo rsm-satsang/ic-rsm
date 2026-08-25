@@ -85,11 +85,17 @@ const Workspace = () => {
   const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("sm");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [draftStage, setDraftStage] = useState<DraftStage>("preparing");
+  const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
+  const [conceptAnswer, setConceptAnswer] = useState("");
+  const [savingConcept, setSavingConcept] = useState(false);
+  const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
+
 
 
   // Autosave: title
