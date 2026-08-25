@@ -1232,8 +1232,39 @@ const Workspace = () => {
             />
           )}
 
+          {/* Concept review questionnaire response — shown above the draft */}
+          {draftStage === "concept_review" && (
+            <div className="border-b bg-amber-50 dark:bg-amber-950/20 px-8 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Concept Review
+                  </p>
+                  <p className="text-sm font-medium mt-1">{CONCEPT_QUESTION}</p>
+                  <p className="text-sm whitespace-pre-wrap mt-1">
+                    {conceptNote?.answer || <span className="text-muted-foreground italic">Not answered yet</span>}
+                  </p>
+                  {conceptNote?.by && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      — {conceptNote.by}
+                      {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                >
+                  {conceptNote?.answer ? "Edit response" : "Answer"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
+
             {loadingContent ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center space-y-2">
