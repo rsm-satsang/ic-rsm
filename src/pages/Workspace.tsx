@@ -58,18 +58,57 @@ interface Project {
   metadata?: any;
 }
 
-type DraftStage = "preparing" | "concept_review" | "refinements" | "peer_review" | "ready";
+type DraftStage =
+  | "s1_preparing"
+  | "s2_submit_concept"
+  | "s3_awaiting_concept"
+  | "s4_concept_approved"
+  | "s5_submit_peer"
+  | "s6_awaiting_peer"
+  | "s7_awaiting_final"
+  | "s8_ready"
+  | "s9_published";
 
 const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
-  { value: "preparing", label: "Preparing first draft" },
-  { value: "concept_review", label: "Submit for Concept Review" },
-  { value: "refinements", label: "Ongoing Refinements" },
-  { value: "peer_review", label: "Submit for Peer Review" },
-  { value: "ready", label: "Ready to Publish" },
+  { value: "s1_preparing", label: "Stg 1. Preparing first draft" },
+  { value: "s2_submit_concept", label: "Stg 2. Submit for Concept Review" },
+  { value: "s3_awaiting_concept", label: "Stg 3. Awaiting Concept Review" },
+  { value: "s4_concept_approved", label: "Stg 4. Concept Approved, Refinements in Progress" },
+  { value: "s5_submit_peer", label: "Stg 5. Submit for Peer Review" },
+  { value: "s6_awaiting_peer", label: "Stg 6. Awaiting Peer Review" },
+  { value: "s7_awaiting_final", label: "Stg 7. Awaiting Final Go ahead" },
+  { value: "s8_ready", label: "Stg 8. Ready to Publish" },
+  { value: "s9_published", label: "Stg 9. Published" },
 ];
+
+// Map legacy stage values stored before the 9-stage workflow
+const LEGACY_STAGE_MAP: Record<string, DraftStage> = {
+  preparing: "s1_preparing",
+  concept_review: "s3_awaiting_concept",
+  refinements: "s4_concept_approved",
+  peer_review: "s6_awaiting_peer",
+  ready: "s8_ready",
+};
 
 const CONCEPT_QUESTION =
   "What is the core concept, message and angle of this draft that you want the reviewers to evaluate?";
+
+const CONCEPT_OUTCOMES = ["Approved", "Refinements required", "Discard"] as const;
+type ConceptOutcome = (typeof CONCEPT_OUTCOMES)[number];
+
+interface ConceptReview {
+  outcome: ConceptOutcome;
+  comments: string;
+  by?: string;
+  at?: string;
+}
+
+interface PeerReviewEntry {
+  comments: string;
+  by?: string;
+  at?: string;
+}
+
 
 const Workspace = () => {
 
