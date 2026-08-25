@@ -164,13 +164,9 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         if (ver?.created_by && ver.created_by !== me) recipients.add(ver.created_by);
       }
 
-      // All approved admins + builders (reviewers) get notified of new comments
-      const { data: reviewers } = await supabase
-        .from("users")
-        .select("id")
-        .in("role", ["admin", "user"])
-        .eq("approval_status", "approved");
-      (reviewers || []).forEach((r: any) => recipients.add(r.id));
+      // Only the explicitly selected reviewers get notified of new comments
+      selectedRecipients.forEach((id) => recipients.add(id));
+
 
       recipients.delete(me);
       if (recipients.size) {
