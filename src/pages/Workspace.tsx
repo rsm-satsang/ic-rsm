@@ -1608,10 +1608,10 @@ const Workspace = () => {
       </div>
 
       {/* Concept Review Questionnaire */}
-      <Dialog open={conceptDialogOpen} onOpenChange={setConceptDialogOpen}>
+      <Dialog open={conceptDialogOpen} onOpenChange={handleConceptDialogClose}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Concept Review</DialogTitle>
+            <DialogTitle>Concept Review Submission</DialogTitle>
             <DialogDescription>{CONCEPT_QUESTION}</DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1621,7 +1621,7 @@ const Workspace = () => {
             placeholder="Write your response for the reviewers..."
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConceptDialogOpen(false)} disabled={savingConcept}>
+            <Button variant="outline" onClick={() => handleConceptDialogClose(false)} disabled={savingConcept}>
               Cancel
             </Button>
             <Button onClick={handleSaveConceptNote} disabled={savingConcept || !conceptAnswer.trim()}>
@@ -1630,6 +1630,109 @@ const Workspace = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Review Concept outcome */}
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review Concept</DialogTitle>
+            <DialogDescription>Record your review comments and the outcome.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={reviewComments}
+              onChange={(e) => setReviewComments(e.target.value)}
+              rows={5}
+              placeholder="Review comments..."
+            />
+            <Select value={reviewOutcome} onValueChange={(v) => setReviewOutcome(v as ConceptOutcome)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select review outcome" />
+              </SelectTrigger>
+              <SelectContent>
+                {CONCEPT_OUTCOMES.map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={savingReview}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveConceptReview} disabled={savingReview || !reviewOutcome}>
+              {savingReview ? "Saving..." : "Save review"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Peer reviewer assignment */}
+      <Dialog open={peerDialogOpen} onOpenChange={setPeerDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Submit for Peer Review</DialogTitle>
+            <DialogDescription>Select exactly two reviewers from the Builders team.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {builders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No Builders available.</p>
+            ) : (
+              builders.map((b) => {
+                const checked = peerReviewerIds.includes(b.id);
+                return (
+                  <label key={b.id} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={!checked && peerReviewerIds.length >= 2}
+                      onChange={(e) =>
+                        setPeerReviewerIds((prev) =>
+                          e.target.checked ? [...prev, b.id] : prev.filter((id) => id !== b.id)
+                        )
+                      }
+                    />
+                    <span>{b.name} ({b.email})</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPeerDialogOpen(false)} disabled={savingPeer}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePeerReviewers} disabled={savingPeer || peerReviewerIds.length !== 2}>
+              {savingPeer ? "Saving..." : "Assign & move to Stg 6"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Peer review comment */}
+      <Dialog open={peerCommentDialogOpen} onOpenChange={setPeerCommentDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add peer review</DialogTitle>
+            <DialogDescription>Your comments will appear in the Peer Review section.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={peerCommentText}
+            onChange={(e) => setPeerCommentText(e.target.value)}
+            rows={5}
+            placeholder="Peer review comments..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPeerCommentDialogOpen(false)} disabled={savingPeerComment}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddPeerReview} disabled={savingPeerComment || !peerCommentText.trim()}>
+              {savingPeerComment ? "Saving..." : "Add comment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       {/* Delete Confirmation Dialog */}
