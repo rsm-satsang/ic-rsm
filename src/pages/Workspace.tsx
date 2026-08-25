@@ -1189,12 +1189,14 @@ const Workspace = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowImageDialog(true)}
+              disabled
+              title="Temporarily deactivated"
               className="gap-2 ml-2"
             >
               <ImageIcon className="h-4 w-4" />
               Generate an image for the article
             </Button>
+
             {project && user && (
               <AddImageDialog
                 projectId={project.id}
