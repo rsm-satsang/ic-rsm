@@ -138,11 +138,26 @@ const Workspace = () => {
   const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("sm");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [draftStage, setDraftStage] = useState<DraftStage>("preparing");
+  const [draftStage, setDraftStage] = useState<DraftStage>("s1_preparing");
   const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
   const [conceptAnswer, setConceptAnswer] = useState("");
   const [savingConcept, setSavingConcept] = useState(false);
   const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
+  const [conceptReview, setConceptReview] = useState<ConceptReview | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewComments, setReviewComments] = useState("");
+  const [reviewOutcome, setReviewOutcome] = useState<ConceptOutcome | "">("");
+  const [savingReview, setSavingReview] = useState(false);
+  const [peerDialogOpen, setPeerDialogOpen] = useState(false);
+  const [builders, setBuilders] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [peerReviewerIds, setPeerReviewerIds] = useState<string[]>([]);
+  const [peerReviewers, setPeerReviewers] = useState<{ id: string; name: string }[]>([]);
+  const [savingPeer, setSavingPeer] = useState(false);
+  const [peerReviews, setPeerReviews] = useState<PeerReviewEntry[]>([]);
+  const [peerCommentDialogOpen, setPeerCommentDialogOpen] = useState(false);
+  const [peerCommentText, setPeerCommentText] = useState("");
+  const [savingPeerComment, setSavingPeerComment] = useState(false);
+
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
