@@ -287,9 +287,12 @@ export default function Tracker() {
     };
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      // Default planner is always Sangeeta ji when present in the planner list
+      const defaultPlanner =
+        planners.find((p: any) => (p.name || "").toLowerCase().includes("sangeeta")) || null;
       const rows = missing.map((w) => {
         const n = parseInt(w.replace(/-/g, ""), 10);
-        const planner = planners[n % planners.length];
+        const planner = defaultPlanner || planners[n % planners.length];
         return {
           channel: activeChannel,
           sub_channel: activeSub,
@@ -298,9 +301,11 @@ export default function Tracker() {
           source: "auto",
           created_by: user?.id ?? null,
           plan_assignee_id: planner.id,
+          plan_assignee_ids: [planner.id],
           plan_due_date: defaultDue(w),
         };
       });
+
       // Insert planning slots one-by-one so a duplicate on the (channel,sub,week,source_url)
       // slot index doesn't abort the whole batch.
       const inserted: any[] = [];
