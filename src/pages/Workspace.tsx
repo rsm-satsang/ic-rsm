@@ -1358,8 +1358,29 @@ const Workspace = () => {
         </div>
       </div>
 
-
-
+      {/* Concept Review Questionnaire */}
+      <Dialog open={conceptDialogOpen} onOpenChange={setConceptDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Concept Review</DialogTitle>
+            <DialogDescription>{CONCEPT_QUESTION}</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={conceptAnswer}
+            onChange={(e) => setConceptAnswer(e.target.value)}
+            rows={6}
+            placeholder="Write your response for the reviewers..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConceptDialogOpen(false)} disabled={savingConcept}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveConceptNote} disabled={savingConcept || !conceptAnswer.trim()}>
+              {savingConcept ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
       {/* Delete Confirmation Dialog */}
