@@ -58,18 +58,57 @@ interface Project {
   metadata?: any;
 }
 
-type DraftStage = "preparing" | "concept_review" | "refinements" | "peer_review" | "ready";
+type DraftStage =
+  | "s1_preparing"
+  | "s2_submit_concept"
+  | "s3_awaiting_concept"
+  | "s4_concept_approved"
+  | "s5_submit_peer"
+  | "s6_awaiting_peer"
+  | "s7_awaiting_final"
+  | "s8_ready"
+  | "s9_published";
 
 const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
-  { value: "preparing", label: "Preparing first draft" },
-  { value: "concept_review", label: "Submit for Concept Review" },
-  { value: "refinements", label: "Ongoing Refinements" },
-  { value: "peer_review", label: "Submit for Peer Review" },
-  { value: "ready", label: "Ready to Publish" },
+  { value: "s1_preparing", label: "Stg 1. Preparing first draft" },
+  { value: "s2_submit_concept", label: "Stg 2. Submit for Concept Review" },
+  { value: "s3_awaiting_concept", label: "Stg 3. Awaiting Concept Review" },
+  { value: "s4_concept_approved", label: "Stg 4. Concept Approved, Refinements in Progress" },
+  { value: "s5_submit_peer", label: "Stg 5. Submit for Peer Review" },
+  { value: "s6_awaiting_peer", label: "Stg 6. Awaiting Peer Review" },
+  { value: "s7_awaiting_final", label: "Stg 7. Awaiting Final Go ahead" },
+  { value: "s8_ready", label: "Stg 8. Ready to Publish" },
+  { value: "s9_published", label: "Stg 9. Published" },
 ];
+
+// Map legacy stage values stored before the 9-stage workflow
+const LEGACY_STAGE_MAP: Record<string, DraftStage> = {
+  preparing: "s1_preparing",
+  concept_review: "s3_awaiting_concept",
+  refinements: "s4_concept_approved",
+  peer_review: "s6_awaiting_peer",
+  ready: "s8_ready",
+};
 
 const CONCEPT_QUESTION =
   "What is the core concept, message and angle of this draft that you want the reviewers to evaluate?";
+
+const CONCEPT_OUTCOMES = ["Approved", "Refinements required", "Discard"] as const;
+type ConceptOutcome = (typeof CONCEPT_OUTCOMES)[number];
+
+interface ConceptReview {
+  outcome: ConceptOutcome;
+  comments: string;
+  by?: string;
+  at?: string;
+}
+
+interface PeerReviewEntry {
+  comments: string;
+  by?: string;
+  at?: string;
+}
+
 
 const Workspace = () => {
 
@@ -99,11 +138,26 @@ const Workspace = () => {
   const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("sm");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [draftStage, setDraftStage] = useState<DraftStage>("preparing");
+  const [draftStage, setDraftStage] = useState<DraftStage>("s1_preparing");
   const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
   const [conceptAnswer, setConceptAnswer] = useState("");
   const [savingConcept, setSavingConcept] = useState(false);
   const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
+  const [conceptReview, setConceptReview] = useState<ConceptReview | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewComments, setReviewComments] = useState("");
+  const [reviewOutcome, setReviewOutcome] = useState<ConceptOutcome | "">("");
+  const [savingReview, setSavingReview] = useState(false);
+  const [peerDialogOpen, setPeerDialogOpen] = useState(false);
+  const [builders, setBuilders] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [peerReviewerIds, setPeerReviewerIds] = useState<string[]>([]);
+  const [peerReviewers, setPeerReviewers] = useState<{ id: string; name: string }[]>([]);
+  const [savingPeer, setSavingPeer] = useState(false);
+  const [peerReviews, setPeerReviews] = useState<PeerReviewEntry[]>([]);
+  const [peerCommentDialogOpen, setPeerCommentDialogOpen] = useState(false);
+  const [peerCommentText, setPeerCommentText] = useState("");
+  const [savingPeerComment, setSavingPeerComment] = useState(false);
+
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
@@ -437,16 +491,24 @@ const Workspace = () => {
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
       const meta = (data as any).metadata || {};
-      const stage: DraftStage | undefined = meta.draft_stage;
-      setDraftStage(
-        stage && DRAFT_STAGES.some((s) => s.value === stage)
-          ? stage
-          : data.status === "approved" || data.status === "published"
-          ? "ready"
-          : "preparing"
-      );
+      const rawStage: string | undefined = meta.draft_stage;
+      const mapped =
+        rawStage && DRAFT_STAGES.some((s) => s.value === rawStage)
+          ? (rawStage as DraftStage)
+          : rawStage && LEGACY_STAGE_MAP[rawStage]
+          ? LEGACY_STAGE_MAP[rawStage]
+          : data.status === "published"
+          ? "s9_published"
+          : data.status === "approved"
+          ? "s8_ready"
+          : "s1_preparing";
+      setDraftStage(mapped);
       setConceptNote(meta.concept_note ?? null);
       setConceptAnswer(meta.concept_note?.answer ?? "");
+      setConceptReview(meta.concept_review ?? null);
+      setPeerReviewerIds(meta.peer_reviewer_ids ?? []);
+      setPeerReviews(meta.peer_reviews ?? []);
+
 
 
       // If the project has comments, open the Comments tab by default
@@ -923,21 +985,58 @@ const Workspace = () => {
     setDraftStage(stage);
   };
 
+  const fetchBuilders = async () => {
+    const { data } = await supabase
+      .from("users")
+      .select("id, name, email, content_roles, approval_status")
+      .order("name");
+    setBuilders(
+      (data || [])
+        .filter((u: any) => u.approval_status === "approved" && (u.content_roles || []).includes("builder"))
+        .map((u: any) => ({ id: u.id, name: u.name, email: u.email }))
+    );
+  };
+
+  useEffect(() => {
+    if (peerReviewerIds.length === 0) {
+      setPeerReviewers([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase.from("users").select("id, name").in("id", peerReviewerIds);
+      setPeerReviewers((data || []).map((u: any) => ({ id: u.id, name: u.name })));
+    })();
+  }, [peerReviewerIds]);
+
   const handleDraftStageChange = async (stage: DraftStage) => {
     if (!project || !user) return;
+
+    // Stg 2 requires the concept questionnaire — open it, revert to Stg 1 if unanswered
+    if (stage === "s2_submit_concept") {
+      setConceptAnswer(conceptNote?.answer ?? "");
+      setConceptDialogOpen(true);
+      return;
+    }
+
+    // Stg 5 requires picking two peer reviewers from the Builders team
+    if (stage === "s5_submit_peer") {
+      await fetchBuilders();
+      setPeerDialogOpen(true);
+      return;
+    }
+
     setMarkingReady(true);
     try {
-      if (stage === "ready") {
+      if (stage === "s8_ready") {
         await persistStage(stage);
         await handleReadyForPublishing();
       } else {
         await persistStage(stage);
-        if (currentStatus === "approved" || currentStatus === "published") {
+        if (stage !== "s9_published" && (currentStatus === "approved" || currentStatus === "published")) {
           await handleStatusChange("in_progress");
         }
-        if (stage === "concept_review") {
-          setConceptAnswer(conceptNote?.answer ?? "");
-          setConceptDialogOpen(true);
+        if (stage === "s9_published") {
+          await handleStatusChange("published");
         }
         toast.success(`Draft status set to "${DRAFT_STAGES.find((s) => s.value === stage)?.label}"`);
       }
@@ -946,6 +1045,14 @@ const Workspace = () => {
       toast.error(e?.message || "Failed to update draft status");
     } finally {
       setMarkingReady(false);
+    }
+  };
+
+  const handleConceptDialogClose = (open: boolean) => {
+    setConceptDialogOpen(open);
+    // Cancelled without a saved questionnaire → stay/revert to Stg 1
+    if (!open && !conceptNote?.answer && draftStage !== "s1_preparing") {
+      persistStage("s1_preparing").catch(console.error);
     }
   };
 
@@ -960,10 +1067,13 @@ const Workspace = () => {
         by: userData?.name || "Unknown User",
         at: new Date().toISOString(),
       };
-      await persistStage("concept_review", { concept_note: note });
+      // Questionnaire filled → move straight to Stg 3
+      const nextStage: DraftStage =
+        draftStage === "s1_preparing" || draftStage === "s2_submit_concept" ? "s3_awaiting_concept" : draftStage;
+      await persistStage(nextStage, { concept_note: note });
       setConceptNote(note);
       setConceptDialogOpen(false);
-      toast.success("Concept review note saved");
+      toast.success("Concept submission saved");
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Failed to save concept note");
@@ -971,6 +1081,75 @@ const Workspace = () => {
       setSavingConcept(false);
     }
   };
+
+  const handleSaveConceptReview = async () => {
+    if (!project || !user || !reviewOutcome) return;
+    setSavingReview(true);
+    try {
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      const review: ConceptReview = {
+        outcome: reviewOutcome as ConceptOutcome,
+        comments: reviewComments.trim(),
+        by: userData?.name || "Unknown User",
+        at: new Date().toISOString(),
+      };
+      const nextStage: DraftStage =
+        review.outcome === "Approved"
+          ? "s4_concept_approved"
+          : review.outcome === "Refinements required"
+          ? "s1_preparing"
+          : draftStage;
+      await persistStage(nextStage, { concept_review: review });
+      setConceptReview(review);
+      setReviewDialogOpen(false);
+      toast.success(`Concept review recorded: ${review.outcome}`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to save concept review");
+    } finally {
+      setSavingReview(false);
+    }
+  };
+
+  const handleSavePeerReviewers = async () => {
+    if (!project || peerReviewerIds.length !== 2) return;
+    setSavingPeer(true);
+    try {
+      await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds });
+      setPeerDialogOpen(false);
+      toast.success("Two peer reviewers assigned — status moved to Stg 6");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to assign peer reviewers");
+    } finally {
+      setSavingPeer(false);
+    }
+  };
+
+  const handleAddPeerReview = async () => {
+    if (!project || !user || !peerCommentText.trim()) return;
+    setSavingPeerComment(true);
+    try {
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      const entry: PeerReviewEntry = {
+        comments: peerCommentText.trim(),
+        by: userData?.name || "Unknown User",
+        at: new Date().toISOString(),
+      };
+      const next = [...peerReviews, entry];
+      await persistStage(draftStage, { peer_reviews: next });
+      setPeerReviews(next);
+      setPeerCommentText("");
+      setPeerCommentDialogOpen(false);
+      toast.success("Peer review comment added");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to add peer review comment");
+    } finally {
+      setSavingPeerComment(false);
+    }
+  };
+
 
 
   // Determine if publish button should be shown
@@ -1058,7 +1237,7 @@ const Workspace = () => {
                     onValueChange={(v) => handleDraftStageChange(v as DraftStage)}
                     disabled={markingReady}
                   >
-                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[210px] focus:ring-0">
+                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[290px] focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1232,8 +1411,8 @@ const Workspace = () => {
             />
           )}
 
-          {/* Concept review questionnaire response — shown above the draft */}
-          {draftStage === "concept_review" && (
+          {/* Concept Review panel — shown above the draft */}
+          {(conceptNote?.answer || conceptReview) && (
             <div className="border-b bg-amber-50 dark:bg-amber-950/20 px-8 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -1250,17 +1429,87 @@ const Workspace = () => {
                       {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
                     </p>
                   )}
+                  {conceptReview && (
+                    <div className="mt-3 border-t pt-2">
+                      <p className="text-sm">
+                        <span className="font-medium">Outcome:</span> {conceptReview.outcome}
+                      </p>
+                      {conceptReview.comments && (
+                        <p className="text-sm whitespace-pre-wrap mt-1">{conceptReview.comments}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        — {conceptReview.by}
+                        {conceptReview.at ? ` on ${new Date(conceptReview.at).toLocaleString()}` : ""}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                  >
+                    {conceptNote?.answer ? "Edit submission" : "Answer"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setReviewComments(conceptReview?.comments ?? "");
+                      setReviewOutcome(conceptReview?.outcome ?? "");
+                      setReviewDialogOpen(true);
+                    }}
+                  >
+                    Review Concept
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Peer Review panel */}
+          {(peerReviewers.length > 0 || peerReviews.length > 0) && (
+            <div className="border-b bg-sky-50 dark:bg-sky-950/20 px-8 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Peer Review
+                  </p>
+                  {peerReviewers.length > 0 && (
+                    <p className="text-sm mt-1">
+                      <span className="font-medium">Reviewers:</span>{" "}
+                      {peerReviewers.map((r) => r.name).join(", ")}
+                    </p>
+                  )}
+                  {peerReviews.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic mt-1">No peer review comments yet</p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {peerReviews.map((pr, i) => (
+                        <div key={i} className="border-t pt-2">
+                          <p className="text-sm whitespace-pre-wrap">{pr.comments}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            — {pr.by}
+                            {pr.at ? ` on ${new Date(pr.at).toLocaleString()}` : ""}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                  className="shrink-0"
+                  onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
                 >
-                  {conceptNote?.answer ? "Edit response" : "Answer"}
+                  Add peer review
                 </Button>
               </div>
             </div>
           )}
+
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
@@ -1359,10 +1608,10 @@ const Workspace = () => {
       </div>
 
       {/* Concept Review Questionnaire */}
-      <Dialog open={conceptDialogOpen} onOpenChange={setConceptDialogOpen}>
+      <Dialog open={conceptDialogOpen} onOpenChange={handleConceptDialogClose}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Concept Review</DialogTitle>
+            <DialogTitle>Concept Review Submission</DialogTitle>
             <DialogDescription>{CONCEPT_QUESTION}</DialogDescription>
           </DialogHeader>
           <Textarea
@@ -1372,7 +1621,7 @@ const Workspace = () => {
             placeholder="Write your response for the reviewers..."
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConceptDialogOpen(false)} disabled={savingConcept}>
+            <Button variant="outline" onClick={() => handleConceptDialogClose(false)} disabled={savingConcept}>
               Cancel
             </Button>
             <Button onClick={handleSaveConceptNote} disabled={savingConcept || !conceptAnswer.trim()}>
@@ -1381,6 +1630,109 @@ const Workspace = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Review Concept outcome */}
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review Concept</DialogTitle>
+            <DialogDescription>Record your review comments and the outcome.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={reviewComments}
+              onChange={(e) => setReviewComments(e.target.value)}
+              rows={5}
+              placeholder="Review comments..."
+            />
+            <Select value={reviewOutcome} onValueChange={(v) => setReviewOutcome(v as ConceptOutcome)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select review outcome" />
+              </SelectTrigger>
+              <SelectContent>
+                {CONCEPT_OUTCOMES.map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={savingReview}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveConceptReview} disabled={savingReview || !reviewOutcome}>
+              {savingReview ? "Saving..." : "Save review"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Peer reviewer assignment */}
+      <Dialog open={peerDialogOpen} onOpenChange={setPeerDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Submit for Peer Review</DialogTitle>
+            <DialogDescription>Select exactly two reviewers from the Builders team.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {builders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No Builders available.</p>
+            ) : (
+              builders.map((b) => {
+                const checked = peerReviewerIds.includes(b.id);
+                return (
+                  <label key={b.id} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={!checked && peerReviewerIds.length >= 2}
+                      onChange={(e) =>
+                        setPeerReviewerIds((prev) =>
+                          e.target.checked ? [...prev, b.id] : prev.filter((id) => id !== b.id)
+                        )
+                      }
+                    />
+                    <span>{b.name} ({b.email})</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPeerDialogOpen(false)} disabled={savingPeer}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePeerReviewers} disabled={savingPeer || peerReviewerIds.length !== 2}>
+              {savingPeer ? "Saving..." : "Assign & move to Stg 6"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Peer review comment */}
+      <Dialog open={peerCommentDialogOpen} onOpenChange={setPeerCommentDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add peer review</DialogTitle>
+            <DialogDescription>Your comments will appear in the Peer Review section.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={peerCommentText}
+            onChange={(e) => setPeerCommentText(e.target.value)}
+            rows={5}
+            placeholder="Peer review comments..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPeerCommentDialogOpen(false)} disabled={savingPeerComment}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddPeerReview} disabled={savingPeerComment || !peerCommentText.trim()}>
+              {savingPeerComment ? "Saving..." : "Add comment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       {/* Delete Confirmation Dialog */}
