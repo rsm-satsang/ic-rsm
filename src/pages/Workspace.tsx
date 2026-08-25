@@ -985,21 +985,58 @@ const Workspace = () => {
     setDraftStage(stage);
   };
 
+  const fetchBuilders = async () => {
+    const { data } = await supabase
+      .from("users")
+      .select("id, name, email, content_roles, approval_status")
+      .order("name");
+    setBuilders(
+      (data || [])
+        .filter((u: any) => u.approval_status === "approved" && (u.content_roles || []).includes("builder"))
+        .map((u: any) => ({ id: u.id, name: u.name, email: u.email }))
+    );
+  };
+
+  useEffect(() => {
+    if (peerReviewerIds.length === 0) {
+      setPeerReviewers([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase.from("users").select("id, name").in("id", peerReviewerIds);
+      setPeerReviewers((data || []).map((u: any) => ({ id: u.id, name: u.name })));
+    })();
+  }, [peerReviewerIds]);
+
   const handleDraftStageChange = async (stage: DraftStage) => {
     if (!project || !user) return;
+
+    // Stg 2 requires the concept questionnaire — open it, revert to Stg 1 if unanswered
+    if (stage === "s2_submit_concept") {
+      setConceptAnswer(conceptNote?.answer ?? "");
+      setConceptDialogOpen(true);
+      return;
+    }
+
+    // Stg 5 requires picking two peer reviewers from the Builders team
+    if (stage === "s5_submit_peer") {
+      await fetchBuilders();
+      setPeerDialogOpen(true);
+      return;
+    }
+
     setMarkingReady(true);
     try {
-      if (stage === "ready") {
+      if (stage === "s8_ready") {
         await persistStage(stage);
         await handleReadyForPublishing();
       } else {
         await persistStage(stage);
-        if (currentStatus === "approved" || currentStatus === "published") {
+        if (stage !== "s9_published" && (currentStatus === "approved" || currentStatus === "published")) {
           await handleStatusChange("in_progress");
         }
-        if (stage === "concept_review") {
-          setConceptAnswer(conceptNote?.answer ?? "");
-          setConceptDialogOpen(true);
+        if (stage === "s9_published") {
+          await handleStatusChange("published");
         }
         toast.success(`Draft status set to "${DRAFT_STAGES.find((s) => s.value === stage)?.label}"`);
       }
@@ -1008,6 +1045,14 @@ const Workspace = () => {
       toast.error(e?.message || "Failed to update draft status");
     } finally {
       setMarkingReady(false);
+    }
+  };
+
+  const handleConceptDialogClose = (open: boolean) => {
+    setConceptDialogOpen(open);
+    // Cancelled without a saved questionnaire → stay/revert to Stg 1
+    if (!open && !conceptNote?.answer && draftStage !== "s1_preparing") {
+      persistStage("s1_preparing").catch(console.error);
     }
   };
 
@@ -1022,10 +1067,13 @@ const Workspace = () => {
         by: userData?.name || "Unknown User",
         at: new Date().toISOString(),
       };
-      await persistStage("concept_review", { concept_note: note });
+      // Questionnaire filled → move straight to Stg 3
+      const nextStage: DraftStage =
+        draftStage === "s1_preparing" || draftStage === "s2_submit_concept" ? "s3_awaiting_concept" : draftStage;
+      await persistStage(nextStage, { concept_note: note });
       setConceptNote(note);
       setConceptDialogOpen(false);
-      toast.success("Concept review note saved");
+      toast.success("Concept submission saved");
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Failed to save concept note");
@@ -1033,6 +1081,75 @@ const Workspace = () => {
       setSavingConcept(false);
     }
   };
+
+  const handleSaveConceptReview = async () => {
+    if (!project || !user || !reviewOutcome) return;
+    setSavingReview(true);
+    try {
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      const review: ConceptReview = {
+        outcome: reviewOutcome as ConceptOutcome,
+        comments: reviewComments.trim(),
+        by: userData?.name || "Unknown User",
+        at: new Date().toISOString(),
+      };
+      const nextStage: DraftStage =
+        review.outcome === "Approved"
+          ? "s4_concept_approved"
+          : review.outcome === "Refinements required"
+          ? "s1_preparing"
+          : draftStage;
+      await persistStage(nextStage, { concept_review: review });
+      setConceptReview(review);
+      setReviewDialogOpen(false);
+      toast.success(`Concept review recorded: ${review.outcome}`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to save concept review");
+    } finally {
+      setSavingReview(false);
+    }
+  };
+
+  const handleSavePeerReviewers = async () => {
+    if (!project || peerReviewerIds.length !== 2) return;
+    setSavingPeer(true);
+    try {
+      await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds });
+      setPeerDialogOpen(false);
+      toast.success("Two peer reviewers assigned — status moved to Stg 6");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to assign peer reviewers");
+    } finally {
+      setSavingPeer(false);
+    }
+  };
+
+  const handleAddPeerReview = async () => {
+    if (!project || !user || !peerCommentText.trim()) return;
+    setSavingPeerComment(true);
+    try {
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      const entry: PeerReviewEntry = {
+        comments: peerCommentText.trim(),
+        by: userData?.name || "Unknown User",
+        at: new Date().toISOString(),
+      };
+      const next = [...peerReviews, entry];
+      await persistStage(draftStage, { peer_reviews: next });
+      setPeerReviews(next);
+      setPeerCommentText("");
+      setPeerCommentDialogOpen(false);
+      toast.success("Peer review comment added");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to add peer review comment");
+    } finally {
+      setSavingPeerComment(false);
+    }
+  };
+
 
 
   // Determine if publish button should be shown
