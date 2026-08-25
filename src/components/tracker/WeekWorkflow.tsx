@@ -349,7 +349,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     const needsOp = !entry.operate_assignee_id;
     const needsStatusBump = !["operate_assigned", "publish_complete", "published"].includes(entry.status);
     if (!needsOp && !needsStatusBump) return;
-    const autoOp = needsOp ? pickByWeek(operators, week) : null;
+    const autoOp = needsOp ? pickDefaultAssignee(operators, week) : null;
     (async () => {
       const patch: any = { status: "operate_assigned" };
       if (autoOp) {
