@@ -1054,29 +1054,21 @@ const Workspace = () => {
                 <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-background">
                   <FileCheck2 className="h-4 w-4 text-muted-foreground" />
                   <Select
-                    value={
-                      currentStatus === "approved" || currentStatus === "published"
-                        ? "ready"
-                        : "in_progress"
-                    }
-                    onValueChange={async (v) => {
-                      if (v === "ready") {
-                        await handleReadyForPublishing();
-                      } else {
-                        await handleStatusChange("in_progress");
-                      }
-                    }}
+                    value={draftStage}
+                    onValueChange={(v) => handleDraftStageChange(v as DraftStage)}
                     disabled={markingReady}
                   >
-                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[170px] focus:ring-0">
+                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[210px] focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="ready">Ready for Publishing</SelectItem>
+                      {DRAFT_STAGES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+
               </>
             )}
 
