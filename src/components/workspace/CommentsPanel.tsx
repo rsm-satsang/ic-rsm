@@ -112,9 +112,20 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
       if (user) setMe(user.id);
       const { data: us } = await supabase.from("users").select("id, name, email").order("name");
       setUsers((us || []) as User[]);
+      const { data: cand } = await supabase
+        .from("users")
+        .select("id, name, email, role, content_roles, approval_status")
+        .eq("approval_status", "approved")
+        .order("name");
+      const list = ((cand || []) as any[]).filter(
+        (u) => u.role === "admin" || (u.content_roles ?? []).includes("builder")
+      );
+      setCandidates(list as User[]);
+      setSelectedRecipients(list.filter((u) => u.id !== user?.id).map((u) => u.id));
       await load();
     })();
   }, [projectId]);
+
 
   const submit = async () => {
     if (!text.trim() || !me) return;
