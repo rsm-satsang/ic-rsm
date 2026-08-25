@@ -436,6 +436,18 @@ const Workspace = () => {
       setProject(data);
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
+      const meta = (data as any).metadata || {};
+      const stage: DraftStage | undefined = meta.draft_stage;
+      setDraftStage(
+        stage && DRAFT_STAGES.some((s) => s.value === stage)
+          ? stage
+          : data.status === "approved" || data.status === "published"
+          ? "ready"
+          : "preparing"
+      );
+      setConceptNote(meta.concept_note ?? null);
+      setConceptAnswer(meta.concept_note?.answer ?? "");
+
 
       // If the project has comments, open the Comments tab by default
       const { count } = await supabase
