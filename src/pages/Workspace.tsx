@@ -491,16 +491,24 @@ const Workspace = () => {
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
       const meta = (data as any).metadata || {};
-      const stage: DraftStage | undefined = meta.draft_stage;
-      setDraftStage(
-        stage && DRAFT_STAGES.some((s) => s.value === stage)
-          ? stage
-          : data.status === "approved" || data.status === "published"
-          ? "ready"
-          : "preparing"
-      );
+      const rawStage: string | undefined = meta.draft_stage;
+      const mapped =
+        rawStage && DRAFT_STAGES.some((s) => s.value === rawStage)
+          ? (rawStage as DraftStage)
+          : rawStage && LEGACY_STAGE_MAP[rawStage]
+          ? LEGACY_STAGE_MAP[rawStage]
+          : data.status === "published"
+          ? "s9_published"
+          : data.status === "approved"
+          ? "s8_ready"
+          : "s1_preparing";
+      setDraftStage(mapped);
       setConceptNote(meta.concept_note ?? null);
       setConceptAnswer(meta.concept_note?.answer ?? "");
+      setConceptReview(meta.concept_review ?? null);
+      setPeerReviewerIds(meta.peer_reviewer_ids ?? []);
+      setPeerReviews(meta.peer_reviews ?? []);
+
 
 
       // If the project has comments, open the Comments tab by default
