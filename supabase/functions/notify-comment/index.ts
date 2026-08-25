@@ -24,7 +24,7 @@ function createRawEmail(from: string, to: string, subject: string, html: string)
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { projectId, commentId, commentText, authorId } = await req.json();
+    const { projectId, commentId, commentText, authorId, recipientIds } = await req.json();
     if (!projectId || !commentText) {
       return new Response(JSON.stringify({ error: "projectId and commentText required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -48,15 +48,23 @@ Deno.serve(async (req) => {
       if (a?.name) authorName = a.name;
     }
 
+    const ids: string[] = Array.isArray(recipientIds) ? recipientIds.filter((x: any) => typeof x === "string") : [];
+    if (ids.length === 0) {
+      return new Response(JSON.stringify({ ok: true, sent: 0, recipients: [], sentTo: [], errors: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: recipients } = await supabase
       .from("users")
       .select("email, id, name")
-      .in("role", ["admin", "user"])
+      .in("id", ids)
       .eq("approval_status", "approved");
 
     const filtered = (recipients || []).filter(
       (r: any) => r.id !== authorId && r.email
     );
+
     const emails = Array.from(new Set(filtered.map((r: any) => r.email)));
     console.log(`notify-comment: ${emails.length} recipients for project ${projectId}`);
 

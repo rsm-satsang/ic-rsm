@@ -58,7 +58,21 @@ interface Project {
   metadata?: any;
 }
 
+type DraftStage = "preparing" | "concept_review" | "refinements" | "peer_review" | "ready";
+
+const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
+  { value: "preparing", label: "Preparing first draft" },
+  { value: "concept_review", label: "Submit for Concept Review" },
+  { value: "refinements", label: "Ongoing Refinements" },
+  { value: "peer_review", label: "Submit for Peer Review" },
+  { value: "ready", label: "Ready to Publish" },
+];
+
+const CONCEPT_QUESTION =
+  "What is the core concept, message and angle of this draft that you want the reviewers to evaluate?";
+
 const Workspace = () => {
+
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -85,11 +99,17 @@ const Workspace = () => {
   const [fontSize, setFontSize] = useState<"sm" | "base" | "lg" | "xl">("sm");
 
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [draftStage, setDraftStage] = useState<DraftStage>("preparing");
+  const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
+  const [conceptAnswer, setConceptAnswer] = useState("");
+  const [savingConcept, setSavingConcept] = useState(false);
+  const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
+
 
 
   // Autosave: title
@@ -416,6 +436,18 @@ const Workspace = () => {
       setProject(data);
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
+      const meta = (data as any).metadata || {};
+      const stage: DraftStage | undefined = meta.draft_stage;
+      setDraftStage(
+        stage && DRAFT_STAGES.some((s) => s.value === stage)
+          ? stage
+          : data.status === "approved" || data.status === "published"
+          ? "ready"
+          : "preparing"
+      );
+      setConceptNote(meta.concept_note ?? null);
+      setConceptAnswer(meta.concept_note?.answer ?? "");
+
 
       // If the project has comments, open the Comments tab by default
       const { count } = await supabase
@@ -879,6 +911,68 @@ const Workspace = () => {
     }
   };
 
+  const persistStage = async (stage: DraftStage, extraMeta?: Record<string, any>) => {
+    if (!project) return;
+    const metadata = { ...(project.metadata || {}), draft_stage: stage, ...(extraMeta || {}) };
+    const { error } = await supabase
+      .from("projects")
+      .update({ metadata, updated_at: new Date().toISOString() } as any)
+      .eq("id", project.id);
+    if (error) throw error;
+    setProject((prev) => (prev ? { ...prev, metadata } : prev));
+    setDraftStage(stage);
+  };
+
+  const handleDraftStageChange = async (stage: DraftStage) => {
+    if (!project || !user) return;
+    setMarkingReady(true);
+    try {
+      if (stage === "ready") {
+        await persistStage(stage);
+        await handleReadyForPublishing();
+      } else {
+        await persistStage(stage);
+        if (currentStatus === "approved" || currentStatus === "published") {
+          await handleStatusChange("in_progress");
+        }
+        if (stage === "concept_review") {
+          setConceptAnswer(conceptNote?.answer ?? "");
+          setConceptDialogOpen(true);
+        }
+        toast.success(`Draft status set to "${DRAFT_STAGES.find((s) => s.value === stage)?.label}"`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to update draft status");
+    } finally {
+      setMarkingReady(false);
+    }
+  };
+
+  const handleSaveConceptNote = async () => {
+    if (!project || !user) return;
+    setSavingConcept(true);
+    try {
+      const { data: userData } = await supabase.from("users").select("name").eq("id", user.id).single();
+      const note = {
+        question: CONCEPT_QUESTION,
+        answer: conceptAnswer.trim(),
+        by: userData?.name || "Unknown User",
+        at: new Date().toISOString(),
+      };
+      await persistStage("concept_review", { concept_note: note });
+      setConceptNote(note);
+      setConceptDialogOpen(false);
+      toast.success("Concept review note saved");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to save concept note");
+    } finally {
+      setSavingConcept(false);
+    }
+  };
+
+
   // Determine if publish button should be shown
   const showPublishButton =
     project?.type === "article" ||
@@ -960,29 +1054,21 @@ const Workspace = () => {
                 <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-background">
                   <FileCheck2 className="h-4 w-4 text-muted-foreground" />
                   <Select
-                    value={
-                      currentStatus === "approved" || currentStatus === "published"
-                        ? "ready"
-                        : "in_progress"
-                    }
-                    onValueChange={async (v) => {
-                      if (v === "ready") {
-                        await handleReadyForPublishing();
-                      } else {
-                        await handleStatusChange("in_progress");
-                      }
-                    }}
+                    value={draftStage}
+                    onValueChange={(v) => handleDraftStageChange(v as DraftStage)}
                     disabled={markingReady}
                   >
-                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[170px] focus:ring-0">
+                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[210px] focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="ready">Ready for Publishing</SelectItem>
+                      {DRAFT_STAGES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+
               </>
             )}
 
@@ -1103,12 +1189,14 @@ const Workspace = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowImageDialog(true)}
+              disabled
+              title="Temporarily deactivated"
               className="gap-2 ml-2"
             >
               <ImageIcon className="h-4 w-4" />
               Generate an image for the article
             </Button>
+
             {project && user && (
               <AddImageDialog
                 projectId={project.id}
@@ -1144,8 +1232,39 @@ const Workspace = () => {
             />
           )}
 
+          {/* Concept review questionnaire response — shown above the draft */}
+          {draftStage === "concept_review" && (
+            <div className="border-b bg-amber-50 dark:bg-amber-950/20 px-8 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Concept Review
+                  </p>
+                  <p className="text-sm font-medium mt-1">{CONCEPT_QUESTION}</p>
+                  <p className="text-sm whitespace-pre-wrap mt-1">
+                    {conceptNote?.answer || <span className="text-muted-foreground italic">Not answered yet</span>}
+                  </p>
+                  {conceptNote?.by && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      — {conceptNote.by}
+                      {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                >
+                  {conceptNote?.answer ? "Edit response" : "Answer"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
+
             {loadingContent ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center space-y-2">
@@ -1239,8 +1358,29 @@ const Workspace = () => {
         </div>
       </div>
 
-
-
+      {/* Concept Review Questionnaire */}
+      <Dialog open={conceptDialogOpen} onOpenChange={setConceptDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Concept Review</DialogTitle>
+            <DialogDescription>{CONCEPT_QUESTION}</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={conceptAnswer}
+            onChange={(e) => setConceptAnswer(e.target.value)}
+            rows={6}
+            placeholder="Write your response for the reviewers..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConceptDialogOpen(false)} disabled={savingConcept}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveConceptNote} disabled={savingConcept || !conceptAnswer.trim()}>
+              {savingConcept ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
       {/* Delete Confirmation Dialog */}

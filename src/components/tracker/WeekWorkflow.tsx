@@ -90,6 +90,12 @@ function pickByWeek<T>(arr: T[], weekIso: string): T | null {
   const n = parseInt(weekIso.replace(/-/g, ""), 10);
   return arr[n % arr.length];
 }
+// Default planner / publisher (operator) is always Sangeeta ji when available.
+function pickDefaultAssignee<T extends { name?: string | null }>(arr: T[], weekIso: string): T | null {
+  const sangeeta = arr.find((u) => (u.name || "").toLowerCase().includes("sangeeta"));
+  return sangeeta ?? pickByWeek(arr, weekIso);
+}
+
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -343,7 +349,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     const needsOp = !entry.operate_assignee_id;
     const needsStatusBump = !["operate_assigned", "publish_complete", "published"].includes(entry.status);
     if (!needsOp && !needsStatusBump) return;
-    const autoOp = needsOp ? pickByWeek(operators, week) : null;
+    const autoOp = needsOp ? pickDefaultAssignee(operators, week) : null;
     (async () => {
       const patch: any = { status: "operate_assigned" };
       if (autoOp) {

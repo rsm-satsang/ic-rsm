@@ -53,6 +53,10 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [emailedDialog, setEmailedDialog] = useState<{ open: boolean; sentTo: { email: string; name: string | null }[]; errors: string[] }>({ open: false, sentTo: [], errors: [] });
+  const [candidates, setCandidates] = useState<User[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [showRecipients, setShowRecipients] = useState(false);
+
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -108,9 +112,20 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
       if (user) setMe(user.id);
       const { data: us } = await supabase.from("users").select("id, name, email").order("name");
       setUsers((us || []) as User[]);
+      const { data: cand } = await supabase
+        .from("users")
+        .select("id, name, email, role, content_roles, approval_status")
+        .eq("approval_status", "approved")
+        .order("name");
+      const list = ((cand || []) as any[]).filter(
+        (u) => u.role === "admin" || (u.content_roles ?? []).includes("builder")
+      );
+      setCandidates(list as User[]);
+      setSelectedRecipients(list.filter((u) => u.id !== user?.id).map((u) => u.id));
       await load();
     })();
   }, [projectId]);
+
 
   const submit = async () => {
     if (!text.trim() || !me) return;
@@ -149,13 +164,9 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         if (ver?.created_by && ver.created_by !== me) recipients.add(ver.created_by);
       }
 
-      // All approved admins + builders (reviewers) get notified of new comments
-      const { data: reviewers } = await supabase
-        .from("users")
-        .select("id")
-        .in("role", ["admin", "user"])
-        .eq("approval_status", "approved");
-      (reviewers || []).forEach((r: any) => recipients.add(r.id));
+      // Only the explicitly selected reviewers get notified of new comments
+      selectedRecipients.forEach((id) => recipients.add(id));
+
 
       recipients.delete(me);
       if (recipients.size) {
@@ -188,11 +199,25 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
         user_name: (meRow as any)?.name || "User",
       } as any);
 
-      // Email notification to admins + builders (reviewers) — await so errors surface
+      // Email notification only to the selected reviewers — await so errors surface
       try {
+        if (selectedRecipients.length === 0) {
+          toast.message("Comment saved — no recipients selected for email");
+          setText("");
+          setReplyTo(null);
+          await load();
+          return;
+        }
         const { data: emailRes, error: emailErr } = await supabase.functions.invoke("notify-comment", {
-          body: { projectId, commentId: data.id, commentText: text.trim(), authorId: me },
+          body: {
+            projectId,
+            commentId: data.id,
+            commentText: text.trim(),
+            authorId: me,
+            recipientIds: selectedRecipients,
+          },
         });
+
         if (emailErr) {
           console.error("notify-comment failed", emailErr);
           toast.error("Comment saved, but email notification failed");
@@ -339,10 +364,44 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
           onChange={handleTextChange}
           className="min-h-[60px] resize-none"
         />
+        <div className="border rounded-md">
+          <button
+            type="button"
+            onClick={() => setShowRecipients((v) => !v)}
+            className="w-full flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/50"
+          >
+            <span className="flex items-center gap-1">
+              <Mail className="h-3 w-3" /> Email to {selectedRecipients.length} selected
+            </span>
+            <span>{showRecipients ? "Hide" : "Choose"}</span>
+          </button>
+          {showRecipients && (
+            <div className="max-h-40 overflow-y-auto border-t p-2 space-y-1">
+              {candidates.filter((c) => c.id !== me).length === 0 && (
+                <p className="text-xs text-muted-foreground">No reviewers available</p>
+              )}
+              {candidates.filter((c) => c.id !== me).map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedRecipients.includes(c.id)}
+                    onChange={(e) =>
+                      setSelectedRecipients((prev) =>
+                        e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id)
+                      )
+                    }
+                  />
+                  <span className="truncate">{c.name || c.email}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         <Button size="sm" className="w-full" onClick={submit} disabled={!text.trim() || submitting}>
           <Send className="h-3 w-3 mr-1" />
           {submitting ? "Sending…" : replyTo ? "Reply" : "Comment"}
         </Button>
+
       </div>
 
       <Dialog open={emailedDialog.open} onOpenChange={(o) => setEmailedDialog((s) => ({ ...s, open: o }))}>
