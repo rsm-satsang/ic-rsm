@@ -1237,7 +1237,7 @@ const Workspace = () => {
                     onValueChange={(v) => handleDraftStageChange(v as DraftStage)}
                     disabled={markingReady}
                   >
-                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[210px] focus:ring-0">
+                    <SelectTrigger className="h-7 border-0 bg-transparent px-1 text-sm w-[290px] focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
