@@ -147,6 +147,7 @@ const Workspace = () => {
   const [savingConcept, setSavingConcept] = useState(false);
   const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
   const [conceptReview, setConceptReview] = useState<ConceptReview | null>(null);
+  const [reviewBoxOpen, setReviewBoxOpen] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviewComments, setReviewComments] = useState("");
   const [reviewOutcome, setReviewOutcome] = useState<ConceptOutcome | "">("");
