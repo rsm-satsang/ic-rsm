@@ -1135,14 +1135,25 @@ const Workspace = () => {
       const entry: PeerReviewEntry = {
         comments: peerCommentText.trim(),
         by: userData?.name || "Unknown User",
+        byId: user.id,
         at: new Date().toISOString(),
       };
       const next = [...peerReviews, entry];
-      await persistStage(draftStage, { peer_reviews: next });
+      // Peer review is done once every assigned reviewer has commented
+      const reviewed = new Set(next.map((p) => p.byId).filter(Boolean) as string[]);
+      const allReviewed =
+        peerReviewerIds.length > 0 && peerReviewerIds.every((id) => reviewed.has(id));
+      const nextStage: DraftStage =
+        allReviewed && draftStage === "s6_awaiting_peer" ? "s7_peer_done" : draftStage;
+      await persistStage(nextStage, { peer_reviews: next });
       setPeerReviews(next);
       setPeerCommentText("");
       setPeerCommentDialogOpen(false);
-      toast.success("Peer review comment added");
+      toast.success(
+        nextStage !== draftStage
+          ? "Peer review complete — status moved to Stg 7"
+          : "Peer review comment added"
+      );
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Failed to add peer review comment");
