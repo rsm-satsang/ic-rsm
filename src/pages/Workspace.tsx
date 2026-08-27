@@ -1053,6 +1053,7 @@ const Workspace = () => {
     // Stg 2 requires the concept questionnaire — open it, revert to Stg 1 if unanswered
     if (stage === "s2_submit_concept") {
       setConceptAnswer(conceptNote?.answer ?? "");
+      setConceptDueDate(conceptNote?.due_date || addDays(7));
       setConceptDialogOpen(true);
       return;
     }
@@ -1060,9 +1061,12 @@ const Workspace = () => {
     // Stg 5 requires picking two peer reviewers from the Builders team
     if (stage === "s5_submit_peer") {
       await fetchBuilders();
+      setPeerSubmitNote(peerRequest?.note ?? "");
+      setPeerDueDate(peerRequest?.due_date || addDays(4));
       setPeerDialogOpen(true);
       return;
     }
+
 
     setMarkingReady(true);
     try {
