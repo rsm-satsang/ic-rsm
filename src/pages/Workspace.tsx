@@ -78,8 +78,8 @@ const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
   { value: "s5_submit_peer", label: "Stg 5. Submit for Peer Review" },
   { value: "s6_awaiting_peer", label: "Stg 6. Awaiting Peer Review" },
   { value: "s7_peer_done", label: "Stg 7. Peer Review done, Refinements In Progress" },
-  { value: "s7_awaiting_final", label: "Stg 8. Awaiting Final Go ahead" },
-  { value: "s8_ready", label: "Stg 9. Ready to Publish" },
+  { value: "s7_awaiting_final", label: "Stg 8. Send Draft and Review Comments for Final Go Ahead" },
+  { value: "s8_ready", label: "Stg 9. Ready to move to Publishing Channel" },
   { value: "s9_published", label: "Stg 10. Published" },
 ];
 
