@@ -593,11 +593,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     </TableRow>
   );
 
-  // Breakdown: outcome type -> stage counts (active projects only)
+  // Breakdown: selected outcome type -> stage counts (active projects only)
   const breakdown = (() => {
     const byGoal = new Map<string, { total: number; stages: Map<string, number> }>();
     for (const p of activeProjects) {
       const goal = (p.metadata as any)?.goal || "other";
+      if (breakdownGoalFilter !== "all" && goal !== breakdownGoalFilter) continue;
       const stage = getDraftStage(p.metadata, p.status);
       if (!byGoal.has(goal)) byGoal.set(goal, { total: 0, stages: new Map() });
       const entry = byGoal.get(goal)!;
