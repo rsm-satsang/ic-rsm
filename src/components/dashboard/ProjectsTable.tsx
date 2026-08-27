@@ -29,6 +29,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -50,6 +55,7 @@ import {
   MessageSquare,
   Archive,
   ArchiveRestore,
+  ChevronDown,
   Clock,
   Calendar,
 } from "lucide-react";
@@ -163,6 +169,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [assignedToFilter, setAssignedToFilter] = useState("");
   const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
+  const [breakdownGoalFilter, setBreakdownGoalFilter] = useState<string>("substack_newsletter");
   
   // Sort state
   const [sortField, setSortField] = useState<string>("updated_at");
@@ -587,11 +594,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     </TableRow>
   );
 
-  // Breakdown: outcome type -> stage counts (active projects only)
+  // Breakdown: selected outcome type -> stage counts (active projects only)
   const breakdown = (() => {
     const byGoal = new Map<string, { total: number; stages: Map<string, number> }>();
     for (const p of activeProjects) {
       const goal = (p.metadata as any)?.goal || "other";
+      if (breakdownGoalFilter !== "all" && goal !== breakdownGoalFilter) continue;
       const stage = getDraftStage(p.metadata, p.status);
       if (!byGoal.has(goal)) byGoal.set(goal, { total: 0, stages: new Map() });
       const entry = byGoal.get(goal)!;
@@ -606,7 +614,22 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Breakdown by outcome type and stage */}
       {breakdown.length > 0 && (
         <div className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-4">
-          <h3 className="text-sm font-semibold">Available Content Types with Draft/Review status</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Available Content Types with Draft/Review status</h3>
+            <Select value={breakdownGoalFilter} onValueChange={setBreakdownGoalFilter}>
+              <SelectTrigger className="w-[180px] h-8 bg-background/50 text-xs">
+                <SelectValue placeholder="Content type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {uniqueGoals.map(goal => (
+                  <SelectItem key={goal} value={goal}>
+                    {formatGoal(goal)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {breakdown.map(([goal, entry]) => (
               <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
@@ -781,40 +804,44 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
       {/* Archived Projects Table */}
       {archivedProjects.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mt-8 pt-6 border-t">
-            <Archive className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-muted-foreground">Archived Projects</h3>
-            <Badge variant="secondary" className="ml-2">
-              {archivedProjects.length}
-            </Badge>
-          </div>
-
-          <div className="border rounded-xl overflow-hidden shadow-sm bg-card/50 opacity-80">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/20 border-b">
-                  <TableHead className="py-3">
-                    <span className="font-semibold text-muted-foreground">Project</span>
-                  </TableHead>
-                  <TableHead className="py-3">
-                    <span className="font-semibold text-muted-foreground">Currently Assigned to</span>
-                  </TableHead>
-                  <TableHead className="py-3">
-                    <span className="font-semibold text-muted-foreground">Last Updated</span>
-                  </TableHead>
-                  <TableHead className="py-3 text-center">
-                    <Users className="h-4 w-4 mx-auto text-muted-foreground" />
-                  </TableHead>
-                  <TableHead className="w-[50px] py-3"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredArchivedProjects.map(renderProjectRow)}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+        <Collapsible defaultOpen={false} className="space-y-4">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center gap-2 mt-8 pt-6 border-t cursor-pointer hover:text-foreground/80 transition-colors">
+              <Archive className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-muted-foreground">Archived Projects</h3>
+              <Badge variant="secondary" className="ml-2">
+                {archivedProjects.length}
+              </Badge>
+              <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 [[data-state=open]>div>&]:rotate-180" />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border rounded-xl overflow-hidden shadow-sm bg-card/50 opacity-80">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/20 border-b">
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Project</span>
+                    </TableHead>
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Currently Assigned to</span>
+                    </TableHead>
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Last Updated</span>
+                    </TableHead>
+                    <TableHead className="py-3 text-center">
+                      <Users className="h-4 w-4 mx-auto text-muted-foreground" />
+                    </TableHead>
+                    <TableHead className="w-[50px] py-3"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredArchivedProjects.map(renderProjectRow)}
+                </TableBody>
+              </Table>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Delete Confirmation Dialog */}
