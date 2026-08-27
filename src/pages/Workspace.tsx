@@ -108,6 +108,7 @@ interface ConceptReview {
 interface PeerReviewEntry {
   comments: string;
   by?: string;
+  byId?: string;
   at?: string;
 }
 
