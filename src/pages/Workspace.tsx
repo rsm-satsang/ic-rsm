@@ -1513,7 +1513,7 @@ const Workspace = () => {
                 </button>
 
                 {reviewBoxOpen && (
-                  <div>
+                  <div className="max-h-[45vh] overflow-y-auto">
                     {/* Concept Review panel */}
                     <div className="bg-amber-50 dark:bg-amber-950/20 px-4 py-3 border-t">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1523,20 +1523,34 @@ const Workspace = () => {
                       <p className="text-sm whitespace-pre-wrap mt-1">
                         {conceptNote?.answer || <span className="text-muted-foreground italic">Not answered yet</span>}
                       </p>
+                      {conceptNote?.due_date && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Review due by {fmtDate(conceptNote.due_date)}
+                        </p>
+                      )}
                       {conceptNote?.by && (
                         <p className="text-xs text-muted-foreground mt-1">
                           — {conceptNote.by}
                           {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
                         </p>
                       )}
-                      <div className="mt-3">
+                      <div className="mt-3 flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                          onClick={() => {
+                            setConceptAnswer(conceptNote?.answer ?? "");
+                            setConceptDueDate(conceptNote?.due_date || addDays(7));
+                            setConceptDialogOpen(true);
+                          }}
                         >
                           {conceptNote?.answer ? "Edit submission" : "Answer"}
                         </Button>
+                        {isAdmin && conceptNote?.answer && (
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("concept")}>
+                            Delete submission
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -1558,10 +1572,15 @@ const Workspace = () => {
                             {conceptReview.at ? ` on ${new Date(conceptReview.at).toLocaleString()}` : ""}
                           </p>
                         </div>
+                      ) : conceptNote?.answer ? (
+                        <p className="text-sm mt-1">
+                          <span className="font-medium">Outcome:</span> Awaited
+                          {conceptNote.due_date ? ` — due by ${fmtDate(conceptNote.due_date)}` : ""}
+                        </p>
                       ) : (
                         <p className="text-sm text-muted-foreground italic mt-1">Not reviewed yet</p>
                       )}
-                      <div className="mt-3">
+                      <div className="mt-3 flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -1573,6 +1592,11 @@ const Workspace = () => {
                         >
                           {conceptReview ? "Edit Review Outcome" : "Review Concept"}
                         </Button>
+                        {isAdmin && conceptReview && (
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("outcome")}>
+                            Delete outcome
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -1587,6 +1611,14 @@ const Workspace = () => {
                             <p className="text-sm mt-1">
                               <span className="font-medium">Reviewers:</span>{" "}
                               {peerReviewers.map((r) => r.name).join(", ")}
+                            </p>
+                          )}
+                          {peerRequest?.note && (
+                            <p className="text-sm whitespace-pre-wrap mt-1">{peerRequest.note}</p>
+                          )}
+                          {peerRequest?.due_date && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Peer review due by {fmtDate(peerRequest.due_date)}
                             </p>
                           )}
                           {peerReviews.length === 0 ? (
@@ -1605,14 +1637,20 @@ const Workspace = () => {
                             </div>
                           )}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
-                        >
-                          Add Peer Review / Respond to review comments
-                        </Button>
+                        <div className="shrink-0 flex flex-col items-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
+                          >
+                            Add Peer Review / Respond to review comments
+                          </Button>
+                          {isAdmin && peerReviews.length > 0 && (
+                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("peer")}>
+                              Delete peer review comments
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
