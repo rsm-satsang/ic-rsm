@@ -1853,6 +1853,20 @@ const Workspace = () => {
               })
             )}
           </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Notes for reviewers</label>
+            <Textarea
+              value={peerSubmitNote}
+              onChange={(e) => setPeerSubmitNote(e.target.value)}
+              rows={3}
+              placeholder="What should the peer reviewers focus on?"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Peer review due date</label>
+            <Input type="date" value={peerDueDate} onChange={(e) => setPeerDueDate(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Defaults to 4 days from submission.</p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPeerDialogOpen(false)} disabled={savingPeer}>
               Cancel
