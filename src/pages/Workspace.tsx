@@ -120,6 +120,8 @@ interface PeerReviewEntry {
   by?: string;
   byId?: string;
   at?: string;
+  /** Set when an admin records the comment as an approval */
+  approved?: boolean;
 }
 
 
@@ -175,6 +177,7 @@ const Workspace = () => {
   const [peerCommentDialogOpen, setPeerCommentDialogOpen] = useState(false);
   const [peerCommentText, setPeerCommentText] = useState("");
   const [savingPeerComment, setSavingPeerComment] = useState(false);
+  const [peerCommentApproved, setPeerCommentApproved] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [markdownContent, setMarkdownContent] = useState("");
@@ -1117,7 +1120,20 @@ const Workspace = () => {
       await persistStage(nextStage, { concept_note: note });
       setConceptNote(note);
       setConceptDialogOpen(false);
-      toast.success("Concept submission saved — review awaited");
+      try {
+        await supabase.functions.invoke("notify-review-workflow", {
+          body: {
+            kind: "concept",
+            projectId: project.id,
+            dueDate: note.due_date,
+            note: note.answer,
+            submittedBy: note.by,
+          },
+        });
+      } catch (mailErr) {
+        console.error("Concept review email failed", mailErr);
+      }
+      toast.success("Concept submission saved — review awaited, notification sent");
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Failed to save concept note");
@@ -1161,6 +1177,21 @@ const Workspace = () => {
       await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds, peer_request: request });
       setPeerRequest(request);
       setPeerDialogOpen(false);
+      try {
+        const { data: me } = await supabase.from("users").select("name").eq("id", user?.id ?? "").maybeSingle();
+        await supabase.functions.invoke("notify-review-workflow", {
+          body: {
+            kind: "peer",
+            projectId: project.id,
+            dueDate: request.due_date,
+            note: request.note,
+            submittedBy: (me as any)?.name,
+            reviewerIds: peerReviewerIds,
+          },
+        });
+      } catch (mailErr) {
+        console.error("Peer review email failed", mailErr);
+      }
       toast.success("Two peer reviewers assigned — status moved to Stg 6");
     } catch (e: any) {
       console.error(e);
@@ -1203,17 +1234,21 @@ const Workspace = () => {
         by: userData?.name || "Unknown User",
         byId: user.id,
         at: new Date().toISOString(),
+        approved: isAdmin && peerCommentApproved,
       };
       const next = [...peerReviews, entry];
-      // Peer review is done once every assigned reviewer has commented
+      // Peer review is done once every assigned reviewer has commented,
+      // OR an admin has recorded an "Approved" comment.
       const reviewed = new Set(next.map((p) => p.byId).filter(Boolean) as string[]);
       const allReviewed =
         peerReviewerIds.length > 0 && peerReviewerIds.every((id) => reviewed.has(id));
+      const adminApproved = next.some((p) => p.approved);
       const nextStage: DraftStage =
-        allReviewed && draftStage === "s6_awaiting_peer" ? "s7_peer_done" : draftStage;
+        (allReviewed || adminApproved) && draftStage === "s6_awaiting_peer" ? "s7_peer_done" : draftStage;
       await persistStage(nextStage, { peer_reviews: next });
       setPeerReviews(next);
       setPeerCommentText("");
+      setPeerCommentApproved(false);
       setPeerCommentDialogOpen(false);
       toast.success(
         nextStage !== draftStage
