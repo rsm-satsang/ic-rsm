@@ -66,10 +66,9 @@ Deno.serve(async (req) => {
     let fromHeader = "";
 
     if (kind === "concept") {
-      const sanjeev = admins.find((a: any) => /sanj[ie]v/i.test(a.name || "") || /sanjiv@/i.test(a.email));
-      to = sanjeev?.email || admins[0]?.email || "";
-      cc = admins.map((a: any) => a.email).filter((e: string) => e !== to);
-      greeting = "Dear Sanjeev Bhaiya ji,";
+      to = admins.map((a: any) => a.email).join(", ");
+      cc = [];
+      greeting = "Dear Team,";
       subject = `Concept Review requested for ${title}`;
       fromHeader = `"Srijan Concept Review" <rsm.ai.labs@gmail.com>`;
       body = `

@@ -302,6 +302,17 @@ Now, create **${goalDesc}** in a **calm, devotional, Satsang-style newsletter fo
       v2Content = `[Gemini API key not configured]\n\n${aggregatedText}`;
     }
 
+    // Prefix the draft with the project title as an H1 heading
+    const { data: projectRow } = await supabase
+      .from("projects")
+      .select("title")
+      .eq("id", project_id)
+      .maybeSingle();
+    const projectTitle = (projectRow?.title || "").trim();
+    if (projectTitle && !/^\s*#\s/.test(v2Content)) {
+      v2Content = `# ${projectTitle}\n\n${v2Content}`;
+    }
+
     // Create v2 - Draft 1
     const { data: v2, error: v2Error } = await supabase
       .from("versions")
