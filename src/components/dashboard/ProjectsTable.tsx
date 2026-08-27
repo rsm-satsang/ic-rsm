@@ -161,7 +161,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [assignedToFilter, setAssignedToFilter] = useState("");
-  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("all");
+  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
   
   // Sort state
