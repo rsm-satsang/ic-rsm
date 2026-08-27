@@ -1439,104 +1439,132 @@ const Workspace = () => {
             />
           )}
 
-          {/* Concept Review panel — shown above the draft */}
-          {(conceptNote?.answer || conceptReview) && (
-            <div className="border-b bg-amber-50 dark:bg-amber-950/20 px-8 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Concept Review
-                  </p>
-                  <p className="text-sm font-medium mt-1">{CONCEPT_QUESTION}</p>
-                  <p className="text-sm whitespace-pre-wrap mt-1">
-                    {conceptNote?.answer || <span className="text-muted-foreground italic">Not answered yet</span>}
-                  </p>
-                  {conceptNote?.by && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      — {conceptNote.by}
-                      {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
-                    </p>
-                  )}
-                  {conceptReview && (
-                    <div className="mt-3 border-t pt-2">
-                      <p className="text-sm">
-                        <span className="font-medium">Outcome:</span> {conceptReview.outcome}
+          {/* Review box — Concept Review, Outcome and Peer Review (collapsible) */}
+          {(conceptNote?.answer || conceptReview || peerReviewers.length > 0 || peerReviews.length > 0) && (
+            <div className="border-b px-8 py-3">
+              <div className="rounded-lg border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setReviewBoxOpen((o) => !o)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-2 bg-muted/60 hover:bg-muted transition-colors"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Review
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${reviewBoxOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {reviewBoxOpen && (
+                  <div>
+                    {/* Concept Review panel */}
+                    <div className="bg-amber-50 dark:bg-amber-950/20 px-4 py-3 border-t">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Concept Review
                       </p>
-                      {conceptReview.comments && (
-                        <p className="text-sm whitespace-pre-wrap mt-1">{conceptReview.comments}</p>
+                      <p className="text-sm font-medium mt-1">{CONCEPT_QUESTION}</p>
+                      <p className="text-sm whitespace-pre-wrap mt-1">
+                        {conceptNote?.answer || <span className="text-muted-foreground italic">Not answered yet</span>}
+                      </p>
+                      {conceptNote?.by && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          — {conceptNote.by}
+                          {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
+                        </p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        — {conceptReview.by}
-                        {conceptReview.at ? ` on ${new Date(conceptReview.at).toLocaleString()}` : ""}
-                      </p>
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                        >
+                          {conceptNote?.answer ? "Edit submission" : "Answer"}
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
-                    >
-                      {conceptNote?.answer ? "Edit submission" : "Answer"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setReviewComments(conceptReview?.comments ?? "");
-                        setReviewOutcome(conceptReview?.outcome ?? "");
-                        setReviewDialogOpen(true);
-                      }}
-                    >
-                      Review Concept
-                    </Button>
+
+                    {/* Outcome panel */}
+                    <div className="bg-emerald-50 dark:bg-emerald-950/20 px-4 py-3 border-t">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Outcome
+                      </p>
+                      {conceptReview ? (
+                        <div className="mt-1">
+                          <p className="text-sm">
+                            <span className="font-medium">Outcome:</span> {conceptReview.outcome}
+                          </p>
+                          {conceptReview.comments && (
+                            <p className="text-sm whitespace-pre-wrap mt-1">{conceptReview.comments}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            — {conceptReview.by}
+                            {conceptReview.at ? ` on ${new Date(conceptReview.at).toLocaleString()}` : ""}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic mt-1">Not reviewed yet</p>
+                      )}
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setReviewComments(conceptReview?.comments ?? "");
+                            setReviewOutcome(conceptReview?.outcome ?? "");
+                            setReviewDialogOpen(true);
+                          }}
+                        >
+                          {conceptReview ? "Edit Review Outcome" : "Review Concept"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Peer Review panel */}
+                    <div className="bg-sky-50 dark:bg-sky-950/20 px-4 py-3 border-t">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Peer Review
+                          </p>
+                          {peerReviewers.length > 0 && (
+                            <p className="text-sm mt-1">
+                              <span className="font-medium">Reviewers:</span>{" "}
+                              {peerReviewers.map((r) => r.name).join(", ")}
+                            </p>
+                          )}
+                          {peerReviews.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic mt-1">No peer review comments yet</p>
+                          ) : (
+                            <div className="mt-2 space-y-2">
+                              {peerReviews.map((pr, i) => (
+                                <div key={i} className="border-t pt-2">
+                                  <p className="text-sm whitespace-pre-wrap">{pr.comments}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    — {pr.by}
+                                    {pr.at ? ` on ${new Date(pr.at).toLocaleString()}` : ""}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
+                        >
+                          Add Peer Review / Respond to review comments
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Peer Review panel */}
-          {(peerReviewers.length > 0 || peerReviews.length > 0) && (
-            <div className="border-b bg-sky-50 dark:bg-sky-950/20 px-8 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Peer Review
-                  </p>
-                  {peerReviewers.length > 0 && (
-                    <p className="text-sm mt-1">
-                      <span className="font-medium">Reviewers:</span>{" "}
-                      {peerReviewers.map((r) => r.name).join(", ")}
-                    </p>
-                  )}
-                  {peerReviews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic mt-1">No peer review comments yet</p>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      {peerReviews.map((pr, i) => (
-                        <div key={i} className="border-t pt-2">
-                          <p className="text-sm whitespace-pre-wrap">{pr.comments}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            — {pr.by}
-                            {pr.at ? ` on ${new Date(pr.at).toLocaleString()}` : ""}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
-                >
-                  Add Peer Review / Respond to review comments
-                </Button>
-              </div>
-            </div>
-          )}
 
 
           {/* Content Area */}
