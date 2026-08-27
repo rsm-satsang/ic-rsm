@@ -1708,21 +1708,6 @@ const Workspace = () => {
               </div>
             ) : viewMode === "edit" ? (
               <div className="flex flex-col h-full">
-                {heroImage && (
-                  <div className="px-8 pt-6">
-                    <div className="relative border rounded-lg overflow-hidden bg-card shadow-sm group">
-                      <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-80 object-cover" />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2 opacity-90 hover:opacity-100"
-                        onClick={() => handleDeleteHeroImage()}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete image
-                      </Button>
-                    </div>
-                  </div>
-                )}
                 <Textarea
                   ref={textareaRef}
                   value={markdownContent}
@@ -1737,19 +1722,6 @@ const Workspace = () => {
               </div>
             ) : (
               <div className="p-8 max-w-4xl mx-auto">
-                {heroImage && (
-                  <div className="relative mb-6 border rounded-lg overflow-hidden bg-card shadow-sm group">
-                    <img src={heroImage.url} alt={heroImage.caption || "Article image"} className="w-full max-h-96 object-cover" />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 opacity-90 hover:opacity-100"
-                      onClick={() => handleDeleteHeroImage()}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete image
-                    </Button>
-                  </div>
-                )}
                 <article className={`prose max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed ${fontSize === "sm" ? "prose-sm" : fontSize === "lg" ? "prose-lg" : fontSize === "xl" ? "prose-xl" : "prose-base"}`}>
                   <ReactMarkdown>{markdownContent}</ReactMarkdown>
                 </article>
