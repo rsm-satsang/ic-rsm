@@ -47,7 +47,7 @@ import InviteDialog from "@/components/workspace/InviteDialog";
 import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import { useAutosave } from "@/hooks/useAutosave";
 import type { User } from "@supabase/supabase-js";
-import { formatDateTime } from "@/lib/datetime";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 
 interface Project {
   id: string;
