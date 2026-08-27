@@ -161,7 +161,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [assignedToFilter, setAssignedToFilter] = useState("");
-  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("all");
+  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
   
   // Sort state
@@ -606,7 +606,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Breakdown by outcome type and stage */}
       {breakdown.length > 0 && (
         <div className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-4">
-          <h3 className="text-sm font-semibold">Projects by outcome type and stage</h3>
+          <h3 className="text-sm font-semibold">Available Content Types with Draft/Review status</h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {breakdown.map(([goal, entry]) => (
               <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
@@ -614,20 +614,28 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <span className="text-sm font-medium">{formatGoal(goal)}</span>
                   <Badge variant="secondary" className="text-xs">{entry.total}</Badge>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {DRAFT_STAGES.filter((s) => (entry.stages.get(s.value) || 0) > 0).map((s) => (
-                    <button
-                      key={s.value}
-                      onClick={() => {
-                        setOutcomeTypeFilter(goal);
-                        setStatusFilter(s.value);
-                      }}
-                      title={s.label}
-                      className="text-xs px-2 py-0.5 rounded-md border bg-background hover:bg-muted transition-colors"
-                    >
-                      {s.short}: {entry.stages.get(s.value)}
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-1">
+                  {DRAFT_STAGES.map((s) => {
+                    const count = entry.stages.get(s.value) || 0;
+                    return (
+                      <button
+                        key={s.value}
+                        onClick={() => {
+                          setOutcomeTypeFilter(goal);
+                          setStatusFilter(s.value);
+                        }}
+                        title={s.label}
+                        className={`flex items-center justify-between gap-2 text-left text-xs px-2 py-1 rounded-md border transition-colors ${
+                          count > 0
+                            ? "bg-background hover:bg-muted"
+                            : "bg-muted/20 text-muted-foreground/60 hover:bg-muted/40"
+                        }`}
+                      >
+                        <span className="truncate">{s.label}</span>
+                        <span className="font-semibold shrink-0">{count}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -636,7 +644,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       )}
 
       {/* Filters - Single Row */}
-      <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/20 rounded-xl border border-border/50">
+      <div className="flex flex-wrap items-center gap-3 p-4 bg-primary/5 rounded-xl border border-primary/20">
+
         <div className="flex items-center gap-2 min-w-[200px] flex-1">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
