@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/datetime";
+import { DRAFT_STAGES, getDraftStage, stageLabel, stageShort } from "@/lib/draftStages";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -389,7 +390,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     return projectList
       .filter(project => {
         const matchesName = project.title.toLowerCase().includes(nameFilter.toLowerCase());
-        const matchesStatus = statusFilter === "all" || project.status === statusFilter;
+        const matchesStatus =
+          statusFilter === "all" || getDraftStage(project.metadata, project.status) === statusFilter;
         const matchesAssigned = !assignedToFilter || 
           (project.assignedToName?.toLowerCase().includes(assignedToFilter.toLowerCase()));
         const projectGoal = (project.metadata as any)?.goal || "";
@@ -411,8 +413,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             bVal = (b.metadata as any)?.goal || "";
             break;
           case "status":
-            aVal = a.status;
-            bVal = b.status;
+            aVal = getDraftStage(a.metadata, a.status);
+            bVal = getDraftStage(b.metadata, b.status);
             break;
           case "updated_at":
             aVal = new Date(a.updated_at).getTime();
@@ -441,7 +443,6 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const filteredActiveProjects = filterAndSortProjects(activeProjects);
   const filteredArchivedProjects = filterAndSortProjects(archivedProjects);
 
-  const uniqueStatuses = [...new Set(projects.map(p => p.status))];
   const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
   const uniqueThemes = dbThemes.length > 0 ? dbThemes : [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
 
@@ -485,9 +486,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             <span className="text-xs text-muted-foreground">•</span>
             <Badge 
               variant={getStatusColor(project.status)}
-              className="text-xs capitalize"
+              className="text-xs"
             >
-              {project.status === "approved" ? "Complete" : project.status.replace("_", " ")}
+              {stageLabel(getDraftStage(project.metadata, project.status))}
             </Badge>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-1">
@@ -629,14 +630,14 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </Select>
         
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[120px] h-9 bg-background/50">
+          <SelectTrigger className="w-[220px] h-9 bg-background/50">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            {uniqueStatuses.map(status => (
-              <SelectItem key={status} value={status} className="capitalize">
-                {status === "approved" ? "Complete" : status.replace("_", " ")}
+            {DRAFT_STAGES.map(stage => (
+              <SelectItem key={stage.value} value={stage.value}>
+                {stage.label}
               </SelectItem>
             ))}
           </SelectContent>
