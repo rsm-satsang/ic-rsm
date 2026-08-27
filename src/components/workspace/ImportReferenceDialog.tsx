@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Search, Database, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/datetime";
 
 export interface ImportedRef {
   id: string;
@@ -216,7 +217,7 @@ export default function ImportReferenceDialog({ open, onOpenChange, currentProje
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{p.title}</div>
-                        <div className="text-[11px] text-muted-foreground">{p.type} · {new Date(p.updated_at).toLocaleDateString()}</div>
+                        <div className="text-[11px] text-muted-foreground">{p.type} · {formatDate(p.updated_at)}</div>
                       </div>
                     </li>
                   ))}

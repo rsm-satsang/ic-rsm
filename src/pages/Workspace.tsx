@@ -47,6 +47,7 @@ import InviteDialog from "@/components/workspace/InviteDialog";
 import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import { useAutosave } from "@/hooks/useAutosave";
 import type { User } from "@supabase/supabase-js";
+import { formatDateTime } from "@/lib/datetime";
 
 interface Project {
   id: string;
@@ -1438,7 +1439,7 @@ const Workspace = () => {
             </Button>
             <Button
               onClick={async () => {
-                const name = window.prompt("Name for the new version:", `Version ${new Date().toLocaleString()}`);
+                const name = window.prompt("Name for the new version:", `Version ${formatDateTime()}`);
                 if (name && name.trim()) await handleSaveAsNewVersion(name.trim());
               }}
               disabled={saving}
@@ -1531,7 +1532,7 @@ const Workspace = () => {
                       {conceptNote?.by && (
                         <p className="text-xs text-muted-foreground mt-1">
                           — {conceptNote.by}
-                          {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
+                          {conceptNote.at ? ` on ${formatDateTime(conceptNote.at)}` : ""}
                         </p>
                       )}
                       <div className="mt-3 flex items-center gap-2">
@@ -1569,7 +1570,7 @@ const Workspace = () => {
                           )}
                           <p className="text-xs text-muted-foreground mt-1">
                             — {conceptReview.by}
-                            {conceptReview.at ? ` on ${new Date(conceptReview.at).toLocaleString()}` : ""}
+                            {conceptReview.at ? ` on ${formatDateTime(conceptReview.at)}` : ""}
                           </p>
                         </div>
                       ) : conceptNote?.answer ? (
@@ -1630,7 +1631,7 @@ const Workspace = () => {
                                   <p className="text-sm whitespace-pre-wrap">{pr.comments}</p>
                                   <p className="text-xs text-muted-foreground mt-1">
                                     — {pr.by}
-                                    {pr.at ? ` on ${new Date(pr.at).toLocaleString()}` : ""}
+                                    {pr.at ? ` on ${formatDateTime(pr.at)}` : ""}
                                   </p>
                                 </div>
                               ))}

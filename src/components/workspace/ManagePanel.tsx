@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
+import { formatDate } from "@/lib/datetime";
   Settings2,
   UserPlus,
   MessageSquare,
@@ -327,7 +328,7 @@ const ManagePanel = ({ projectId, versionId, currentStatus, onStatusChange }: Ma
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium truncate">{note.user?.name || "Unknown"}</span>
                           <span className="text-xs text-muted-foreground">
-                            {new Date(note.created_at).toLocaleDateString()}
+                            {formatDate(note.created_at)}
                           </span>
                         </div>
                         <p className="text-sm mt-1 whitespace-pre-wrap">{note.content}</p>

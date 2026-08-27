@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { 
+import { formatDate } from "@/lib/datetime";
   MessageSquare, 
   Plus, 
   Send, 
@@ -424,7 +425,7 @@ const VersionNotesPanel = ({ projectId, versionId }: VersionNotesPanelProps) => 
                           {note.user?.name || "Unknown"}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(note.created_at).toLocaleDateString()}
+                          {formatDate(note.created_at)}
                         </span>
                       </div>
                       <p className="text-sm mt-1 whitespace-pre-wrap">{note.content}</p>
@@ -503,7 +504,7 @@ const VersionNotesPanel = ({ projectId, versionId }: VersionNotesPanelProps) => 
                                   {task.due_date && (
                                     <>
                                       <Clock className="h-3 w-3 ml-2" />
-                                      <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                                      <span>{formatDate(task.due_date)}</span>
                                     </>
                                   )}
                                 </div>

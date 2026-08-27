@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Clock, RotateCcw, GitCompare, Trash2, Edit2, Star } from "lucide-react";
 import { toast } from "sonner";
 import VersionCompareDialog from "./VersionCompareDialog";
+import { formatDate } from "@/lib/datetime";
 
 interface Version {
   id: string;
@@ -343,7 +344,7 @@ const VersionsSidebar = ({ projectId, onVersionSelect }: VersionsSidebarProps) =
                   />
                 </Button>
                 <span className="text-xs text-muted-foreground ml-auto">
-                  {new Date(version.created_at).toLocaleDateString()}
+                  {formatDate(version.created_at)}
                 </span>
               </div>
               
