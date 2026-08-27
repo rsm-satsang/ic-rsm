@@ -1017,6 +1017,25 @@ const Workspace = () => {
     );
   };
 
+  const addDays = (n: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const fmtDate = (s?: string) =>
+    s ? new Date(`${s}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }) : "";
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+      setIsAdmin((data as any)?.role === "admin");
+    })();
+  }, [user]);
+
+
+
   useEffect(() => {
     if (peerReviewerIds.length === 0) {
       setPeerReviewers([]);
