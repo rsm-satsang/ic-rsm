@@ -83,6 +83,15 @@ const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
   { value: "s9_published", label: "Stg 10. Published" },
 ];
 
+// Stages set automatically by the workflow — not user-selectable
+const AUTO_STAGES: DraftStage[] = [
+  "s3_awaiting_concept",
+  "s4_concept_approved",
+  "s6_awaiting_peer",
+  "s7_peer_done",
+];
+
+
 // Map legacy stage values stored before the 9-stage workflow
 const LEGACY_STAGE_MAP: Record<string, DraftStage> = {
   preparing: "s1_preparing",
