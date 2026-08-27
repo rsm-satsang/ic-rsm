@@ -803,40 +803,44 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
       {/* Archived Projects Table */}
       {archivedProjects.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mt-8 pt-6 border-t">
-            <Archive className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-muted-foreground">Archived Projects</h3>
-            <Badge variant="secondary" className="ml-2">
-              {archivedProjects.length}
-            </Badge>
-          </div>
-
-          <div className="border rounded-xl overflow-hidden shadow-sm bg-card/50 opacity-80">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/20 border-b">
-                  <TableHead className="py-3">
-                    <span className="font-semibold text-muted-foreground">Project</span>
-                  </TableHead>
-                  <TableHead className="py-3">
-                    <span className="font-semibold text-muted-foreground">Currently Assigned to</span>
-                  </TableHead>
-                  <TableHead className="py-3">
-                    <span className="font-semibold text-muted-foreground">Last Updated</span>
-                  </TableHead>
-                  <TableHead className="py-3 text-center">
-                    <Users className="h-4 w-4 mx-auto text-muted-foreground" />
-                  </TableHead>
-                  <TableHead className="w-[50px] py-3"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredArchivedProjects.map(renderProjectRow)}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+        <Collapsible defaultOpen={false} className="space-y-4">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center gap-2 mt-8 pt-6 border-t cursor-pointer hover:text-foreground/80 transition-colors">
+              <Archive className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-muted-foreground">Archived Projects</h3>
+              <Badge variant="secondary" className="ml-2">
+                {archivedProjects.length}
+              </Badge>
+              <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 [[data-state=open]>div>&]:rotate-180" />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border rounded-xl overflow-hidden shadow-sm bg-card/50 opacity-80">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/20 border-b">
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Project</span>
+                    </TableHead>
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Currently Assigned to</span>
+                    </TableHead>
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Last Updated</span>
+                    </TableHead>
+                    <TableHead className="py-3 text-center">
+                      <Users className="h-4 w-4 mx-auto text-muted-foreground" />
+                    </TableHead>
+                    <TableHead className="w-[50px] py-3"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredArchivedProjects.map(renderProjectRow)}
+                </TableBody>
+              </Table>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Delete Confirmation Dialog */}
