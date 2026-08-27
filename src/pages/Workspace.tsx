@@ -1255,7 +1255,13 @@ const Workspace = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {DRAFT_STAGES.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        <SelectItem
+                          key={s.value}
+                          value={s.value}
+                          disabled={AUTO_STAGES.includes(s.value)}
+                        >
+                          {s.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
