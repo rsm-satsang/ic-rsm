@@ -523,9 +523,11 @@ const Workspace = () => {
       setDraftStage(mapped);
       setConceptNote(meta.concept_note ?? null);
       setConceptAnswer(meta.concept_note?.answer ?? "");
+      setConceptDueDate(meta.concept_note?.due_date ?? "");
       setConceptReview(meta.concept_review ?? null);
       setPeerReviewerIds(meta.peer_reviewer_ids ?? []);
       setPeerReviews(meta.peer_reviews ?? []);
+      setPeerRequest(meta.peer_request ?? null);
 
 
 
