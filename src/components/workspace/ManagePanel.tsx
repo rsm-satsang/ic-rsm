@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/datetime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
-import { formatDate } from "@/lib/datetime";
   Settings2,
   UserPlus,
   MessageSquare,

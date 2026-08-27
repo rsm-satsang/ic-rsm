@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/datetime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { 
-import { formatDate } from "@/lib/datetime";
   MessageSquare, 
   Plus, 
   Send, 
