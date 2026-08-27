@@ -1157,7 +1157,9 @@ const Workspace = () => {
     if (!project || peerReviewerIds.length !== 2) return;
     setSavingPeer(true);
     try {
-      await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds });
+      const request = { note: peerSubmitNote.trim(), due_date: peerDueDate || addDays(4) };
+      await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds, peer_request: request });
+      setPeerRequest(request);
       setPeerDialogOpen(false);
       toast.success("Two peer reviewers assigned — status moved to Stg 6");
     } catch (e: any) {
@@ -1167,6 +1169,29 @@ const Workspace = () => {
       setSavingPeer(false);
     }
   };
+
+  const handleAdminDelete = async (what: "concept" | "outcome" | "peer") => {
+    if (!project) return;
+    try {
+      if (what === "concept") {
+        await persistStage(draftStage, { concept_note: null });
+        setConceptNote(null);
+        setConceptAnswer("");
+      } else if (what === "outcome") {
+        await persistStage(draftStage, { concept_review: null });
+        setConceptReview(null);
+      } else {
+        await persistStage(draftStage, { peer_reviews: [] });
+        setPeerReviews([]);
+      }
+      toast.success("Deleted");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to delete");
+    }
+  };
+
+
 
   const handleAddPeerReview = async () => {
     if (!project || !user || !peerCommentText.trim()) return;
