@@ -1770,6 +1770,11 @@ const Workspace = () => {
             rows={6}
             placeholder="Write your response for the reviewers..."
           />
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Review due date</label>
+            <Input type="date" value={conceptDueDate} onChange={(e) => setConceptDueDate(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Defaults to 7 days from submission.</p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => handleConceptDialogClose(false)} disabled={savingConcept}>
               Cancel
