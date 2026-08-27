@@ -613,7 +613,22 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       {/* Breakdown by outcome type and stage */}
       {breakdown.length > 0 && (
         <div className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-4">
-          <h3 className="text-sm font-semibold">Available Content Types with Draft/Review status</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Available Content Types with Draft/Review status</h3>
+            <Select value={breakdownGoalFilter} onValueChange={setBreakdownGoalFilter}>
+              <SelectTrigger className="w-[180px] h-8 bg-background/50 text-xs">
+                <SelectValue placeholder="Content type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {uniqueGoals.map(goal => (
+                  <SelectItem key={goal} value={goal}>
+                    {formatGoal(goal)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {breakdown.map(([goal, entry]) => (
               <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
