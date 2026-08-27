@@ -1024,8 +1024,7 @@ const Workspace = () => {
     return d.toISOString().slice(0, 10);
   };
 
-  const fmtDate = (s?: string) =>
-    s ? new Date(`${s}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }) : "";
+  const fmtDate = (s?: string) => (s ? formatDate(s) : "");
 
   useEffect(() => {
     if (!user) return;
@@ -1439,7 +1438,7 @@ const Workspace = () => {
             </Button>
             <Button
               onClick={async () => {
-                const name = window.prompt("Name for the new version:", `Version ${formatDateTime()}`);
+                const name = window.prompt("Name for the new version:", `Version ${formatDateTime(new Date())}`);
                 if (name && name.trim()) await handleSaveAsNewVersion(name.trim());
               }}
               disabled={saving}

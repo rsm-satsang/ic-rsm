@@ -16,6 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { ChevronDown, Pencil, Lock, History, RotateCcw, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 
 function DatePicker({ value, onChange, min }: { value?: string; onChange: (iso: string) => void; min?: string }) {
   const selected = value ? new Date(value + "T00:00:00") : undefined;
@@ -30,7 +31,7 @@ function DatePicker({ value, onChange, min }: { value?: string; onChange: (iso: 
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {selected
-            ? selected.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+            ? formatDate(selected)
             : "Pick a date"}
         </Button>
       </PopoverTrigger>
@@ -97,13 +98,10 @@ function pickDefaultAssignee<T extends { name?: string | null }>(arr: T[], weekI
 }
 
 function fmtDate(iso?: string | null) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(iso);
 }
 function fmtDateTime(iso?: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return formatDateTime(iso);
 }
 
 type Panel =

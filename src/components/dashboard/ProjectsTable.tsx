@@ -525,11 +525,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
               )}
             </div>
             <span className="text-xs text-muted-foreground">
-              {new Date(project.updated_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric"
-              })}
+              {formatDate(project.updated_at)}
             </span>
             <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-0.5">
               <Clock className="h-3 w-3" />
