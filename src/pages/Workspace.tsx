@@ -1926,6 +1926,18 @@ const Workspace = () => {
             rows={5}
             placeholder="Peer review comments..."
           />
+          {isAdmin && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={peerCommentApproved}
+                onChange={(e) => setPeerCommentApproved(e.target.checked)}
+              />
+              Record this as an admin <b>Approved</b> comment (completes peer review)
+            </label>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setPeerCommentDialogOpen(false)} disabled={savingPeerComment}>
               Cancel
