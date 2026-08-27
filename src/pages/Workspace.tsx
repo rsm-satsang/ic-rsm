@@ -78,8 +78,8 @@ const DRAFT_STAGES: { value: DraftStage; label: string }[] = [
   { value: "s5_submit_peer", label: "Stg 5. Submit for Peer Review" },
   { value: "s6_awaiting_peer", label: "Stg 6. Awaiting Peer Review" },
   { value: "s7_peer_done", label: "Stg 7. Peer Review done, Refinements In Progress" },
-  { value: "s7_awaiting_final", label: "Stg 8. Awaiting Final Go ahead" },
-  { value: "s8_ready", label: "Stg 9. Ready to Publish" },
+  { value: "s7_awaiting_final", label: "Stg 8. Send Draft and Review Comments for Final Go Ahead" },
+  { value: "s8_ready", label: "Stg 9. Ready to move to Publishing Channel" },
   { value: "s9_published", label: "Stg 10. Published" },
 ];
 
@@ -153,8 +153,9 @@ const Workspace = () => {
   const [draftStage, setDraftStage] = useState<DraftStage>("s1_preparing");
   const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
   const [conceptAnswer, setConceptAnswer] = useState("");
+  const [conceptDueDate, setConceptDueDate] = useState("");
   const [savingConcept, setSavingConcept] = useState(false);
-  const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
+  const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string; due_date?: string } | null>(null);
   const [conceptReview, setConceptReview] = useState<ConceptReview | null>(null);
   const [reviewBoxOpen, setReviewBoxOpen] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -165,11 +166,15 @@ const Workspace = () => {
   const [builders, setBuilders] = useState<{ id: string; name: string; email: string }[]>([]);
   const [peerReviewerIds, setPeerReviewerIds] = useState<string[]>([]);
   const [peerReviewers, setPeerReviewers] = useState<{ id: string; name: string }[]>([]);
+  const [peerSubmitNote, setPeerSubmitNote] = useState("");
+  const [peerDueDate, setPeerDueDate] = useState("");
+  const [peerRequest, setPeerRequest] = useState<{ note?: string; due_date?: string } | null>(null);
   const [savingPeer, setSavingPeer] = useState(false);
   const [peerReviews, setPeerReviews] = useState<PeerReviewEntry[]>([]);
   const [peerCommentDialogOpen, setPeerCommentDialogOpen] = useState(false);
   const [peerCommentText, setPeerCommentText] = useState("");
   const [savingPeerComment, setSavingPeerComment] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
@@ -518,9 +523,11 @@ const Workspace = () => {
       setDraftStage(mapped);
       setConceptNote(meta.concept_note ?? null);
       setConceptAnswer(meta.concept_note?.answer ?? "");
+      setConceptDueDate(meta.concept_note?.due_date ?? "");
       setConceptReview(meta.concept_review ?? null);
       setPeerReviewerIds(meta.peer_reviewer_ids ?? []);
       setPeerReviews(meta.peer_reviews ?? []);
+      setPeerRequest(meta.peer_request ?? null);
 
 
 
@@ -1010,6 +1017,25 @@ const Workspace = () => {
     );
   };
 
+  const addDays = (n: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const fmtDate = (s?: string) =>
+    s ? new Date(`${s}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }) : "";
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+      setIsAdmin((data as any)?.role === "admin");
+    })();
+  }, [user]);
+
+
+
   useEffect(() => {
     if (peerReviewerIds.length === 0) {
       setPeerReviewers([]);
@@ -1027,6 +1053,7 @@ const Workspace = () => {
     // Stg 2 requires the concept questionnaire — open it, revert to Stg 1 if unanswered
     if (stage === "s2_submit_concept") {
       setConceptAnswer(conceptNote?.answer ?? "");
+      setConceptDueDate(conceptNote?.due_date || addDays(7));
       setConceptDialogOpen(true);
       return;
     }
@@ -1034,9 +1061,12 @@ const Workspace = () => {
     // Stg 5 requires picking two peer reviewers from the Builders team
     if (stage === "s5_submit_peer") {
       await fetchBuilders();
+      setPeerSubmitNote(peerRequest?.note ?? "");
+      setPeerDueDate(peerRequest?.due_date || addDays(4));
       setPeerDialogOpen(true);
       return;
     }
+
 
     setMarkingReady(true);
     try {
@@ -1079,6 +1109,7 @@ const Workspace = () => {
         answer: conceptAnswer.trim(),
         by: userData?.name || "Unknown User",
         at: new Date().toISOString(),
+        due_date: conceptDueDate || addDays(7),
       };
       // Questionnaire filled → move straight to Stg 3
       const nextStage: DraftStage =
@@ -1086,7 +1117,7 @@ const Workspace = () => {
       await persistStage(nextStage, { concept_note: note });
       setConceptNote(note);
       setConceptDialogOpen(false);
-      toast.success("Concept submission saved");
+      toast.success("Concept submission saved — review awaited");
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Failed to save concept note");
@@ -1126,7 +1157,9 @@ const Workspace = () => {
     if (!project || peerReviewerIds.length !== 2) return;
     setSavingPeer(true);
     try {
-      await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds });
+      const request = { note: peerSubmitNote.trim(), due_date: peerDueDate || addDays(4) };
+      await persistStage("s6_awaiting_peer", { peer_reviewer_ids: peerReviewerIds, peer_request: request });
+      setPeerRequest(request);
       setPeerDialogOpen(false);
       toast.success("Two peer reviewers assigned — status moved to Stg 6");
     } catch (e: any) {
@@ -1136,6 +1169,29 @@ const Workspace = () => {
       setSavingPeer(false);
     }
   };
+
+  const handleAdminDelete = async (what: "concept" | "outcome" | "peer") => {
+    if (!project) return;
+    try {
+      if (what === "concept") {
+        await persistStage(draftStage, { concept_note: null });
+        setConceptNote(null);
+        setConceptAnswer("");
+      } else if (what === "outcome") {
+        await persistStage(draftStage, { concept_review: null });
+        setConceptReview(null);
+      } else {
+        await persistStage(draftStage, { peer_reviews: [] });
+        setPeerReviews([]);
+      }
+      toast.success("Deleted");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to delete");
+    }
+  };
+
+
 
   const handleAddPeerReview = async () => {
     if (!project || !user || !peerCommentText.trim()) return;
@@ -1457,7 +1513,7 @@ const Workspace = () => {
                 </button>
 
                 {reviewBoxOpen && (
-                  <div>
+                  <div className="max-h-[45vh] overflow-y-auto">
                     {/* Concept Review panel */}
                     <div className="bg-amber-50 dark:bg-amber-950/20 px-4 py-3 border-t">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1467,20 +1523,34 @@ const Workspace = () => {
                       <p className="text-sm whitespace-pre-wrap mt-1">
                         {conceptNote?.answer || <span className="text-muted-foreground italic">Not answered yet</span>}
                       </p>
+                      {conceptNote?.due_date && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Review due by {fmtDate(conceptNote.due_date)}
+                        </p>
+                      )}
                       {conceptNote?.by && (
                         <p className="text-xs text-muted-foreground mt-1">
                           — {conceptNote.by}
                           {conceptNote.at ? ` on ${new Date(conceptNote.at).toLocaleString()}` : ""}
                         </p>
                       )}
-                      <div className="mt-3">
+                      <div className="mt-3 flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => { setConceptAnswer(conceptNote?.answer ?? ""); setConceptDialogOpen(true); }}
+                          onClick={() => {
+                            setConceptAnswer(conceptNote?.answer ?? "");
+                            setConceptDueDate(conceptNote?.due_date || addDays(7));
+                            setConceptDialogOpen(true);
+                          }}
                         >
                           {conceptNote?.answer ? "Edit submission" : "Answer"}
                         </Button>
+                        {isAdmin && conceptNote?.answer && (
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("concept")}>
+                            Delete submission
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -1502,10 +1572,15 @@ const Workspace = () => {
                             {conceptReview.at ? ` on ${new Date(conceptReview.at).toLocaleString()}` : ""}
                           </p>
                         </div>
+                      ) : conceptNote?.answer ? (
+                        <p className="text-sm mt-1">
+                          <span className="font-medium">Outcome:</span> Awaited
+                          {conceptNote.due_date ? ` — due by ${fmtDate(conceptNote.due_date)}` : ""}
+                        </p>
                       ) : (
                         <p className="text-sm text-muted-foreground italic mt-1">Not reviewed yet</p>
                       )}
-                      <div className="mt-3">
+                      <div className="mt-3 flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -1517,6 +1592,11 @@ const Workspace = () => {
                         >
                           {conceptReview ? "Edit Review Outcome" : "Review Concept"}
                         </Button>
+                        {isAdmin && conceptReview && (
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("outcome")}>
+                            Delete outcome
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -1531,6 +1611,14 @@ const Workspace = () => {
                             <p className="text-sm mt-1">
                               <span className="font-medium">Reviewers:</span>{" "}
                               {peerReviewers.map((r) => r.name).join(", ")}
+                            </p>
+                          )}
+                          {peerRequest?.note && (
+                            <p className="text-sm whitespace-pre-wrap mt-1">{peerRequest.note}</p>
+                          )}
+                          {peerRequest?.due_date && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Peer review due by {fmtDate(peerRequest.due_date)}
                             </p>
                           )}
                           {peerReviews.length === 0 ? (
@@ -1549,14 +1637,20 @@ const Workspace = () => {
                             </div>
                           )}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
-                        >
-                          Add Peer Review / Respond to review comments
-                        </Button>
+                        <div className="shrink-0 flex flex-col items-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
+                          >
+                            Add Peer Review / Respond to review comments
+                          </Button>
+                          {isAdmin && peerReviews.length > 0 && (
+                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("peer")}>
+                              Delete peer review comments
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1676,6 +1770,11 @@ const Workspace = () => {
             rows={6}
             placeholder="Write your response for the reviewers..."
           />
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Review due date</label>
+            <Input type="date" value={conceptDueDate} onChange={(e) => setConceptDueDate(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Defaults to 7 days from submission.</p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => handleConceptDialogClose(false)} disabled={savingConcept}>
               Cancel
@@ -1753,6 +1852,20 @@ const Workspace = () => {
                 );
               })
             )}
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Notes for reviewers</label>
+            <Textarea
+              value={peerSubmitNote}
+              onChange={(e) => setPeerSubmitNote(e.target.value)}
+              rows={3}
+              placeholder="What should the peer reviewers focus on?"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Peer review due date</label>
+            <Input type="date" value={peerDueDate} onChange={(e) => setPeerDueDate(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Defaults to 4 days from submission.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPeerDialogOpen(false)} disabled={savingPeer}>
