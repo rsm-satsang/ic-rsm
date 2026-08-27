@@ -153,8 +153,9 @@ const Workspace = () => {
   const [draftStage, setDraftStage] = useState<DraftStage>("s1_preparing");
   const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
   const [conceptAnswer, setConceptAnswer] = useState("");
+  const [conceptDueDate, setConceptDueDate] = useState("");
   const [savingConcept, setSavingConcept] = useState(false);
-  const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string } | null>(null);
+  const [conceptNote, setConceptNote] = useState<{ answer: string; by?: string; at?: string; due_date?: string } | null>(null);
   const [conceptReview, setConceptReview] = useState<ConceptReview | null>(null);
   const [reviewBoxOpen, setReviewBoxOpen] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -165,11 +166,15 @@ const Workspace = () => {
   const [builders, setBuilders] = useState<{ id: string; name: string; email: string }[]>([]);
   const [peerReviewerIds, setPeerReviewerIds] = useState<string[]>([]);
   const [peerReviewers, setPeerReviewers] = useState<{ id: string; name: string }[]>([]);
+  const [peerSubmitNote, setPeerSubmitNote] = useState("");
+  const [peerDueDate, setPeerDueDate] = useState("");
+  const [peerRequest, setPeerRequest] = useState<{ note?: string; due_date?: string } | null>(null);
   const [savingPeer, setSavingPeer] = useState(false);
   const [peerReviews, setPeerReviews] = useState<PeerReviewEntry[]>([]);
   const [peerCommentDialogOpen, setPeerCommentDialogOpen] = useState(false);
   const [peerCommentText, setPeerCommentText] = useState("");
   const [savingPeerComment, setSavingPeerComment] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
