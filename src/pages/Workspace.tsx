@@ -1109,6 +1109,7 @@ const Workspace = () => {
         answer: conceptAnswer.trim(),
         by: userData?.name || "Unknown User",
         at: new Date().toISOString(),
+        due_date: conceptDueDate || addDays(7),
       };
       // Questionnaire filled → move straight to Stg 3
       const nextStage: DraftStage =
@@ -1116,7 +1117,7 @@ const Workspace = () => {
       await persistStage(nextStage, { concept_note: note });
       setConceptNote(note);
       setConceptDialogOpen(false);
-      toast.success("Concept submission saved");
+      toast.success("Concept submission saved — review awaited");
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Failed to save concept note");
