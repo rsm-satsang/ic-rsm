@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ImageIcon, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AddImageDialog from "./AddImageDialog";
+import { formatDate } from "@/lib/datetime";
 
 interface ProjectImage {
   id: string;
@@ -127,7 +128,7 @@ const ProjectImagesSection = ({ projectId, userId }: Props) => {
               </a>
               <div className="p-2 flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground truncate">
-                  {new Date(img.created_at).toLocaleDateString()}
+                  {formatDate(img.created_at)}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button size="sm" variant="outline" className="h-7" onClick={() => handleDownload(img)}>

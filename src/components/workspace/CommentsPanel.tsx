@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { MessageSquare, Send, Trash2, CheckCircle2, Reply, Mail } from "lucide-react";
+import { formatDateTime } from "@/lib/datetime";
 
 interface User { id: string; name: string; email: string; }
 
@@ -290,7 +291,7 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 flex-wrap">
                       <span className="text-sm font-medium whitespace-nowrap">{u?.name || "User"}</span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(c.created_at).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDateTime(c.created_at)}</span>
                       {c.resolved && <Badge variant="outline" className="text-xs">Resolved</Badge>}
                     </div>
                     <p className="text-sm whitespace-pre-wrap break-words mt-1">{c.text}</p>
@@ -316,7 +317,7 @@ export default function CommentsPanel({ projectId, versionId }: Props) {
                           <div className="flex items-baseline gap-2 flex-wrap">
                             <Avatar className="h-5 w-5 self-center"><AvatarFallback className="text-[10px]">{initials(ru?.name || "?")}</AvatarFallback></Avatar>
                             <span className="text-xs font-medium whitespace-nowrap">{ru?.name}</span>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDateTime(r.created_at)}</span>
                             {r.user_id === me && (
                               <button onClick={() => remove(r.id)} className="text-destructive ml-auto">
                                 <Trash2 className="h-3 w-3" />

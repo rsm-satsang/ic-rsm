@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, Database, FileSpreadsheet, ChevronDown, ChevronRight, ExternalLink, Search, X, FileText, Scissors } from "lucide-react";
+import { formatDate } from "@/lib/datetime";
 
 type FieldKey =
   | "content_type"
@@ -401,7 +402,7 @@ export default function ContentStore() {
                           )}
                           {it.publish_date && (
                             <span className="text-xs text-muted-foreground tabular-nums">
-                              {new Date(it.publish_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                              {formatDate(it.publish_date)}
                             </span>
                           )}
                         </div>

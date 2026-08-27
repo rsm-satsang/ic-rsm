@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Check, X, Mail } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { formatDateTime, formatDate } from "@/lib/datetime";
 
 interface Invitation {
   id: string;
@@ -215,7 +216,7 @@ const Notifications = () => {
                       <span className="text-sm">{n.message}</span>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(n.created_at).toLocaleString()}
+                      {formatDateTime(n.created_at)}
                     </span>
                   </div>
                 ))}
@@ -270,7 +271,7 @@ const Notifications = () => {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {new Date(invitation.created_at).toLocaleDateString()}
+                          {formatDate(invitation.created_at)}
                         </p>
                       </div>
 

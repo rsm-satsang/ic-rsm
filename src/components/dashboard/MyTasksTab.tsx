@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/datetime";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -365,7 +366,7 @@ const MyTasksTab = ({ userId }: MyTasksTabProps) => {
                         {task.due_date && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                            <span>Due: {formatDate(task.due_date)}</span>
                           </div>
                         )}
                       </div>
@@ -452,7 +453,7 @@ const MyTasksTab = ({ userId }: MyTasksTabProps) => {
                       </Avatar>
                       <span>{note.user?.name || "Unknown"}</span>
                       <span>•</span>
-                      <span>{new Date(note.created_at).toLocaleDateString()}</span>
+                      <span>{formatDate(note.created_at)}</span>
                     </div>
                   </CardContent>
                 </Card>

@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import DiffMatchPatch from "diff-match-patch";
+import { formatDate } from "@/lib/datetime";
 
 interface Version {
   id: string;
@@ -110,7 +111,7 @@ const VersionCompareDialog = ({ projectId, open, onOpenChange, initialVersionId 
   };
 
   const getVersionLabel = (version: Version) => {
-    return `v${version.version_number} - ${version.title || 'Untitled'} (${new Date(version.created_at).toLocaleDateString()})`;
+    return `v${version.version_number} - ${version.title || 'Untitled'} (${formatDate(version.created_at)})`;
   };
 
   return (

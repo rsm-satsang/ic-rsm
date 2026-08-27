@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatDateTime } from "@/lib/datetime";
 
 interface TimelineEvent {
   id: string;
@@ -205,7 +206,7 @@ const TimelineFeed = ({ projectId }: TimelineFeedProps) => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(event.created_at).toLocaleString()}
+                    {formatDateTime(event.created_at)}
                   </p>
                 </div>
               </div>

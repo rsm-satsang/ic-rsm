@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/datetime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -424,7 +425,7 @@ const VersionNotesPanel = ({ projectId, versionId }: VersionNotesPanelProps) => 
                           {note.user?.name || "Unknown"}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(note.created_at).toLocaleDateString()}
+                          {formatDate(note.created_at)}
                         </span>
                       </div>
                       <p className="text-sm mt-1 whitespace-pre-wrap">{note.content}</p>
@@ -503,7 +504,7 @@ const VersionNotesPanel = ({ projectId, versionId }: VersionNotesPanelProps) => 
                                   {task.due_date && (
                                     <>
                                       <Clock className="h-3 w-3 ml-2" />
-                                      <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                                      <span>{formatDate(task.due_date)}</span>
                                     </>
                                   )}
                                 </div>

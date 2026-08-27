@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, ListTodo } from "lucide-react";
+import { formatDate } from "@/lib/datetime";
 
 interface Row {
   key: string;
@@ -195,7 +196,7 @@ const MyAssignedTasksSection = ({ userId }: { userId: string }) => {
                       {r.description || "—"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {new Date(r.created_at).toLocaleDateString()}
+                      {formatDate(r.created_at)}
                     </TableCell>
                     <TableCell className="text-sm">{r.assigner_name}</TableCell>
                   </TableRow>

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Upload, Pencil, Plus, Trash2, BookOpen, Video, ChevronDown, ChevronRight, Play } from "lucide-react";
+import { formatDate } from "@/lib/datetime";
 
 interface FAQ { id: string; question: string; answer: string; }
 interface HelpVideo { id: string; title: string; video_url: string | null; storage_path: string | null; created_at: string; }
@@ -167,7 +168,7 @@ export default function SrijanHelp() {
                         <div className="flex items-start gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="text-xs text-muted-foreground tabular-nums">
-                              {new Date(v.created_at).toLocaleDateString()}
+                              {formatDate(v.created_at)}
                             </div>
                             <div className="font-medium text-sm">{v.title}</div>
                           </div>

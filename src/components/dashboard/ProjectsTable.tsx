@@ -1,3 +1,4 @@
+import { formatDate } from "@/lib/datetime";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -525,11 +526,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
               )}
             </div>
             <span className="text-xs text-muted-foreground">
-              {new Date(project.updated_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric"
-              })}
+              {formatDate(project.updated_at)}
             </span>
             <div className="flex items-center gap-1 text-xs text-muted-foreground/70 mt-0.5">
               <Clock className="h-3 w-3" />
