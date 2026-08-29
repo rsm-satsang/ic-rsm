@@ -180,6 +180,12 @@ const Workspace = () => {
   const [peerCommentApproved, setPeerCommentApproved] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Once the draft reaches Stg 9 (Ready to move to Publishing Channel) or beyond,
+  // it is locked for everyone except admins.
+  const editLocked = !isAdmin && (draftStage === "s8_ready" || draftStage === "s9_published");
+
+
+
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
@@ -1308,9 +1314,15 @@ const Workspace = () => {
           <Input
             value={projectTitle}
             onChange={(e) => setProjectTitle(e.target.value)}
+            readOnly={editLocked}
             placeholder="Project title"
             className="font-medium text-sm max-w-md mx-auto text-center border-transparent hover:border-input focus-visible:border-input bg-transparent h-7"
           />
+          {editLocked && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+              This draft is locked for editing (Stg 9 onwards). Only admins can make changes.
+            </p>
+          )}
         </div>
       </div>
 
@@ -1321,10 +1333,11 @@ const Workspace = () => {
             <Button onClick={() => navigate(`/tracker?project=${project.id}`)} variant="outline" className="gap-2">
               Tracker
             </Button>
-            <Button onClick={handleSaveCurrentVersion} disabled={saving} variant="outline" className="gap-2">
+            <Button onClick={handleSaveCurrentVersion} disabled={saving || editLocked} variant="outline" className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Saving..." : "Save Project"}
             </Button>
+
 
             <AssignDialog projectId={project.id} versionId={currentVersionId} />
 
@@ -1476,7 +1489,7 @@ const Workspace = () => {
                 const name = window.prompt("Name for the new version:", `Version ${formatDateTime(new Date())}`);
                 if (name && name.trim()) await handleSaveAsNewVersion(name.trim());
               }}
-              disabled={saving}
+              disabled={saving || editLocked}
               variant="outline"
               size="sm"
               className="gap-2"
@@ -1711,7 +1724,9 @@ const Workspace = () => {
                 <Textarea
                   ref={textareaRef}
                   value={markdownContent}
-                  onChange={(e) => setMarkdownContent(e.target.value)}
+                  readOnly={editLocked}
+                  onChange={(e) => { if (!editLocked) setMarkdownContent(e.target.value); }}
+
                   onSelect={handleTextSelection}
                   onMouseUp={handleTextSelection}
                   onKeyUp={handleTextSelection}

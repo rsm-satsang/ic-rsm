@@ -1,4 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { DRAFT_STAGES, getDraftStage, stageLabel } from "@/lib/draftStages";
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,19 @@ function DatePicker({ value, onChange, min }: { value?: string; onChange: (iso: 
 }
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
+
+// Content types a planner can pick for a week
+export const CONTENT_TYPES: { value: string; label: string }[] = [
+  { value: "substack_newsletter", label: "Substack Newsletter" },
+  { value: "wordpress_blog", label: "WordPress Blog" },
+  { value: "long_form_video", label: "Long form Video" },
+  { value: "shorts_reels", label: "Shorts / Reels" },
+  { value: "daily_inspiration", label: "Daily Inspiration" },
+  { value: "other", label: "Other" },
+];
+export const contentTypeLabel = (v?: string | null) =>
+  CONTENT_TYPES.find((c) => c.value === v)?.label ?? (v ? v.replace(/_/g, " ") : null);
+
 
 interface Props {
   week: string;
@@ -147,6 +162,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [planDue, setPlanDue] = useState<string>(entry?.plan_due_date ?? defaultDueNotBeforeToday(week, 2));
   const [theme, setTheme] = useState<string>(entry?.theme_text ?? "");
   const [planComments, setPlanComments] = useState<string>(entry?.plan_comments ?? "");
+  const [contentType, setContentType] = useState<string>((entry as any)?.content_type ?? "substack_newsletter");
+
 
   // Build
   const [buildAssignees, setBuildAssignees] = useState<string[]>(
@@ -237,7 +254,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     (async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id,title,status")
+        .select("id,title,status,metadata,type")
         .order("updated_at", { ascending: false })
         .limit(500);
       if (error) {
@@ -247,6 +264,21 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       setDraftProjects((data as any[]) ?? []);
     })();
   }, []);
+
+  // Planner may only link newsletters whose concept has been approved and which
+  // are not yet published.
+  const plannableProjects = useMemo(() => {
+    const order = DRAFT_STAGES.map((s) => s.value);
+    const minIdx = order.indexOf("s4_concept_approved");
+    return draftProjects.filter((p: any) => {
+      if ((p.metadata as any)?.goal !== "substack_newsletter") return false;
+      if (p.status === "published") return false;
+      const stage = getDraftStage(p.metadata, p.status);
+      if (stage === "s9_published") return false;
+      return order.indexOf(stage) >= minIdx;
+    });
+  }, [draftProjects]);
+
 
 
   const close = () => setPanel(null);
@@ -265,13 +297,16 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitCompletePlan = async () => {
+    if (!contentType) return toast.error("Select a content type for the week");
     const autoBuilder = pickByWeek(builders, week);
     const existingBuild = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
     const patch: any = {
       theme_text: theme.trim() || null,
       plan_comments: planComments.trim() || null,
+      content_type: contentType,
       status: "plan_complete",
     };
+
     if (existingBuild.length === 0 && autoBuilder) {
       patch.build_assignee_ids = [autoBuilder.id];
       patch.build_assignee_id = autoBuilder.id;
@@ -491,6 +526,14 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
   return (
     <div className="border-t pt-2 space-y-1">
+      {(entry as any)?.content_type && (
+        <div className="px-2">
+          <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+            {contentTypeLabel((entry as any).content_type)}
+          </span>
+        </div>
+      )}
+
       {isAdmin && (
         <div className="flex justify-end">
           <Button size="sm" variant="ghost" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={handleReset}>
@@ -523,6 +566,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {/* Plan details — always visible when planning is done */}
           {planDone && (
             <div className="mb-2 space-y-1 rounded-md border bg-muted/30 p-2 text-xs">
+              <div><b>Content type:</b> {contentTypeLabel((entry as any)?.content_type) || "—"}</div>
               <div><b>Topic:</b> {entry?.theme_text || "—"}</div>
               <div><b>Plan notes:</b> {entry?.plan_comments || "—"}</div>
               {entry?.project_id && (
@@ -549,21 +593,37 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
+              <label className="text-xs font-medium">Content type <span className="text-destructive">*</span></label>
+              <Select value={contentType} onValueChange={setContentType}>
+                <SelectTrigger><SelectValue placeholder="Select content type" /></SelectTrigger>
+                <SelectContent>
+                  {CONTENT_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <label className="text-xs font-medium">Topic <span className="text-muted-foreground font-normal">(optional)</span></label>
               <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Topic" />
               <label className="text-xs font-medium">Plan comments</label>
               <Textarea value={planComments} onChange={(e) => setPlanComments(e.target.value)} className="min-h-[60px] resize-none" />
-              <label className="text-xs font-medium">Link a project <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <label className="text-xs font-medium">
+                Link a project <span className="text-muted-foreground font-normal">(concept-approved, unpublished newsletters)</span>
+              </label>
               <Select value={planLinkProjectId} onValueChange={setPlanLinkProjectId}>
                 <SelectTrigger><SelectValue placeholder="Select a project (optional)" /></SelectTrigger>
                 <SelectContent>
-                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
-                  {draftProjects.filter((p) => p.id !== entry?.project_id).map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                  {plannableProjects.filter((p) => p.id !== entry?.project_id).length === 0 && (
+                    <div className="p-2 text-xs text-muted-foreground">No concept-approved newsletters available</div>
+                  )}
+                  {plannableProjects.filter((p) => p.id !== entry?.project_id).map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.title} — {stageLabel(getDraftStage(p.metadata, p.status))}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button size="sm" className="w-full" onClick={submitCompletePlan}>Submit Plan</Button>
             </div>
           )}
+
         </CollapsibleContent>
       </Collapsible>
 

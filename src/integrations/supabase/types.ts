@@ -1052,6 +1052,7 @@ export type Database = {
           build_assignee_ids: string[]
           build_due_date: string | null
           channel: Database["public"]["Enums"]["tracker_channel"]
+          content_type: string | null
           created_at: string
           created_by: string | null
           draft_title: string | null
@@ -1086,6 +1087,7 @@ export type Database = {
           build_assignee_ids?: string[]
           build_due_date?: string | null
           channel: Database["public"]["Enums"]["tracker_channel"]
+          content_type?: string | null
           created_at?: string
           created_by?: string | null
           draft_title?: string | null
@@ -1120,6 +1122,7 @@ export type Database = {
           build_assignee_ids?: string[]
           build_due_date?: string | null
           channel?: Database["public"]["Enums"]["tracker_channel"]
+          content_type?: string | null
           created_at?: string
           created_by?: string | null
           draft_title?: string | null
