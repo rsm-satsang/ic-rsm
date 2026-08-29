@@ -210,7 +210,7 @@ const Workspace = () => {
     }
   }, [project, user]);
 
-  useAutosave(projectTitle, autosaveTitle, 1500, !!project && !!user);
+  useAutosave(projectTitle, autosaveTitle, 1500, !!project && !!user && !editLocked);
 
   // Autosave: editor content
   const autosaveContent = useCallback(async (content: string) => {
@@ -229,7 +229,7 @@ const Workspace = () => {
     }
   }, [project, user, currentVersionId]);
 
-  useAutosave(markdownContent, autosaveContent, 2000, !!project && !!user && !!currentVersionId);
+  useAutosave(markdownContent, autosaveContent, 2000, !!project && !!user && !!currentVersionId && !editLocked);
 
   const handleTextSelection = () => {
     const textarea = textareaRef.current;

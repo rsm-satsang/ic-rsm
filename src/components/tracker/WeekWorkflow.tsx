@@ -81,6 +81,7 @@ interface Props {
   operators: UserOpt[];
   isAdmin?: boolean;
   projectStatus?: string | null;
+  projectStage?: string | null;
   upsert: (week: string, patch: any) => Promise<any>;
   onReset?: (week: string) => Promise<void>;
 }
@@ -91,10 +92,10 @@ function minusMonthsISO(weekIso: string, months: number) {
   d.setUTCMonth(d.getUTCMonth() - months);
   return d.toISOString().slice(0, 10);
 }
+// Due dates are always relative to the week itself — never clamped to today,
+// so past weeks keep their own (past) due dates.
 function defaultDueNotBeforeToday(weekIso: string, monthsBack: number) {
-  const t = todayISO();
-  const c = minusMonthsISO(weekIso, monthsBack);
-  return c < t ? t : c;
+  return minusMonthsISO(weekIso, monthsBack);
 }
 function wednesdayOf(weekIso: string) {
   const d = new Date(weekIso + "T00:00:00Z");
@@ -127,12 +128,13 @@ type Panel =
 
 type PhaseState = "todo" | "active" | "done";
 
-function phaseStates(status: string, projectStatus?: string | null): { plan: PhaseState; build: PhaseState; operate: PhaseState } {
-  const planDone = ["plan_complete", "build_assigned", "build_in_progress", "operate_assigned", "publish_complete", "published"].includes(status);
+function phaseStates(status: string, projectStatus?: string | null, projectStage?: string | null): { plan: PhaseState; build: PhaseState; operate: PhaseState } {
+  const stagePublished = projectStage === "s9_published";
+  const planDone = ["plan_complete", "build_assigned", "build_in_progress", "operate_assigned", "publish_complete", "published"].includes(status) || stagePublished;
   const projectReady = projectStatus === "approved" || projectStatus === "published";
   const buildDoneFromStatus = ["operate_assigned", "publish_complete", "published"].includes(status);
-  const buildDone = buildDoneFromStatus || (planDone && projectReady);
-  const opDone = ["publish_complete", "published"].includes(status);
+  const buildDone = buildDoneFromStatus || (planDone && projectReady) || stagePublished;
+  const opDone = ["publish_complete", "published"].includes(status) || stagePublished;
   return {
     plan: planDone ? "done" : "active",
     build: buildDone ? "done" : planDone ? "active" : "todo",
@@ -140,12 +142,12 @@ function phaseStates(status: string, projectStatus?: string | null): { plan: Pha
   };
 }
 
-export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, upsert, onReset }: Props) {
+export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, projectStage, upsert, onReset }: Props) {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
 
   const status = entry?.status ?? "tbd";
-  const ps = phaseStates(status, projectStatus);
+  const ps = phaseStates(status, projectStatus, projectStage);
   const planDone = ps.plan === "done";
   const buildDone = ps.build === "done";
   const opDone = ps.operate === "done";
@@ -395,9 +397,22 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildDone, entry?.id, projectStatus]);
 
+  // Linked project reached "Stg 10. Published" → mark the whole week (incl. Publish) complete.
+  useEffect(() => {
+    if (!entry?.id || !entry?.project_id) return;
+    if (projectStage !== "s9_published") return;
+    if (entry.status === "published") return;
+    (async () => {
+      await upsert(week, { status: "published", substack_published: true });
+      await logActivity("publish_completed", { via: "project_stage_published" });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectStage, entry?.id, entry?.project_id, entry?.status]);
+
   // Revert Build → In-progress when a linked project is reversed from ready-to-publish back to in_progress/draft/review.
   useEffect(() => {
     if (!entry?.id || !entry?.project_id) return;
+    if (projectStage === "s9_published") return;
     const projectActive = projectStatus && !["approved", "published"].includes(projectStatus);
     const trackerThinksDone = ["operate_assigned", "publish_complete"].includes(entry.status);
     if (projectActive && trackerThinksDone && !entry.substack_published && !entry.youtube_published) {
@@ -407,7 +422,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectStatus, entry?.id, entry?.project_id, entry?.status]);
+  }, [projectStatus, projectStage, entry?.id, entry?.project_id, entry?.status]);
 
 
   const submitEditOp = async () => {
