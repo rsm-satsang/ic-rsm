@@ -55,6 +55,19 @@ function DatePicker({ value, onChange, min }: { value?: string; onChange: (iso: 
 
 export interface UserOpt { id: string; name: string; email: string; content_roles?: string[] }
 
+// Content types a planner can pick for a week
+export const CONTENT_TYPES: { value: string; label: string }[] = [
+  { value: "substack_newsletter", label: "Substack Newsletter" },
+  { value: "wordpress_blog", label: "WordPress Blog" },
+  { value: "long_form_video", label: "Long form Video" },
+  { value: "shorts_reels", label: "Shorts / Reels" },
+  { value: "daily_inspiration", label: "Daily Inspiration" },
+  { value: "other", label: "Other" },
+];
+export const contentTypeLabel = (v?: string | null) =>
+  CONTENT_TYPES.find((c) => c.value === v)?.label ?? (v ? v.replace(/_/g, " ") : null);
+
+
 interface Props {
   week: string;
   channel: string;
