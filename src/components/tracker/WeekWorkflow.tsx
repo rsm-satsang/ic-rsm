@@ -147,7 +147,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [panel, setPanel] = useState<Panel>(null);
 
   const status = entry?.status ?? "tbd";
-  const ps = phaseStates(status, projectStatus);
+  const ps = phaseStates(status, projectStatus, projectStage);
   const planDone = ps.plan === "done";
   const buildDone = ps.build === "done";
   const opDone = ps.operate === "done";
