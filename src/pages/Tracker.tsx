@@ -213,13 +213,16 @@ export default function Tracker() {
   useEffect(() => {
     const linked = entries.filter((e) => e.project_id);
     const ids = Array.from(new Set(linked.map((e) => e.project_id as string)));
-    if (!ids.length) { setProjectStatusMap({}); return; }
+    if (!ids.length) { setProjectStatusMap({}); setProjectInfoMap({}); return; }
     (async () => {
-      const { data } = await supabase.from("projects").select("id,status").in("id", ids);
+      const { data } = await supabase.from("projects").select("id,status,title,owner_id,metadata").in("id", ids);
       const found = new Set((data as any[] | null)?.map((p) => p.id) ?? []);
       const map: Record<string, string> = {};
-      (data as any[] | null)?.forEach((p) => { map[p.id] = p.status; });
+      const info: Record<string, any> = {};
+      (data as any[] | null)?.forEach((p) => { map[p.id] = p.status; info[p.id] = p; });
       setProjectStatusMap(map);
+      setProjectInfoMap(info);
+
 
       const orphanEntries = linked.filter((e) => !found.has(e.project_id as string));
       if (orphanEntries.length) {
