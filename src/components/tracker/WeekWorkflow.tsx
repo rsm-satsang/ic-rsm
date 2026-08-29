@@ -297,13 +297,16 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   };
 
   const submitCompletePlan = async () => {
+    if (!contentType) return toast.error("Select a content type for the week");
     const autoBuilder = pickByWeek(builders, week);
     const existingBuild = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
     const patch: any = {
       theme_text: theme.trim() || null,
       plan_comments: planComments.trim() || null,
+      content_type: contentType,
       status: "plan_complete",
     };
+
     if (existingBuild.length === 0 && autoBuilder) {
       patch.build_assignee_ids = [autoBuilder.id];
       patch.build_assignee_id = autoBuilder.id;
