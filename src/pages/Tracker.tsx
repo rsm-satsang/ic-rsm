@@ -880,10 +880,10 @@ export default function Tracker() {
               <div className="space-y-2">
                 {calendarRows.map((row) => {
                   const inYear = weeks.includes(row.weekIso);
-                  const { entry, meta, headerBg } = weekMeta(row.weekIso);
+                  const { entry, meta } = weekMeta(row.weekIso);
                   const weekNum = weeks.indexOf(row.weekIso) + 1;
                   const isSelected = selectedWeek === row.weekIso;
-                  
+
                   const detail = entry?.theme_text || entry?.draft_title || null;
                   const info = weekInfo(row.weekIso);
                   const stuck = inYear && info.overdueDays > 0;
@@ -897,11 +897,9 @@ export default function Tracker() {
                       type="button"
                       disabled={!inYear}
                       onClick={() => inYear && setSelectedWeek(row.weekIso)}
-                      className={`w-full text-left rounded-xl border transition-all p-2 shadow-sm hover:shadow-md ${
-                        stuck ? "bg-red-50 border-red-300" : `${headerBg} border-transparent`
-                      } ${isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"} ${
-                        inYear ? "" : "opacity-40 cursor-not-allowed"
-                      }`}
+                      className={`w-full text-left rounded-xl border bg-white transition-all p-2 shadow-sm hover:shadow-md border-sky-100 ${
+                        isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
+                      } ${inYear ? "" : "opacity-40 cursor-not-allowed"}`}
                     >
                       <div className="grid grid-cols-7 gap-1.5">
                         {row.days.map((d) => {
