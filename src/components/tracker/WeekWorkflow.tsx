@@ -397,9 +397,22 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildDone, entry?.id, projectStatus]);
 
+  // Linked project reached "Stg 10. Published" → mark the whole week (incl. Publish) complete.
+  useEffect(() => {
+    if (!entry?.id || !entry?.project_id) return;
+    if (projectStage !== "s9_published") return;
+    if (entry.status === "published") return;
+    (async () => {
+      await upsert(week, { status: "published", substack_published: true });
+      await logActivity("publish_completed", { via: "project_stage_published" });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectStage, entry?.id, entry?.project_id, entry?.status]);
+
   // Revert Build → In-progress when a linked project is reversed from ready-to-publish back to in_progress/draft/review.
   useEffect(() => {
     if (!entry?.id || !entry?.project_id) return;
+    if (projectStage === "s9_published") return;
     const projectActive = projectStatus && !["approved", "published"].includes(projectStatus);
     const trackerThinksDone = ["operate_assigned", "publish_complete"].includes(entry.status);
     if (projectActive && trackerThinksDone && !entry.substack_published && !entry.youtube_published) {
@@ -409,7 +422,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectStatus, entry?.id, entry?.project_id, entry?.status]);
+  }, [projectStatus, projectStage, entry?.id, entry?.project_id, entry?.status]);
 
 
   const submitEditOp = async () => {
