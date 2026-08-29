@@ -621,6 +621,7 @@ export default function Tracker() {
       projectTitle: proj?.title ?? entry?.title ?? null,
       author,
       stage,
+      phases,
       dues,
       weeksAway,
       overdueDays,
