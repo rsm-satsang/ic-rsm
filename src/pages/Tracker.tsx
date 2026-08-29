@@ -1043,11 +1043,6 @@ export default function Tracker() {
                           {info.planDone && info.buildDone && phaseLine("operate", "📮", "Publish", info.opDone,
                             <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>
                           )}
-
-                          {/* Full weekly workflow (assignments, notes, comments, activity) */}
-                          <div onClick={(e) => e.stopPropagation()}>
-                            {renderWeekCard(row.weekIso, false)}
-                          </div>
                         </div>
                       )}
                     </div>
@@ -1055,8 +1050,24 @@ export default function Tracker() {
 
                 })}
               </div>
-              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its full details.</div>
+              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its summary. The full workflow for the selected week appears on the right.</div>
             </Card>
+
+            {/* Right-side panel: full weekly workflow for the selected week */}
+            <div className="w-full lg:w-[420px] lg:shrink-0 lg:sticky lg:top-4">
+              {selectedWeek && weeks.includes(selectedWeek) ? (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-sky-900 bg-sky-100 border border-sky-200 rounded-md px-3 py-1.5">
+                    Selected week workflow
+                  </div>
+                  {renderWeekCard(selectedWeek, false)}
+                </div>
+              ) : (
+                <Card className="p-6 text-sm text-muted-foreground text-center border-dashed">
+                  Select a week in the calendar to manage its Plan / Build / Publish workflow here.
+                </Card>
+              )}
+            </div>
           </div>
 
 
