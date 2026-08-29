@@ -526,6 +526,14 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
   return (
     <div className="border-t pt-2 space-y-1">
+      {(entry as any)?.content_type && (
+        <div className="px-2">
+          <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+            {contentTypeLabel((entry as any).content_type)}
+          </span>
+        </div>
+      )}
+
       {isAdmin && (
         <div className="flex justify-end">
           <Button size="sm" variant="ghost" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={handleReset}>
