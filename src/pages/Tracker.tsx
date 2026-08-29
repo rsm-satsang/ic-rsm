@@ -376,9 +376,10 @@ export default function Tracker() {
     return { total, published, missing };
   }, [weeks, entriesByWeek, ytdMaxMonth, channelEntries]);
 
-  // Phase-bucket metrics (YTD scope)
+  // Phase-bucket metrics (FULL YEAR scope)
   const phaseStats = useMemo(() => {
-    const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
+    const ytdWeeks = weeks;
+
     let planInProgress = 0, planComplete = 0;
     let buildYet = 0, buildAssigned = 0, buildInProgress = 0, buildComplete = 0;
     let opInProgress = 0, opComplete = 0;
