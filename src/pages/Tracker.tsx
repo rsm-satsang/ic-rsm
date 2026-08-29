@@ -11,7 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import GlobalNav from "@/components/GlobalNav";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2, RefreshCw, Calendar as CalendarIcon, ChevronDown, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import WeekWorkflow, { contentTypeLabel } from "@/components/tracker/WeekWorkflow";
 import { getDraftStage, stageLabel } from "@/lib/draftStages";
