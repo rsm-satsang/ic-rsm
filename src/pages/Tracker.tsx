@@ -571,16 +571,29 @@ export default function Tracker() {
   };
 
   // Rich per-week info used by the calendar rows
+  const phaseAssigneeNames = (entry: Entry | undefined, key: "plan" | "build" | "operate") => {
+    if (!entry) return [] as string[];
+    const ids = (((entry as any)[`${key}_assignee_ids`] as string[] | null) ??
+      ((entry as any)[`${key}_assignee_id`] ? [(entry as any)[`${key}_assignee_id`]] : [])) as string[];
+    return Array.from(new Set(ids.map((id) => nameById[id]).filter(Boolean)));
+  };
+
   const weekInfo = (week: string) => {
     const { entry, opDone } = weekMeta(week);
     const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
     const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
     const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
 
+    const phases = {
+      plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null },
+      build: { names: phaseAssigneeNames(entry, "build"), due: (entry as any)?.build_due_date ?? null },
+      operate: { names: phaseAssigneeNames(entry, "operate"), due: (entry as any)?.operate_due_date ?? null },
+    };
+
     const dues = [
-      { label: "Plan", date: entry?.plan_due_date ?? null },
-      { label: "Build", date: (entry as any)?.build_due_date ?? null },
-      { label: "Publish", date: (entry as any)?.operate_due_date ?? null },
+      { label: "Plan", date: phases.plan.due },
+      { label: "Build", date: phases.build.due },
+      { label: "Publish", date: phases.operate.due },
     ].filter((d) => !!d.date) as { label: string; date: string }[];
 
     const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
