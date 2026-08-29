@@ -570,6 +570,53 @@ export default function Tracker() {
     return Array.from(new Set(ids.map((id) => nameById[id]).filter(Boolean)));
   };
 
+  // Rich per-week info used by the calendar rows
+  const weekInfo = (week: string) => {
+    const { entry, opDone } = weekMeta(week);
+    const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
+    const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
+    const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
+
+    const dues = [
+      { label: "Plan", date: entry?.plan_due_date ?? null },
+      { label: "Build", date: (entry as any)?.build_due_date ?? null },
+      { label: "Publish", date: (entry as any)?.operate_due_date ?? null },
+    ].filter((d) => !!d.date) as { label: string; date: string }[];
+
+    const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
+    const weeksAway = Math.round(
+      (new Date(week + "T00:00:00Z").getTime() - new Date(todayMonday + "T00:00:00Z").getTime()) /
+        (7 * 86400000)
+    );
+
+    const todayISO = new Date().toISOString().slice(0, 10);
+    let overdueDays = 0;
+    let overdueLabel: string | null = null;
+    if (!opDone) {
+      for (const d of dues) {
+        if (d.date < todayISO) {
+          const days = Math.floor(
+            (new Date(todayISO + "T00:00:00Z").getTime() - new Date(d.date + "T00:00:00Z").getTime()) / 86400000
+          );
+          if (days > overdueDays) { overdueDays = days; overdueLabel = d.label; }
+        }
+      }
+    }
+
+    return {
+      contentType: contentTypeLabel((entry as any)?.content_type),
+      projectTitle: proj?.title ?? entry?.title ?? null,
+      author,
+      stage,
+      dues,
+      weeksAway,
+      overdueDays,
+      overdueLabel,
+    };
+  };
+
+
+
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   useEffect(() => {
     const monthWeeks = weeks.filter((w) => monthOf(w) === selectedMonth);
