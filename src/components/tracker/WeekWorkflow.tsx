@@ -128,12 +128,13 @@ type Panel =
 
 type PhaseState = "todo" | "active" | "done";
 
-function phaseStates(status: string, projectStatus?: string | null): { plan: PhaseState; build: PhaseState; operate: PhaseState } {
-  const planDone = ["plan_complete", "build_assigned", "build_in_progress", "operate_assigned", "publish_complete", "published"].includes(status);
+function phaseStates(status: string, projectStatus?: string | null, projectStage?: string | null): { plan: PhaseState; build: PhaseState; operate: PhaseState } {
+  const stagePublished = projectStage === "s9_published";
+  const planDone = ["plan_complete", "build_assigned", "build_in_progress", "operate_assigned", "publish_complete", "published"].includes(status) || stagePublished;
   const projectReady = projectStatus === "approved" || projectStatus === "published";
   const buildDoneFromStatus = ["operate_assigned", "publish_complete", "published"].includes(status);
-  const buildDone = buildDoneFromStatus || (planDone && projectReady);
-  const opDone = ["publish_complete", "published"].includes(status);
+  const buildDone = buildDoneFromStatus || (planDone && projectReady) || stagePublished;
+  const opDone = ["publish_complete", "published"].includes(status) || stagePublished;
   return {
     plan: planDone ? "done" : "active",
     build: buildDone ? "done" : planDone ? "active" : "todo",
