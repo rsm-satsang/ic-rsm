@@ -180,6 +180,12 @@ const Workspace = () => {
   const [peerCommentApproved, setPeerCommentApproved] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Once the draft reaches Stg 9 (Ready to move to Publishing Channel) or beyond,
+  // it is locked for everyone except admins.
+  const editLocked = !isAdmin && (draftStage === "s8_ready" || draftStage === "s9_published");
+
+
+
   const [markdownContent, setMarkdownContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(true);
   const [heroImage, setHeroImage] = useState<{ id?: string; storage_path?: string | null; url: string; caption: string | null } | null>(null);
