@@ -1724,7 +1724,9 @@ const Workspace = () => {
                 <Textarea
                   ref={textareaRef}
                   value={markdownContent}
-                  onChange={(e) => setMarkdownContent(e.target.value)}
+                  readOnly={editLocked}
+                  onChange={(e) => { if (!editLocked) setMarkdownContent(e.target.value); }}
+
                   onSelect={handleTextSelection}
                   onMouseUp={handleTextSelection}
                   onKeyUp={handleTextSelection}
