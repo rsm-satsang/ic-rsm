@@ -141,7 +141,7 @@ function phaseStates(status: string, projectStatus?: string | null): { plan: Pha
   };
 }
 
-export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, upsert, onReset }: Props) {
+export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, projectStage, upsert, onReset }: Props) {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
 
