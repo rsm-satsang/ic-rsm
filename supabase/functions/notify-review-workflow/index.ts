@@ -24,6 +24,12 @@ const fmtDate = (s?: string) => {
 function createRawEmail(from: string, to: string, cc: string[], subject: string, html: string): string {
   const lines = [`From: ${from}`, `To: ${to}`];
   if (cc.length) lines.push(`Cc: ${cc.join(", ")}`);
+  // Subject must be encoded when it contains non-ASCII characters.
+  const cleanSubject = String(subject || "Srijan notification").replace(/[\r\n]+/g, " ").trim();
+  const subjectHeader = /^[\x20-\x7E]*$/.test(cleanSubject)
+    ? cleanSubject
+    : `=?UTF-8?B?${btoa(unescape(encodeURIComponent(cleanSubject)))}?=`;
+  lines.push(`Subject: ${subjectHeader}`);
   lines.push("MIME-Version: 1.0", 'Content-Type: text/html; charset="UTF-8"', "", html);
   const msg = lines.join("\r\n");
   return btoa(unescape(encodeURIComponent(msg))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
