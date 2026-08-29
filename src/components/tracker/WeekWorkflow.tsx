@@ -250,7 +250,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     (async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id,title,status")
+        .select("id,title,status,metadata,type")
         .order("updated_at", { ascending: false })
         .limit(500);
       if (error) {
@@ -260,6 +260,21 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       setDraftProjects((data as any[]) ?? []);
     })();
   }, []);
+
+  // Planner may only link newsletters whose concept has been approved and which
+  // are not yet published.
+  const plannableProjects = useMemo(() => {
+    const order = DRAFT_STAGES.map((s) => s.value);
+    const minIdx = order.indexOf("s4_concept_approved");
+    return draftProjects.filter((p: any) => {
+      if ((p.metadata as any)?.goal !== "substack_newsletter") return false;
+      if (p.status === "published") return false;
+      const stage = getDraftStage(p.metadata, p.status);
+      if (stage === "s9_published") return false;
+      return order.indexOf(stage) >= minIdx;
+    });
+  }, [draftProjects]);
+
 
 
   const close = () => setPanel(null);
