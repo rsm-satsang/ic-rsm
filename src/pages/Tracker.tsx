@@ -828,7 +828,9 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
+          <div className="text-xs font-semibold text-muted-foreground mb-2">Phase progress · Full year {YEAR}</div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+
             <Card className="p-4">
               <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
               <div className="text-sm flex justify-between"><span>In progress</span><b>{phaseStats.planInProgress}</b></div>
