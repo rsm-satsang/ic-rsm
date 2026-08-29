@@ -560,27 +560,30 @@ export default function Tracker() {
     return m;
   }, [users]);
 
-  const assigneeNames = (entry: Entry | undefined) => {
+  // Rich per-week info used by the calendar rows
+  const phaseAssigneeNames = (entry: Entry | undefined, key: "plan" | "build" | "operate") => {
     if (!entry) return [] as string[];
-    const ids = [
-      ...(((entry as any).plan_assignee_ids as string[] | null) ?? (entry.plan_assignee_id ? [entry.plan_assignee_id] : [])),
-      ...(((entry as any).build_assignee_ids as string[] | null) ?? (entry.build_assignee_id ? [entry.build_assignee_id] : [])),
-      ...(((entry as any).operate_assignee_ids as string[] | null) ?? (entry.operate_assignee_id ? [entry.operate_assignee_id] : [])),
-    ];
+    const ids = (((entry as any)[`${key}_assignee_ids`] as string[] | null) ??
+      ((entry as any)[`${key}_assignee_id`] ? [(entry as any)[`${key}_assignee_id`]] : [])) as string[];
     return Array.from(new Set(ids.map((id) => nameById[id]).filter(Boolean)));
   };
 
-  // Rich per-week info used by the calendar rows
   const weekInfo = (week: string) => {
     const { entry, opDone } = weekMeta(week);
     const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
     const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
     const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
 
+    const phases = {
+      plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null },
+      build: { names: phaseAssigneeNames(entry, "build"), due: (entry as any)?.build_due_date ?? null },
+      operate: { names: phaseAssigneeNames(entry, "operate"), due: (entry as any)?.operate_due_date ?? null },
+    };
+
     const dues = [
-      { label: "Plan", date: entry?.plan_due_date ?? null },
-      { label: "Build", date: (entry as any)?.build_due_date ?? null },
-      { label: "Publish", date: (entry as any)?.operate_due_date ?? null },
+      { label: "Plan", date: phases.plan.due },
+      { label: "Build", date: phases.build.due },
+      { label: "Publish", date: phases.operate.due },
     ].filter((d) => !!d.date) as { label: string; date: string }[];
 
     const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
@@ -608,6 +611,7 @@ export default function Tracker() {
       projectTitle: proj?.title ?? entry?.title ?? null,
       author,
       stage,
+      phases,
       dues,
       weeksAway,
       overdueDays,
@@ -871,7 +875,7 @@ export default function Tracker() {
                   const { entry, meta, headerBg } = weekMeta(row.weekIso);
                   const weekNum = weeks.indexOf(row.weekIso) + 1;
                   const isSelected = selectedWeek === row.weekIso;
-                  const names = assigneeNames(entry);
+                  
                   const detail = entry?.theme_text || entry?.draft_title || null;
                   const info = weekInfo(row.weekIso);
                   const stuck = inYear && info.overdueDays > 0;
@@ -930,23 +934,35 @@ export default function Tracker() {
                               </span>
                             )}
                           </div>
-                          {(info.projectTitle || detail) && (
-                            <div className="text-[10px] truncate">📌 {info.projectTitle || detail}</div>
-                          )}
+                          {/* Row 1 — Plan: planner, due date, linked project */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">📝 Plan:</span>{" "}
+                            {info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}
+                            {info.phases.plan.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.plan.due)}</span>}
+                            {(info.projectTitle || detail) && (
+                              <span className="text-muted-foreground"> · 📌 {info.projectTitle || detail}</span>
+                            )}
+                          </div>
+                          {/* Row 2 — Build: builders, due date */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">🛠️ Build:</span>{" "}
+                            {info.phases.build.names.length ? info.phases.build.names.join(", ") : "—"}
+                            {info.phases.build.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.build.due)}</span>}
+                          </div>
+                          {/* Row 3 — Publish: operators, due date */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">📮 Publish:</span>{" "}
+                            {info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}
+                            {info.phases.operate.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.operate.due)}</span>}
+                          </div>
+                          {/* Row 4 — Linked project author + current stage */}
                           {(info.author || info.stage) && (
                             <div className="text-[10px] text-muted-foreground truncate">
+                              <span className="font-semibold text-foreground">📄 Draft:</span>{" "}
                               {info.author ? `✍️ ${info.author}` : ""}
                               {info.author && info.stage ? " · " : ""}
                               {info.stage ?? ""}
                             </div>
-                          )}
-                          {info.dues.length > 0 && (
-                            <div className="text-[10px] text-muted-foreground truncate">
-                              📅 {info.dues.map((d) => `${d.label}: ${formatDate(d.date)}`).join(" · ")}
-                            </div>
-                          )}
-                          {names.length > 0 && (
-                            <div className="text-[10px] text-muted-foreground truncate">👤 {names.join(", ")}</div>
                           )}
                         </div>
                       )}
