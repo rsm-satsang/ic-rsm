@@ -899,9 +899,9 @@ export default function Tracker() {
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col lg:flex-row gap-4 items-start">
             {/* Calendar */}
-            <Card className="p-4 bg-gradient-to-b from-sky-50/70 to-background border-2 border-sky-300 shadow-md">
+            <Card className="p-4 bg-gradient-to-b from-sky-50/70 to-background border-2 border-sky-300 shadow-md flex-1 min-w-0 w-full">
               <div className="grid grid-cols-7 gap-2 mb-2">
                 {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
                   <div key={d} className="text-xs font-bold text-center text-sky-900/80 uppercase tracking-wider py-1">{d}</div>
