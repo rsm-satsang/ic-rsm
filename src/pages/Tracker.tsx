@@ -62,11 +62,11 @@ const STATUS_META: Record<Status, { label: string; emoji: string; cls: string }>
   not_published: { label: "Not Published", emoji: "🔴", cls: "bg-red-100 text-red-800 border-red-200" },
   tbd: { label: "TBD", emoji: "⚪", cls: "bg-gray-100 text-gray-700 border-gray-200" },
   not_applicable: { label: "Not Applicable", emoji: "⚫", cls: "bg-gray-200 text-gray-600 border-gray-300" },
-  planning_assigned: { label: "Planning Assigned", emoji: "📝", cls: "bg-blue-100 text-blue-800 border-blue-200" },
+  planning_assigned: { label: "Awaiting Planning", emoji: "📝", cls: "bg-blue-100 text-blue-800 border-blue-200" },
   plan_complete: { label: "Plan Complete", emoji: "✅", cls: "bg-indigo-100 text-indigo-800 border-indigo-200" },
-  build_assigned: { label: "Build Assigned", emoji: "🛠️", cls: "bg-purple-100 text-purple-800 border-purple-200" },
+  build_assigned: { label: "Awaiting Build", emoji: "🛠️", cls: "bg-purple-100 text-purple-800 border-purple-200" },
   build_in_progress: { label: "Build In Progress", emoji: "🚧", cls: "bg-amber-100 text-amber-800 border-amber-200" },
-  operate_assigned: { label: "Operate/Publish Assigned", emoji: "📣", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  operate_assigned: { label: "Awaiting Publish", emoji: "📣", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
   publish_complete: { label: "Publish Complete", emoji: "🎉", cls: "bg-green-100 text-green-800 border-green-200" },
 };
 
