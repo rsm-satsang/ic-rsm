@@ -761,6 +761,11 @@ export default function Tracker() {
             operators={operators}
             isAdmin={isAdmin}
             projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
+            projectStage={
+              entry?.project_id && projectInfoMap[entry.project_id]
+                ? getDraftStage(projectInfoMap[entry.project_id].metadata, projectInfoMap[entry.project_id].status)
+                : null
+            }
             upsert={upsert as any}
             onReset={resetWeek as any}
           />
