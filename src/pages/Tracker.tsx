@@ -885,7 +885,7 @@ export default function Tracker() {
                   const { entry, meta, headerBg } = weekMeta(row.weekIso);
                   const weekNum = weeks.indexOf(row.weekIso) + 1;
                   const isSelected = selectedWeek === row.weekIso;
-                  const names = assigneeNames(entry);
+                  
                   const detail = entry?.theme_text || entry?.draft_title || null;
                   const info = weekInfo(row.weekIso);
                   const stuck = inYear && info.overdueDays > 0;
