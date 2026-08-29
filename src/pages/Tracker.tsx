@@ -899,9 +899,9 @@ export default function Tracker() {
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col lg:flex-row gap-4 items-start">
             {/* Calendar */}
-            <Card className="p-4 bg-gradient-to-b from-sky-50/70 to-background border-2 border-sky-300 shadow-md">
+            <Card className="p-4 bg-gradient-to-b from-sky-50/70 to-background border-2 border-sky-300 shadow-md flex-1 min-w-0 w-full">
               <div className="grid grid-cols-7 gap-2 mb-2">
                 {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
                   <div key={d} className="text-xs font-bold text-center text-sky-900/80 uppercase tracking-wider py-1">{d}</div>
@@ -983,31 +983,9 @@ export default function Tracker() {
                         )}
                       </div>
 
-                      {/* Dates of the week */}
-                      <div className="grid grid-cols-7 gap-2 p-3">
-                        {row.days.map((d) => {
-                          const iso = d.toISOString().slice(0, 10);
-                          const other = d.getUTCMonth() !== selectedMonth;
-                          const pubs = publishByDate.get(iso) || [];
-                          const isToday = iso === new Date().toISOString().slice(0, 10);
-                          return (
-                            <div
-                              key={iso}
-                              className={`h-16 rounded-xl border px-2 py-1 ${
-                                other ? "bg-muted/30 text-muted-foreground/50 border-sky-100" : "bg-white text-foreground border-sky-200"
-                              } ${isToday ? "border-sky-500 ring-2 ring-sky-300 bg-sky-50" : ""}`}
-                            >
-                              <div className="text-lg font-bold tabular-nums leading-tight">{d.getUTCDate()}</div>
-                              {pubs.length > 0 && (
-                                <div className="text-[10px] text-green-700 font-medium truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
+                      {/* Week summary — Plan / Build / Publish rows (top, below the week header) */}
                       {inYear && isOpen && (
-                        <div className="px-3 pb-3 space-y-2">
+                        <div className="px-3 pt-3 space-y-2">
                           {/* Linked project */}
                           <div className="text-xs flex items-center gap-1.5 flex-wrap">
                             {(info.projectTitle || detail) ? (
@@ -1043,20 +1021,55 @@ export default function Tracker() {
                           {info.planDone && info.buildDone && phaseLine("operate", "📮", "Publish", info.opDone,
                             <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>
                           )}
-
-                          {/* Full weekly workflow (assignments, notes, comments, activity) */}
-                          <div onClick={(e) => e.stopPropagation()}>
-                            {renderWeekCard(row.weekIso, false)}
-                          </div>
                         </div>
                       )}
+
+                      {/* Dates of the week */}
+                      <div className="grid grid-cols-7 gap-2 p-3">
+                        {row.days.map((d) => {
+                          const iso = d.toISOString().slice(0, 10);
+                          const other = d.getUTCMonth() !== selectedMonth;
+                          const pubs = publishByDate.get(iso) || [];
+                          const isToday = iso === new Date().toISOString().slice(0, 10);
+                          return (
+                            <div
+                              key={iso}
+                              className={`h-16 rounded-xl border px-2 py-1 ${
+                                other ? "bg-muted/30 text-muted-foreground/50 border-sky-100" : "bg-white text-foreground border-sky-200"
+                              } ${isToday ? "border-sky-500 ring-2 ring-sky-300 bg-sky-50" : ""}`}
+                            >
+                              <div className="text-lg font-bold tabular-nums leading-tight">{d.getUTCDate()}</div>
+                              {pubs.length > 0 && (
+                                <div className="text-[10px] text-green-700 font-medium truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
                     </div>
                   );
 
                 })}
               </div>
-              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its full details.</div>
+              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its summary. The full workflow for the selected week appears on the right.</div>
             </Card>
+
+            {/* Right-side panel: full weekly workflow for the selected week */}
+            <div className="w-full lg:w-[420px] lg:shrink-0 lg:sticky lg:top-4">
+              {selectedWeek && weeks.includes(selectedWeek) ? (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-sky-900 bg-sky-100 border border-sky-200 rounded-md px-3 py-1.5">
+                    Selected week workflow
+                  </div>
+                  {renderWeekCard(selectedWeek, false)}
+                </div>
+              ) : (
+                <Card className="p-6 text-sm text-muted-foreground text-center border-dashed">
+                  Select a week in the calendar to manage its Plan / Build / Publish workflow here.
+                </Card>
+              )}
+            </div>
           </div>
 
 
