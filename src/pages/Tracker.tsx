@@ -944,23 +944,35 @@ export default function Tracker() {
                               </span>
                             )}
                           </div>
-                          {(info.projectTitle || detail) && (
-                            <div className="text-[10px] truncate">📌 {info.projectTitle || detail}</div>
-                          )}
+                          {/* Row 1 — Plan: planner, due date, linked project */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">📝 Plan:</span>{" "}
+                            {info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}
+                            {info.phases.plan.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.plan.due)}</span>}
+                            {(info.projectTitle || detail) && (
+                              <span className="text-muted-foreground"> · 📌 {info.projectTitle || detail}</span>
+                            )}
+                          </div>
+                          {/* Row 2 — Build: builders, due date */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">🛠️ Build:</span>{" "}
+                            {info.phases.build.names.length ? info.phases.build.names.join(", ") : "—"}
+                            {info.phases.build.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.build.due)}</span>}
+                          </div>
+                          {/* Row 3 — Publish: operators, due date */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">📮 Publish:</span>{" "}
+                            {info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}
+                            {info.phases.operate.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.operate.due)}</span>}
+                          </div>
+                          {/* Row 4 — Linked project author + current stage */}
                           {(info.author || info.stage) && (
                             <div className="text-[10px] text-muted-foreground truncate">
+                              <span className="font-semibold text-foreground">📄 Draft:</span>{" "}
                               {info.author ? `✍️ ${info.author}` : ""}
                               {info.author && info.stage ? " · " : ""}
                               {info.stage ?? ""}
                             </div>
-                          )}
-                          {info.dues.length > 0 && (
-                            <div className="text-[10px] text-muted-foreground truncate">
-                              📅 {info.dues.map((d) => `${d.label}: ${formatDate(d.date)}`).join(" · ")}
-                            </div>
-                          )}
-                          {names.length > 0 && (
-                            <div className="text-[10px] text-muted-foreground truncate">👤 {names.join(", ")}</div>
                           )}
                         </div>
                       )}
