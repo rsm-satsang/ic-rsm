@@ -91,10 +91,10 @@ function minusMonthsISO(weekIso: string, months: number) {
   d.setUTCMonth(d.getUTCMonth() - months);
   return d.toISOString().slice(0, 10);
 }
+// Due dates are always relative to the week itself — never clamped to today,
+// so past weeks keep their own (past) due dates.
 function defaultDueNotBeforeToday(weekIso: string, monthsBack: number) {
-  const t = todayISO();
-  const c = minusMonthsISO(weekIso, monthsBack);
-  return c < t ? t : c;
+  return minusMonthsISO(weekIso, monthsBack);
 }
 function wednesdayOf(weekIso: string) {
   const d = new Date(weekIso + "T00:00:00Z");
