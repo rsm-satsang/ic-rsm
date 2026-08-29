@@ -560,16 +560,6 @@ export default function Tracker() {
     return m;
   }, [users]);
 
-  const assigneeNames = (entry: Entry | undefined) => {
-    if (!entry) return [] as string[];
-    const ids = [
-      ...(((entry as any).plan_assignee_ids as string[] | null) ?? (entry.plan_assignee_id ? [entry.plan_assignee_id] : [])),
-      ...(((entry as any).build_assignee_ids as string[] | null) ?? (entry.build_assignee_id ? [entry.build_assignee_id] : [])),
-      ...(((entry as any).operate_assignee_ids as string[] | null) ?? (entry.operate_assignee_id ? [entry.operate_assignee_id] : [])),
-    ];
-    return Array.from(new Set(ids.map((id) => nameById[id]).filter(Boolean)));
-  };
-
   // Rich per-week info used by the calendar rows
   const phaseAssigneeNames = (entry: Entry | undefined, key: "plan" | "build" | "operate") => {
     if (!entry) return [] as string[];
