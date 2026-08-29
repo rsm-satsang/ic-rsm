@@ -588,10 +588,13 @@ export default function Tracker() {
     const reviewerIds = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
     const reviewers = reviewerIds.map((id) => nameById[id]).filter(Boolean);
 
+    const doneOn = (action: string) =>
+      entry ? activityDoneMap[`${entry.channel}|${entry.sub_channel}|${week}|${action}`] ?? null : null;
+
     const phases = {
-      plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null },
-      build: { names: phaseAssigneeNames(entry, "build"), due: (entry as any)?.build_due_date ?? null },
-      operate: { names: phaseAssigneeNames(entry, "operate"), due: (entry as any)?.operate_due_date ?? null },
+      plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null, doneOn: doneOn("plan_completed") },
+      build: { names: phaseAssigneeNames(entry, "build"), due: (entry as any)?.build_due_date ?? null, doneOn: doneOn("build_complete_auto") },
+      operate: { names: phaseAssigneeNames(entry, "operate"), due: (entry as any)?.operate_due_date ?? null, doneOn: doneOn("publish_completed") },
     };
 
     const dues = [
