@@ -628,6 +628,7 @@ export default function Tracker() {
 
     return {
       contentType: contentTypeLabel((entry as any)?.content_type),
+      projectId: entry?.project_id ?? null,
       projectTitle: proj?.title ?? entry?.title ?? null,
       author,
       stage,
