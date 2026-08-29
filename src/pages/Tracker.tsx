@@ -859,31 +859,39 @@ export default function Tracker() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
             {/* Calendar */}
-            <Card className="p-3">
-              <div className="grid grid-cols-7 gap-1 mb-1">
+            <Card className="p-4 bg-gradient-to-b from-sky-50/60 to-background border-sky-200 shadow-sm">
+              <div className="grid grid-cols-7 gap-1.5 mb-2">
                 {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
-                  <div key={d} className="text-[11px] font-semibold text-center text-muted-foreground py-1">{d}</div>
+                  <div key={d} className="text-[11px] font-semibold text-center text-sky-900/70 uppercase tracking-wide py-1">{d}</div>
                 ))}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {calendarRows.map((row) => {
                   const inYear = weeks.includes(row.weekIso);
                   const { entry, meta, headerBg } = weekMeta(row.weekIso);
                   const weekNum = weeks.indexOf(row.weekIso) + 1;
                   const isSelected = selectedWeek === row.weekIso;
                   const names = assigneeNames(entry);
-                  const detail = entry?.title || entry?.theme_text || entry?.draft_title || null;
+                  const detail = entry?.theme_text || entry?.draft_title || null;
+                  const info = weekInfo(row.weekIso);
+                  const stuck = inYear && info.overdueDays > 0;
+                  const awayText =
+                    info.weeksAway === 0 ? "This week"
+                      : info.weeksAway > 0 ? `In ${info.weeksAway} week${info.weeksAway > 1 ? "s" : ""}`
+                      : `${Math.abs(info.weeksAway)} week${Math.abs(info.weeksAway) > 1 ? "s" : ""} ago`;
                   return (
                     <button
                       key={row.weekIso}
                       type="button"
                       disabled={!inYear}
                       onClick={() => inYear && setSelectedWeek(row.weekIso)}
-                      className={`w-full text-left rounded-md border transition-all p-1.5 ${headerBg} ${
-                        isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
-                      } ${inYear ? "" : "opacity-50 cursor-not-allowed"}`}
+                      className={`w-full text-left rounded-xl border transition-all p-2 shadow-sm hover:shadow-md ${
+                        stuck ? "bg-red-50 border-red-300" : `${headerBg} border-transparent`
+                      } ${isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"} ${
+                        inYear ? "" : "opacity-40 cursor-not-allowed"
+                      }`}
                     >
-                      <div className="grid grid-cols-7 gap-1">
+                      <div className="grid grid-cols-7 gap-1.5">
                         {row.days.map((d) => {
                           const iso = d.toISOString().slice(0, 10);
                           const other = d.getUTCMonth() !== selectedMonth;
@@ -892,11 +900,11 @@ export default function Tracker() {
                           return (
                             <div
                               key={iso}
-                              className={`h-10 rounded bg-white/70 border text-[11px] px-1 py-0.5 ${
-                                other ? "text-muted-foreground/50" : "text-foreground"
-                              } ${isToday ? "border-sky-500" : "border-transparent"}`}
+                              className={`h-11 rounded-lg bg-white/80 border text-[11px] px-1 py-0.5 ${
+                                other ? "text-muted-foreground/40" : "text-foreground"
+                              } ${isToday ? "border-sky-500 ring-1 ring-sky-300" : "border-sky-100"}`}
                             >
-                              <div className="font-medium tabular-nums">{d.getUTCDate()}</div>
+                              <div className="font-semibold tabular-nums">{d.getUTCDate()}</div>
                               {pubs.length > 0 && (
                                 <div className="text-[9px] text-green-700 truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
                               )}
@@ -905,17 +913,46 @@ export default function Tracker() {
                         })}
                       </div>
                       {inYear && (
-                        <div className="mt-1 flex items-center gap-2 flex-wrap px-0.5">
-                          <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
-                          <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
-                          {detail && <span className="text-[10px] truncate max-w-[45%]">📌 {detail}</span>}
+                        <div className="mt-2 space-y-1 px-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {info.contentType && (
+                              <span className="rounded-full bg-primary/10 border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                {info.contentType}
+                              </span>
+                            )}
+                            <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
+                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            <span className="text-[10px] text-muted-foreground">🕒 {awayText}</span>
+                            {stuck && (
+                              <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
+                                Stuck for {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""}
+                                {info.overdueLabel ? ` (${info.overdueLabel} due date passed)` : ""}
+                              </span>
+                            )}
+                          </div>
+                          {(info.projectTitle || detail) && (
+                            <div className="text-[10px] truncate">📌 {info.projectTitle || detail}</div>
+                          )}
+                          {(info.author || info.stage) && (
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {info.author ? `✍️ ${info.author}` : ""}
+                              {info.author && info.stage ? " · " : ""}
+                              {info.stage ?? ""}
+                            </div>
+                          )}
+                          {info.dues.length > 0 && (
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              📅 {info.dues.map((d) => `${d.label}: ${formatDate(d.date)}`).join(" · ")}
+                            </div>
+                          )}
                           {names.length > 0 && (
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[45%]">👤 {names.join(", ")}</span>
+                            <div className="text-[10px] text-muted-foreground truncate">👤 {names.join(", ")}</div>
                           )}
                         </div>
                       )}
                     </button>
                   );
+
                 })}
               </div>
               <div className="text-[10px] text-muted-foreground mt-2">Click any week row to open its weekly card on the right.</div>
