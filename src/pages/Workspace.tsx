@@ -1489,7 +1489,7 @@ const Workspace = () => {
                 const name = window.prompt("Name for the new version:", `Version ${formatDateTime(new Date())}`);
                 if (name && name.trim()) await handleSaveAsNewVersion(name.trim());
               }}
-              disabled={saving}
+              disabled={saving || editLocked}
               variant="outline"
               size="sm"
               className="gap-2"
