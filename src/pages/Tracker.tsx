@@ -650,6 +650,8 @@ export default function Tracker() {
 
 
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
+  const navigate = useNavigate();
   useEffect(() => {
     const monthWeeks = weeks.filter((w) => monthOf(w) === selectedMonth);
     const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
