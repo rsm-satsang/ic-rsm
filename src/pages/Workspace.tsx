@@ -229,7 +229,7 @@ const Workspace = () => {
     }
   }, [project, user, currentVersionId]);
 
-  useAutosave(markdownContent, autosaveContent, 2000, !!project && !!user && !!currentVersionId);
+  useAutosave(markdownContent, autosaveContent, 2000, !!project && !!user && !!currentVersionId && !editLocked);
 
   const handleTextSelection = () => {
     const textarea = textareaRef.current;
