@@ -787,6 +787,97 @@ export default function Tracker() {
           {/* Section divider */}
           <div className="border-t my-6" />
 
+          {/* ── Calendar month view + selected week panel ─────────────────── */}
+          <div className="mb-3 flex items-center justify-between flex-wrap gap-3 bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <h2 className="text-xl font-bold text-sky-900">Calendar · {MONTH_NAMES[selectedMonth]} {YEAR}</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm" variant="outline" className="h-8 bg-white"
+                onClick={() => setSelectedMonth((m) => (m + 11) % 12)}
+              >‹ Prev</Button>
+              <Button
+                size="sm" variant="outline" className="h-8 bg-white"
+                onClick={() => setSelectedMonth((m) => (m + 1) % 12)}
+              >Next ›</Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+            {/* Calendar */}
+            <Card className="p-3">
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
+                  <div key={d} className="text-[11px] font-semibold text-center text-muted-foreground py-1">{d}</div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                {calendarRows.map((row) => {
+                  const inYear = weeks.includes(row.weekIso);
+                  const { entry, meta, headerBg } = weekMeta(row.weekIso);
+                  const weekNum = weeks.indexOf(row.weekIso) + 1;
+                  const isSelected = selectedWeek === row.weekIso;
+                  const names = assigneeNames(entry);
+                  const detail = entry?.title || entry?.theme_text || entry?.draft_title || null;
+                  return (
+                    <button
+                      key={row.weekIso}
+                      type="button"
+                      disabled={!inYear}
+                      onClick={() => inYear && setSelectedWeek(row.weekIso)}
+                      className={`w-full text-left rounded-md border transition-all p-1.5 ${headerBg} ${
+                        isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
+                      } ${inYear ? "" : "opacity-50 cursor-not-allowed"}`}
+                    >
+                      <div className="grid grid-cols-7 gap-1">
+                        {row.days.map((d) => {
+                          const iso = d.toISOString().slice(0, 10);
+                          const other = d.getUTCMonth() !== selectedMonth;
+                          const pubs = publishByDate.get(iso) || [];
+                          const isToday = iso === new Date().toISOString().slice(0, 10);
+                          return (
+                            <div
+                              key={iso}
+                              className={`h-10 rounded bg-white/70 border text-[11px] px-1 py-0.5 ${
+                                other ? "text-muted-foreground/50" : "text-foreground"
+                              } ${isToday ? "border-sky-500" : "border-transparent"}`}
+                            >
+                              <div className="font-medium tabular-nums">{d.getUTCDate()}</div>
+                              {pubs.length > 0 && (
+                                <div className="text-[9px] text-green-700 truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {inYear && (
+                        <div className="mt-1 flex items-center gap-2 flex-wrap px-0.5">
+                          <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
+                          <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                          {detail && <span className="text-[10px] truncate max-w-[45%]">📌 {detail}</span>}
+                          {names.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground truncate max-w-[45%]">👤 {names.join(", ")}</span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-2">Click any week row to open its weekly card on the right.</div>
+            </Card>
+
+            {/* Selected week panel */}
+            <div className="lg:sticky lg:top-4">
+              {selectedWeek ? (
+                renderWeekCard(selectedWeek, false)
+              ) : (
+                <Card className="p-6 text-sm text-muted-foreground">Select a week in the calendar to see its card.</Card>
+              )}
+            </div>
+          </div>
+
+
+
           {/* Monthly section header with inline Plan/Track by Month + month dropdown */}
           <div className="mb-3 flex items-center justify-between flex-wrap gap-3 bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
             <div className="flex items-center gap-4 flex-wrap">
