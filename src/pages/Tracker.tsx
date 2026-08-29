@@ -598,10 +598,11 @@ export default function Tracker() {
     };
 
     const dues = [
-      { label: "Plan", date: phases.plan.due },
-      { label: "Build", date: phases.build.due },
-      { label: "Publish", date: phases.operate.due },
-    ].filter((d) => !!d.date) as { label: string; date: string }[];
+      { label: "Plan", date: phases.plan.due, done: planDone || !!phases.plan.doneOn },
+      { label: "Build", date: phases.build.due, done: buildDone || !!phases.build.doneOn },
+      { label: "Publish", date: phases.operate.due, done: opDone || !!phases.operate.doneOn },
+    ].filter((d) => !!d.date) as { label: string; date: string; done: boolean }[];
+
 
     const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
     const weeksAway = Math.round(
