@@ -210,7 +210,7 @@ const Workspace = () => {
     }
   }, [project, user]);
 
-  useAutosave(projectTitle, autosaveTitle, 1500, !!project && !!user);
+  useAutosave(projectTitle, autosaveTitle, 1500, !!project && !!user && !editLocked);
 
   // Autosave: editor content
   const autosaveContent = useCallback(async (content: string) => {
