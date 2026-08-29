@@ -556,7 +556,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_plan" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <DatePicker value={planDue} min={todayISO()} onChange={setPlanDue} />
+              <DatePicker value={planDue} onChange={setPlanDue} />
               <label className="text-xs font-medium">Planner(s)</label>
               {multiUserSelect(planAssignees, setPlanAssignees, planners)}
               <Button size="sm" className="w-full" onClick={submitEditPlan}>Save</Button>
@@ -640,7 +640,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {panel === "edit_build" && (
             <div className="mb-2 space-y-2 rounded-md border bg-muted/30 p-2">
               <label className="text-xs font-medium">Due date</label>
-              <DatePicker value={buildDue} min={todayISO()} onChange={setBuildDue} />
+              <DatePicker value={buildDue} onChange={setBuildDue} />
               <label className="text-xs font-medium">Builder(s)</label>
               {multiUserSelect(buildAssignees, setBuildAssignees, builders)}
               <Button size="sm" className="w-full" onClick={submitEditBuild}>Save</Button>
