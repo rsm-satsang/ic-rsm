@@ -558,6 +558,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           {/* Plan details — always visible when planning is done */}
           {planDone && (
             <div className="mb-2 space-y-1 rounded-md border bg-muted/30 p-2 text-xs">
+              <div><b>Content type:</b> {contentTypeLabel((entry as any)?.content_type) || "—"}</div>
               <div><b>Topic:</b> {entry?.theme_text || "—"}</div>
               <div><b>Plan notes:</b> {entry?.plan_comments || "—"}</div>
               {entry?.project_id && (
@@ -584,21 +585,37 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
           {panel === "complete_plan" && (
             <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
+              <label className="text-xs font-medium">Content type <span className="text-destructive">*</span></label>
+              <Select value={contentType} onValueChange={setContentType}>
+                <SelectTrigger><SelectValue placeholder="Select content type" /></SelectTrigger>
+                <SelectContent>
+                  {CONTENT_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <label className="text-xs font-medium">Topic <span className="text-muted-foreground font-normal">(optional)</span></label>
               <Input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Topic" />
               <label className="text-xs font-medium">Plan comments</label>
               <Textarea value={planComments} onChange={(e) => setPlanComments(e.target.value)} className="min-h-[60px] resize-none" />
-              <label className="text-xs font-medium">Link a project <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <label className="text-xs font-medium">
+                Link a project <span className="text-muted-foreground font-normal">(concept-approved, unpublished newsletters)</span>
+              </label>
               <Select value={planLinkProjectId} onValueChange={setPlanLinkProjectId}>
                 <SelectTrigger><SelectValue placeholder="Select a project (optional)" /></SelectTrigger>
                 <SelectContent>
-                  {draftProjects.length === 0 && <div className="p-2 text-xs text-muted-foreground">No projects found</div>}
-                  {draftProjects.filter((p) => p.id !== entry?.project_id).map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                  {plannableProjects.filter((p) => p.id !== entry?.project_id).length === 0 && (
+                    <div className="p-2 text-xs text-muted-foreground">No concept-approved newsletters available</div>
+                  )}
+                  {plannableProjects.filter((p) => p.id !== entry?.project_id).map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.title} — {stageLabel(getDraftStage(p.metadata, p.status))}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button size="sm" className="w-full" onClick={submitCompletePlan}>Submit Plan</Button>
             </div>
           )}
+
         </CollapsibleContent>
       </Collapsible>
 
