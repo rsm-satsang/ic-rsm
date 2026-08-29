@@ -615,7 +615,9 @@ export default function Tracker() {
     let overdueLabel: string | null = null;
     if (!opDone) {
       for (const d of dues) {
+        if (d.done) continue;
         if (d.date < todayISO) {
+
           const days = Math.floor(
             (new Date(todayISO + "T00:00:00Z").getTime() - new Date(d.date + "T00:00:00Z").getTime()) / 86400000
           );
