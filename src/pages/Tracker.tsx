@@ -1047,45 +1047,6 @@ export default function Tracker() {
                         })}
                       </div>
 
-                      {inYear && isOpen && (
-                        <div className="px-3 pb-3 space-y-2">
-                          {/* Linked project */}
-                          <div className="text-xs flex items-center gap-1.5 flex-wrap">
-                            {(info.projectTitle || detail) ? (
-                              <span className="font-semibold truncate max-w-[60%]">📌 {info.projectTitle || detail}</span>
-                            ) : (
-                              <span className="text-muted-foreground">No linked project</span>
-                            )}
-                            {info.projectId && (
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                onClick={(e) => { e.stopPropagation(); navigate(`/workspace/${info.projectId}`); }}
-                                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate(`/workspace/${info.projectId}`); } }}
-                                className="inline-flex items-center gap-0.5 text-sky-700 underline underline-offset-2 hover:text-sky-900 cursor-pointer"
-                              >
-                                Open <ExternalLink className="h-3 w-3" />
-                              </span>
-                            )}
-                            {info.stage && <span className="text-muted-foreground">· {info.stage}</span>}
-                          </div>
-
-                          {phaseLine("plan", "📝", "Plan", info.planDone,
-                            <span>{info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}</span>
-                          )}
-                          {info.planDone && phaseLine("build", "🛠️", "Build", info.buildDone,
-                            <span>
-                              {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
-                              {info.reviewers.length > 0 && (
-                                <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
-                              )}
-                            </span>
-                          )}
-                          {info.planDone && info.buildDone && phaseLine("operate", "📮", "Publish", info.opDone,
-                            <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
 
