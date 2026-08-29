@@ -498,7 +498,190 @@ export default function Tracker() {
     }
   };
 
+  // ── Week status helper (shared by calendar + cards) ────────────────────────
+  const weekMeta = (week: string) => {
+    const entry = (entriesByWeek.get(week) || [])[0];
+    const status = (entry?.status ?? "tbd") as Status;
+    const meta = STATUS_META[status];
+    const projSt = entry?.project_id ? projectStatusMap[entry.project_id] : undefined;
+    const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(status);
+    const projReady = projSt === "approved" || projSt === "published";
+    const buildDone = ["operate_assigned","publish_complete","published"].includes(status) || (planDone && projReady);
+    const opDone = ["publish_complete","published"].includes(status);
+    let headerBg = "bg-gray-300";
+    if (opDone) headerBg = "bg-green-200";
+    else if (buildDone) headerBg = "bg-green-50";
+    else if (planDone && (status === "build_in_progress" || entry?.project_id)) headerBg = "bg-yellow-50";
+    return { entry, status, meta, planDone, buildDone, opDone, headerBg };
+  };
+
+  // Calendar rows (Mon-start) covering the selected month
+  const calendarRows = useMemo(() => {
+    const first = new Date(Date.UTC(YEAR, selectedMonth, 1));
+    const last = new Date(Date.UTC(YEAR, selectedMonth + 1, 0));
+    const cur = mondayOf(first);
+    const rows: { weekIso: string; days: Date[] }[] = [];
+    while (cur.getTime() <= last.getTime()) {
+      const days: Date[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(cur);
+        d.setUTCDate(d.getUTCDate() + i);
+        days.push(d);
+      }
+      rows.push({ weekIso: cur.toISOString().slice(0, 10), days });
+      cur.setUTCDate(cur.getUTCDate() + 7);
+    }
+    return rows;
+  }, [selectedMonth]);
+
+  // Publish markers by ISO date for the active channel
+  const publishByDate = useMemo(() => {
+    const m = new Map<string, Entry[]>();
+    for (const e of channelEntries) {
+      if (!e.publish_date) continue;
+      const arr = m.get(e.publish_date) || [];
+      arr.push(e);
+      m.set(e.publish_date, arr);
+    }
+    return m;
+  }, [channelEntries]);
+
+  const nameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    users.forEach((u) => { m[u.id] = u.name; });
+    return m;
+  }, [users]);
+
+  const assigneeNames = (entry: Entry | undefined) => {
+    if (!entry) return [] as string[];
+    const ids = [
+      ...(((entry as any).plan_assignee_ids as string[] | null) ?? (entry.plan_assignee_id ? [entry.plan_assignee_id] : [])),
+      ...(((entry as any).build_assignee_ids as string[] | null) ?? (entry.build_assignee_id ? [entry.build_assignee_id] : [])),
+      ...(((entry as any).operate_assignee_ids as string[] | null) ?? (entry.operate_assignee_id ? [entry.operate_assignee_id] : [])),
+    ];
+    return Array.from(new Set(ids.map((id) => nameById[id]).filter(Boolean)));
+  };
+
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  useEffect(() => {
+    const monthWeeks = weeks.filter((w) => monthOf(w) === selectedMonth);
+    const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
+    setSelectedWeek(monthWeeks.includes(todayMonday) ? todayMonday : (monthWeeks[0] ?? null));
+  }, [selectedMonth, activeTabKey, weeks]);
+
+  // ── Weekly card renderer (used by calendar side panel + monthly list) ──────
+  const renderWeekCard = (week: string, applyFilters = true) => {
+    const { entry, status, meta, planDone, buildDone, opDone, headerBg } = weekMeta(week);
+    if (applyFilters) {
+      if (assigneeFilter !== "all" && entry?.assignee_id !== assigneeFilter) return null;
+      if (statusFilter !== "all" && status !== statusFilter) return null;
+    }
+    const weekNum = weeks.indexOf(week) + 1;
+    const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
+
+    const notifyAssignees = async () => {
+      try {
+        let activePhase: "plan" | "build" | "operate" | null = null;
+        if (!planDone) activePhase = "plan";
+        else if (!buildDone) activePhase = "build";
+        else if (!opDone) activePhase = "operate";
+
+        if (!activePhase) {
+          return toast.error("All phases are complete — nothing to remind");
+        }
+
+        const planIds: string[] = ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : []);
+        const buildIds: string[] = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
+        const opIds: string[] = ((entry as any)?.operate_assignee_ids as string[] | null) ?? (entry?.operate_assignee_id ? [entry.operate_assignee_id] : []);
+
+        const activeAssigneeIds =
+          activePhase === "plan" ? planIds
+          : activePhase === "build" ? buildIds
+          : opIds;
+
+        if (activeAssigneeIds.length === 0) {
+          return toast.error(`No assignee on the current ${activePhase} phase`);
+        }
+
+        const recipients = users
+          .filter((u) => activeAssigneeIds.includes(u.id))
+          .map((u) => ({ name: u.name, email: u.email, id: u.id }));
+
+        const phaseDescription =
+          activePhase === "plan" ? "Plan the weekly content theme and brief."
+          : activePhase === "build" ? "Build the draft / produce the content."
+          : "Publish on Substack/YouTube.";
+
+        let linkedProjectTitle: string | null = null;
+        if (entry?.project_id) {
+          linkedProjectTitle = entry?.title || null;
+        }
+
+        const planContext = activePhase === "build" ? {
+          topic: entry?.theme_text || null,
+          plan_comments: entry?.plan_comments || null,
+          linked_project_title: linkedProjectTitle,
+          linked_project_id: entry?.project_id || null,
+        } : null;
+
+        const { error } = await supabase.functions.invoke("notify-week-assignees", {
+          body: {
+            contentId,
+            weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+            title: entry?.title || entry?.theme_text || `Week of ${week}`,
+            status: meta?.label ?? status,
+            recipients,
+            planContext,
+            plan: activePhase === "plan" ? { assignee_ids: planIds, due: entry?.plan_due_date, description: phaseDescription } : {},
+            build: activePhase === "build" ? { assignee_ids: buildIds, due: entry?.build_due_date, description: phaseDescription } : {},
+            operate: activePhase === "operate" ? { assignee_ids: opIds, due: entry?.operate_due_date, description: phaseDescription } : {},
+          },
+        });
+        if (error) throw error;
+        toast.success(`Reminder sent for ${activePhase} phase (+ admins)`);
+      } catch (e: any) {
+        toast.error(e.message ?? "Failed to send reminders");
+      }
+    };
+
+    return (
+      <Card key={week} id={`week-card-${week}`} className="space-y-3 w-full overflow-hidden transition-all">
+        <div className={`px-4 py-3 ${headerBg} border-b`}>
+          <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
+          <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
+            <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
+              {isAdmin && (
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={notifyAssignees}>
+                  Notify assignees
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="px-4 pb-4">
+          <WeekWorkflow
+            week={week}
+            channel={activeChannel}
+            subChannel={activeSub}
+            entry={entry ?? null}
+            users={users}
+            planners={planners}
+            builders={builders}
+            operators={operators}
+            isAdmin={isAdmin}
+            projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
+            upsert={upsert as any}
+            onReset={resetWeek as any}
+          />
+        </div>
+      </Card>
+    );
+  };
+
   return (
+
     <div className="min-h-screen bg-background">
       <GlobalNav />
       <div className="pl-16">
@@ -603,6 +786,97 @@ export default function Tracker() {
 
           {/* Section divider */}
           <div className="border-t my-6" />
+
+          {/* ── Calendar month view + selected week panel ─────────────────── */}
+          <div className="mb-3 flex items-center justify-between flex-wrap gap-3 bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <h2 className="text-xl font-bold text-sky-900">Calendar · {MONTH_NAMES[selectedMonth]} {YEAR}</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm" variant="outline" className="h-8 bg-white"
+                onClick={() => setSelectedMonth((m) => (m + 11) % 12)}
+              >‹ Prev</Button>
+              <Button
+                size="sm" variant="outline" className="h-8 bg-white"
+                onClick={() => setSelectedMonth((m) => (m + 1) % 12)}
+              >Next ›</Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+            {/* Calendar */}
+            <Card className="p-3">
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
+                  <div key={d} className="text-[11px] font-semibold text-center text-muted-foreground py-1">{d}</div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                {calendarRows.map((row) => {
+                  const inYear = weeks.includes(row.weekIso);
+                  const { entry, meta, headerBg } = weekMeta(row.weekIso);
+                  const weekNum = weeks.indexOf(row.weekIso) + 1;
+                  const isSelected = selectedWeek === row.weekIso;
+                  const names = assigneeNames(entry);
+                  const detail = entry?.title || entry?.theme_text || entry?.draft_title || null;
+                  return (
+                    <button
+                      key={row.weekIso}
+                      type="button"
+                      disabled={!inYear}
+                      onClick={() => inYear && setSelectedWeek(row.weekIso)}
+                      className={`w-full text-left rounded-md border transition-all p-1.5 ${headerBg} ${
+                        isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
+                      } ${inYear ? "" : "opacity-50 cursor-not-allowed"}`}
+                    >
+                      <div className="grid grid-cols-7 gap-1">
+                        {row.days.map((d) => {
+                          const iso = d.toISOString().slice(0, 10);
+                          const other = d.getUTCMonth() !== selectedMonth;
+                          const pubs = publishByDate.get(iso) || [];
+                          const isToday = iso === new Date().toISOString().slice(0, 10);
+                          return (
+                            <div
+                              key={iso}
+                              className={`h-10 rounded bg-white/70 border text-[11px] px-1 py-0.5 ${
+                                other ? "text-muted-foreground/50" : "text-foreground"
+                              } ${isToday ? "border-sky-500" : "border-transparent"}`}
+                            >
+                              <div className="font-medium tabular-nums">{d.getUTCDate()}</div>
+                              {pubs.length > 0 && (
+                                <div className="text-[9px] text-green-700 truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {inYear && (
+                        <div className="mt-1 flex items-center gap-2 flex-wrap px-0.5">
+                          <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
+                          <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                          {detail && <span className="text-[10px] truncate max-w-[45%]">📌 {detail}</span>}
+                          {names.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground truncate max-w-[45%]">👤 {names.join(", ")}</span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-2">Click any week row to open its weekly card on the right.</div>
+            </Card>
+
+            {/* Selected week panel */}
+            <div className="lg:sticky lg:top-4">
+              {selectedWeek ? (
+                renderWeekCard(selectedWeek, false)
+              ) : (
+                <Card className="p-6 text-sm text-muted-foreground">Select a week in the calendar to see its card.</Card>
+              )}
+            </div>
+          </div>
+
+
 
           {/* Monthly section header with inline Plan/Track by Month + month dropdown */}
           <div className="mb-3 flex items-center justify-between flex-wrap gap-3 bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
@@ -735,131 +1009,10 @@ export default function Tracker() {
             <div className="flex justify-center py-12"><Loader2 className="animate-spin h-6 w-6" /></div>
           ) : (
             <div className="flex flex-col gap-4">
-              {visibleWeeks.map((week) => {
-                const list = entriesByWeek.get(week) || [];
-                const entry = list[0];
-                if (assigneeFilter !== "all" && entry?.assignee_id !== assigneeFilter) return null;
-                if (statusFilter !== "all" && (entry?.status ?? "tbd") !== statusFilter) return null;
-                const status = entry?.status ?? "tbd";
-                const meta = STATUS_META[status];
-                const weekNum = weeks.indexOf(week) + 1;
-                const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
-
-                // Header background based on phase status
-                const projSt = entry?.project_id ? projectStatusMap[entry.project_id] : undefined;
-                const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(status);
-                const projReady = projSt === "approved" || projSt === "published";
-                const buildDone = ["operate_assigned","publish_complete","published"].includes(status) || (planDone && projReady);
-                const opDone = ["publish_complete","published"].includes(status);
-                let headerBg = "bg-gray-300"; // build not in progress → dark grey
-                if (opDone) headerBg = "bg-green-200"; // operate complete → green
-                else if (buildDone) headerBg = "bg-green-50"; // build complete → very light green
-                else if (planDone && (status === "build_in_progress" || entry?.project_id)) headerBg = "bg-yellow-50"; // build in progress → light yellow
-
-                const notifyAssignees = async () => {
-                  try {
-                    // Only notify the assignee(s) of the current in-progress phase.
-                    let activePhase: "plan" | "build" | "operate" | null = null;
-                    if (!planDone) activePhase = "plan";
-                    else if (!buildDone) activePhase = "build";
-                    else if (!opDone) activePhase = "operate";
-
-                    if (!activePhase) {
-                      return toast.error("All phases are complete — nothing to remind");
-                    }
-
-                    const planIds: string[] = ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : []);
-                    const buildIds: string[] = ((entry as any)?.build_assignee_ids as string[] | null) ?? (entry?.build_assignee_id ? [entry.build_assignee_id] : []);
-                    const opIds: string[] = ((entry as any)?.operate_assignee_ids as string[] | null) ?? (entry?.operate_assignee_id ? [entry.operate_assignee_id] : []);
-
-                    const activeAssigneeIds =
-                      activePhase === "plan" ? planIds
-                      : activePhase === "build" ? buildIds
-                      : opIds;
-
-                    if (activeAssigneeIds.length === 0) {
-                      return toast.error(`No assignee on the current ${activePhase} phase`);
-                    }
-
-                    const recipients = users
-                      .filter((u) => activeAssigneeIds.includes(u.id))
-                      .map((u) => ({ name: u.name, email: u.email, id: u.id }));
-
-                    const phaseDescription =
-                      activePhase === "plan" ? "Plan the weekly content theme and brief."
-                      : activePhase === "build" ? "Build the draft / produce the content."
-                      : "Publish on Substack/YouTube.";
-
-                    // Look up linked project title for build phase context
-                    let linkedProjectTitle: string | null = null;
-                    if (entry?.project_id) {
-                      linkedProjectTitle = entry?.title || null;
-                    }
-
-                    const planContext = activePhase === "build" ? {
-                      topic: entry?.theme_text || null,
-                      plan_comments: entry?.plan_comments || null,
-                      linked_project_title: linkedProjectTitle,
-                      linked_project_id: entry?.project_id || null,
-                    } : null;
-
-                    const { error } = await supabase.functions.invoke("notify-week-assignees", {
-                      body: {
-                        contentId,
-                        weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
-                        title: entry?.title || entry?.theme_text || `Week of ${week}`,
-                        status: meta?.label ?? status,
-                        recipients,
-                        planContext,
-                        plan: activePhase === "plan" ? { assignee_ids: planIds, due: entry?.plan_due_date, description: phaseDescription } : {},
-                        build: activePhase === "build" ? { assignee_ids: buildIds, due: entry?.build_due_date, description: phaseDescription } : {},
-                        operate: activePhase === "operate" ? { assignee_ids: opIds, due: entry?.operate_due_date, description: phaseDescription } : {},
-                      },
-                    });
-                    if (error) throw error;
-                    toast.success(`Reminder sent for ${activePhase} phase (+ admins)`);
-                  } catch (e: any) {
-                    toast.error(e.message ?? "Failed to send reminders");
-                  }
-                };
-
-                return (
-                  <Card key={week} id={`week-card-${week}`} className="space-y-3 w-full overflow-hidden transition-all">
-                    <div className={`px-4 py-3 ${headerBg} border-b`}>
-                      <div className="text-[11px] font-mono text-muted-foreground">{contentId}</div>
-                      <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
-                        <div className="text-sm font-semibold">Week {weekNum} · {fmtWeek(week)}</div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={meta.cls}>{meta.emoji} {meta.label}</Badge>
-                          {isAdmin && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={notifyAssignees}>
-                              Notify assignees
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="px-4 pb-4">
-                      <WeekWorkflow
-                        week={week}
-                        channel={activeChannel}
-                        subChannel={activeSub}
-                        entry={entry ?? null}
-                        users={users}
-                        planners={planners}
-                        builders={builders}
-                        operators={operators}
-                        isAdmin={isAdmin}
-                        projectStatus={entry?.project_id ? projectStatusMap[entry.project_id] : null}
-                        upsert={upsert as any}
-                        onReset={resetWeek as any}
-                      />
-                    </div>
-                  </Card>
-                );
-              })}
+              {visibleWeeks.map((week) => renderWeekCard(week))}
             </div>
           )}
+
         </div>
       </div>
     </div>
