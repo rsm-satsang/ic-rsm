@@ -569,10 +569,12 @@ export default function Tracker() {
   };
 
   const weekInfo = (week: string) => {
-    const { entry, opDone } = weekMeta(week);
+    const { entry, status, meta, planDone, buildDone, opDone } = weekMeta(week);
     const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
     const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
     const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
+    const reviewerIds = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
+    const reviewers = reviewerIds.map((id) => nameById[id]).filter(Boolean);
 
     const phases = {
       plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null },
