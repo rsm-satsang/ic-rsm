@@ -911,15 +911,45 @@ export default function Tracker() {
                     info.weeksAway === 0 ? "This week"
                       : info.weeksAway > 0 ? `In ${info.weeksAway} week${info.weeksAway > 1 ? "s" : ""}`
                       : `${Math.abs(info.weeksAway)} week${Math.abs(info.weeksAway) > 1 ? "s" : ""} ago`;
+                  const phaseRow = (
+                    key: "plan" | "build" | "operate",
+                    emoji: string,
+                    label: string,
+                    done: boolean,
+                    body: React.ReactNode,
+                  ) => {
+                    const p = info.phases[key];
+                    const openKey = `${row.weekIso}|${key}`;
+                    const isOpen = !!expandedPhases[openKey];
+                    const suffix = done
+                      ? p.doneOn ? ` (Done on ${formatDate(p.doneOn)})` : " (Done)"
+                      : p.due ? ` (Due by ${formatDate(p.due)})` : "";
+                    return (
+                      <div className="text-[10px]">
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => { e.stopPropagation(); setExpandedPhases((s) => ({ ...s, [openKey]: !s[openKey] })); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setExpandedPhases((s) => ({ ...s, [openKey]: !s[openKey] })); } }}
+                          className="flex items-center gap-1 font-semibold cursor-pointer hover:text-sky-700"
+                        >
+                          <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : "-rotate-90"}`} />
+                          <span>{emoji} {label}{suffix}</span>
+                        </div>
+                        {isOpen && <div className="pl-4 pt-0.5">{body}</div>}
+                      </div>
+                    );
+                  };
+
                   return (
-                    <button
+                    <div
                       key={row.weekIso}
-                      type="button"
-                      disabled={!inYear}
+                      role="button"
+                      tabIndex={inYear ? 0 : -1}
                       onClick={() => inYear && setSelectedWeek(row.weekIso)}
                       className={`w-full text-left rounded-xl border bg-white transition-all p-2 shadow-sm hover:shadow-md border-sky-100 ${
                         isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
-                      } ${inYear ? "" : "opacity-40 cursor-not-allowed"}`}
+                      } ${inYear ? "cursor-pointer" : "opacity-40 cursor-not-allowed pointer-events-none"}`}
                     >
                       <div className="grid grid-cols-7 gap-1.5">
                         {row.days.map((d) => {
@@ -954,11 +984,22 @@ export default function Tracker() {
                             <span className="text-[10px] text-muted-foreground">🕒 {awayText}</span>
                           </div>
                           {/* Row 1 — Linked project, project status, phase status, Stuck/On Track */}
-                          <div className="text-[10px] truncate flex items-center gap-1.5 flex-wrap">
+                          <div className="text-[10px] flex items-center gap-1.5 flex-wrap">
                             {(info.projectTitle || detail) ? (
-                              <span className="font-semibold truncate">📌 {info.projectTitle || detail}</span>
+                              <span className="font-semibold truncate max-w-[45%]">📌 {info.projectTitle || detail}</span>
                             ) : (
                               <span className="text-muted-foreground">No linked project</span>
+                            )}
+                            {info.projectId && (
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => { e.stopPropagation(); navigate(`/workspace/${info.projectId}`); }}
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate(`/workspace/${info.projectId}`); } }}
+                                className="inline-flex items-center gap-0.5 text-sky-700 underline underline-offset-2 hover:text-sky-900 cursor-pointer"
+                              >
+                                Open <ExternalLink className="h-2.5 w-2.5" />
+                              </span>
                             )}
                             {info.stage && <span className="text-muted-foreground">· {info.stage}</span>}
                             <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
@@ -970,28 +1011,26 @@ export default function Tracker() {
                               <span className="rounded-full bg-green-600 text-white px-2 py-0.5 text-[10px] font-semibold">On Track</span>
                             )}
                           </div>
-                          {/* Row 2 — Plan (Due by / Done on): planner names, due date */}
-                          <div className="text-[10px] truncate">
-                            <span className="font-semibold">📝 Plan{info.planDone ? (info.phases.plan.doneOn ? ` (Done on ${formatDate(info.phases.plan.doneOn)})` : " (Done)") : info.phases.plan.due ? ` (Due by ${formatDate(info.phases.plan.due)})` : ""}:</span>{" "}
-                            {info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}
-                          </div>
-                          {/* Row 3 — Build (Due by / Done on): author, project stage, reviewers */}
-                          <div className="text-[10px] truncate">
-                            <span className="font-semibold">🛠️ Build{info.buildDone ? (info.phases.build.doneOn ? ` (Done on ${formatDate(info.phases.build.doneOn)})` : " (Done)") : info.phases.build.due ? ` (Due by ${formatDate(info.phases.build.due)})` : ""}:</span>{" "}
-                            {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
-                            {info.stage && <span className="text-muted-foreground"> · {info.stage}</span>}
-                            {info.reviewers.length > 0 && (
-                              <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
-                            )}
-                          </div>
-                          {/* Row 4 — Publish (Due by / Done on): publisher names, due date */}
-                          <div className="text-[10px] truncate">
-                            <span className="font-semibold">📮 Publish{info.opDone ? (info.phases.operate.doneOn ? ` (Done on ${formatDate(info.phases.operate.doneOn)})` : " (Done)") : info.phases.operate.due ? ` (Due by ${formatDate(info.phases.operate.due)})` : ""}:</span>{" "}
-                            {info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}
-                          </div>
+                          {/* Plan */}
+                          {phaseRow("plan", "📝", "Plan", info.planDone,
+                            <span>{info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}</span>
+                          )}
+                          {/* Build — only once Plan is done */}
+                          {info.planDone && phaseRow("build", "🛠️", "Build", info.buildDone,
+                            <span>
+                              {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
+                              {info.reviewers.length > 0 && (
+                                <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
+                              )}
+                            </span>
+                          )}
+                          {/* Publish — only once Build is done */}
+                          {info.planDone && info.buildDone && phaseRow("operate", "📮", "Publish", info.opDone,
+                            <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>
+                          )}
                         </div>
                       )}
-                    </button>
+                    </div>
                   );
 
                 })}
