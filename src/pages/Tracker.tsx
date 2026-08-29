@@ -62,11 +62,11 @@ const STATUS_META: Record<Status, { label: string; emoji: string; cls: string }>
   not_published: { label: "Not Published", emoji: "🔴", cls: "bg-red-100 text-red-800 border-red-200" },
   tbd: { label: "TBD", emoji: "⚪", cls: "bg-gray-100 text-gray-700 border-gray-200" },
   not_applicable: { label: "Not Applicable", emoji: "⚫", cls: "bg-gray-200 text-gray-600 border-gray-300" },
-  planning_assigned: { label: "Planning Assigned", emoji: "📝", cls: "bg-blue-100 text-blue-800 border-blue-200" },
+  planning_assigned: { label: "Awaiting Planning", emoji: "📝", cls: "bg-blue-100 text-blue-800 border-blue-200" },
   plan_complete: { label: "Plan Complete", emoji: "✅", cls: "bg-indigo-100 text-indigo-800 border-indigo-200" },
-  build_assigned: { label: "Build Assigned", emoji: "🛠️", cls: "bg-purple-100 text-purple-800 border-purple-200" },
+  build_assigned: { label: "Awaiting Build", emoji: "🛠️", cls: "bg-purple-100 text-purple-800 border-purple-200" },
   build_in_progress: { label: "Build In Progress", emoji: "🚧", cls: "bg-amber-100 text-amber-800 border-amber-200" },
-  operate_assigned: { label: "Operate/Publish Assigned", emoji: "📣", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  operate_assigned: { label: "Awaiting Publish", emoji: "📣", cls: "bg-cyan-100 text-cyan-800 border-cyan-200" },
   publish_complete: { label: "Publish Complete", emoji: "🎉", cls: "bg-green-100 text-green-800 border-green-200" },
 };
 
@@ -149,6 +149,8 @@ export default function Tracker() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
+  // Map of `${channel}|${sub_channel}|${week_start_date}|${action}` → latest created_at date (ISO date)
+  const [activityDoneMap, setActivityDoneMap] = useState<Record<string, string>>({});
 
 
   const weeks = useMemo(() => weeksOfYear(YEAR), []);
@@ -166,14 +168,24 @@ export default function Tracker() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUserId(user?.id ?? null);
-    const [e, u, t] = await Promise.all([
+    const [e, u, t, a] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
       supabase.from("users").select("id, name, email, role, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
+      supabase.from("tracker_activity" as any).select("channel, sub_channel, week_start_date, action, created_at"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
     if (u.data) setUsers(u.data as any as UserOpt[]);
     if (t.data) setThemes(t.data as ThemeOpt[]);
+    if (a.data) {
+      const map: Record<string, string> = {};
+      (a.data as any[]).forEach((r) => {
+        const key = `${r.channel}|${r.sub_channel}|${r.week_start_date}|${r.action}`;
+        const d = String(r.created_at).slice(0, 10);
+        if (!map[key] || d > map[key]) map[key] = d;
+      });
+      setActivityDoneMap(map);
+    }
     setLoading(false);
   };
 
@@ -569,15 +581,20 @@ export default function Tracker() {
   };
 
   const weekInfo = (week: string) => {
-    const { entry, opDone } = weekMeta(week);
+    const { entry, status, meta, planDone, buildDone, opDone } = weekMeta(week);
     const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
     const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
     const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
+    const reviewerIds = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
+    const reviewers = reviewerIds.map((id) => nameById[id]).filter(Boolean);
+
+    const doneOn = (action: string) =>
+      entry ? activityDoneMap[`${entry.channel}|${entry.sub_channel}|${week}|${action}`] ?? null : null;
 
     const phases = {
-      plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null },
-      build: { names: phaseAssigneeNames(entry, "build"), due: (entry as any)?.build_due_date ?? null },
-      operate: { names: phaseAssigneeNames(entry, "operate"), due: (entry as any)?.operate_due_date ?? null },
+      plan: { names: phaseAssigneeNames(entry, "plan"), due: entry?.plan_due_date ?? null, doneOn: doneOn("plan_completed") },
+      build: { names: phaseAssigneeNames(entry, "build"), due: (entry as any)?.build_due_date ?? null, doneOn: doneOn("build_complete_auto") },
+      operate: { names: phaseAssigneeNames(entry, "operate"), due: (entry as any)?.operate_due_date ?? null, doneOn: doneOn("publish_completed") },
     };
 
     const dues = [
@@ -611,6 +628,12 @@ export default function Tracker() {
       projectTitle: proj?.title ?? entry?.title ?? null,
       author,
       stage,
+      reviewers,
+      status,
+      statusLabel: meta?.label ?? status,
+      planDone,
+      buildDone,
+      opDone,
       phases,
       dues,
       weeksAway,
@@ -872,10 +895,10 @@ export default function Tracker() {
               <div className="space-y-2">
                 {calendarRows.map((row) => {
                   const inYear = weeks.includes(row.weekIso);
-                  const { entry, meta, headerBg } = weekMeta(row.weekIso);
+                  const { entry, meta } = weekMeta(row.weekIso);
                   const weekNum = weeks.indexOf(row.weekIso) + 1;
                   const isSelected = selectedWeek === row.weekIso;
-                  
+
                   const detail = entry?.theme_text || entry?.draft_title || null;
                   const info = weekInfo(row.weekIso);
                   const stuck = inYear && info.overdueDays > 0;
@@ -889,11 +912,9 @@ export default function Tracker() {
                       type="button"
                       disabled={!inYear}
                       onClick={() => inYear && setSelectedWeek(row.weekIso)}
-                      className={`w-full text-left rounded-xl border transition-all p-2 shadow-sm hover:shadow-md ${
-                        stuck ? "bg-red-50 border-red-300" : `${headerBg} border-transparent`
-                      } ${isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"} ${
-                        inYear ? "" : "opacity-40 cursor-not-allowed"
-                      }`}
+                      className={`w-full text-left rounded-xl border bg-white transition-all p-2 shadow-sm hover:shadow-md border-sky-100 ${
+                        isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
+                      } ${inYear ? "" : "opacity-40 cursor-not-allowed"}`}
                     >
                       <div className="grid grid-cols-7 gap-1.5">
                         {row.days.map((d) => {
@@ -925,45 +946,44 @@ export default function Tracker() {
                               </span>
                             )}
                             <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
-                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
                             <span className="text-[10px] text-muted-foreground">🕒 {awayText}</span>
-                            {stuck && (
+                          </div>
+                          {/* Row 1 — Linked project, project status, phase status, Stuck/On Track */}
+                          <div className="text-[10px] truncate flex items-center gap-1.5 flex-wrap">
+                            {(info.projectTitle || detail) ? (
+                              <span className="font-semibold truncate">📌 {info.projectTitle || detail}</span>
+                            ) : (
+                              <span className="text-muted-foreground">No linked project</span>
+                            )}
+                            {info.stage && <span className="text-muted-foreground">· {info.stage}</span>}
+                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            {stuck ? (
                               <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
-                                Stuck for {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""}
-                                {info.overdueLabel ? ` (${info.overdueLabel} due date passed)` : ""}
+                                Stuck at {info.overdueLabel ?? "phase"} · {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""} overdue
                               </span>
+                            ) : (
+                              <span className="rounded-full bg-green-600 text-white px-2 py-0.5 text-[10px] font-semibold">On Track</span>
                             )}
                           </div>
-                          {/* Row 1 — Plan: planner, due date, linked project */}
+                          {/* Row 2 — Plan (Due by / Done on): planner names, due date */}
                           <div className="text-[10px] truncate">
-                            <span className="font-semibold">📝 Plan:</span>{" "}
+                            <span className="font-semibold">📝 Plan{info.planDone ? (info.phases.plan.doneOn ? ` (Done on ${formatDate(info.phases.plan.doneOn)})` : " (Done)") : info.phases.plan.due ? ` (Due by ${formatDate(info.phases.plan.due)})` : ""}:</span>{" "}
                             {info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}
-                            {info.phases.plan.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.plan.due)}</span>}
-                            {(info.projectTitle || detail) && (
-                              <span className="text-muted-foreground"> · 📌 {info.projectTitle || detail}</span>
+                          </div>
+                          {/* Row 3 — Build (Due by / Done on): author, project stage, reviewers */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">🛠️ Build{info.buildDone ? (info.phases.build.doneOn ? ` (Done on ${formatDate(info.phases.build.doneOn)})` : " (Done)") : info.phases.build.due ? ` (Due by ${formatDate(info.phases.build.due)})` : ""}:</span>{" "}
+                            {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
+                            {info.stage && <span className="text-muted-foreground"> · {info.stage}</span>}
+                            {info.reviewers.length > 0 && (
+                              <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
                             )}
                           </div>
-                          {/* Row 2 — Build: builders, due date */}
+                          {/* Row 4 — Publish (Due by / Done on): publisher names, due date */}
                           <div className="text-[10px] truncate">
-                            <span className="font-semibold">🛠️ Build:</span>{" "}
-                            {info.phases.build.names.length ? info.phases.build.names.join(", ") : "—"}
-                            {info.phases.build.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.build.due)}</span>}
-                          </div>
-                          {/* Row 3 — Publish: operators, due date */}
-                          <div className="text-[10px] truncate">
-                            <span className="font-semibold">📮 Publish:</span>{" "}
+                            <span className="font-semibold">📮 Publish{info.opDone ? (info.phases.operate.doneOn ? ` (Done on ${formatDate(info.phases.operate.doneOn)})` : " (Done)") : info.phases.operate.due ? ` (Due by ${formatDate(info.phases.operate.due)})` : ""}:</span>{" "}
                             {info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}
-                            {info.phases.operate.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.operate.due)}</span>}
                           </div>
-                          {/* Row 4 — Linked project author + current stage */}
-                          {(info.author || info.stage) && (
-                            <div className="text-[10px] text-muted-foreground truncate">
-                              <span className="font-semibold text-foreground">📄 Draft:</span>{" "}
-                              {info.author ? `✍️ ${info.author}` : ""}
-                              {info.author && info.stage ? " · " : ""}
-                              {info.stage ?? ""}
-                            </div>
-                          )}
                         </div>
                       )}
                     </button>
