@@ -162,6 +162,8 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [planDue, setPlanDue] = useState<string>(entry?.plan_due_date ?? defaultDueNotBeforeToday(week, 2));
   const [theme, setTheme] = useState<string>(entry?.theme_text ?? "");
   const [planComments, setPlanComments] = useState<string>(entry?.plan_comments ?? "");
+  const [contentType, setContentType] = useState<string>((entry as any)?.content_type ?? "substack_newsletter");
+
 
   // Build
   const [buildAssignees, setBuildAssignees] = useState<string[]>(
