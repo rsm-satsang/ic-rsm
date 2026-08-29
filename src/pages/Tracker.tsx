@@ -376,9 +376,10 @@ export default function Tracker() {
     return { total, published, missing };
   }, [weeks, entriesByWeek, ytdMaxMonth, channelEntries]);
 
-  // Phase-bucket metrics (YTD scope)
+  // Phase-bucket metrics (FULL YEAR scope)
   const phaseStats = useMemo(() => {
-    const ytdWeeks = weeks.filter((w) => monthOf(w) <= ytdMaxMonth);
+    const ytdWeeks = weeks;
+
     let planInProgress = 0, planComplete = 0;
     let buildYet = 0, buildAssigned = 0, buildInProgress = 0, buildComplete = 0;
     let opInProgress = 0, opComplete = 0;
@@ -827,7 +828,9 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
+          <div className="text-xs font-semibold text-muted-foreground mb-2">Phase progress · Full year {YEAR}</div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+
             <Card className="p-4">
               <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
               <div className="text-sm flex justify-between"><span>In progress</span><b>{phaseStats.planInProgress}</b></div>
@@ -896,15 +899,15 @@ export default function Tracker() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+          <div className="mb-6">
             {/* Calendar */}
-            <Card className="p-4 bg-gradient-to-b from-sky-50/60 to-background border-sky-200 shadow-sm">
-              <div className="grid grid-cols-7 gap-1.5 mb-2">
+            <Card className="p-4 bg-gradient-to-b from-sky-50/70 to-background border-2 border-sky-300 shadow-md">
+              <div className="grid grid-cols-7 gap-2 mb-2">
                 {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
-                  <div key={d} className="text-[11px] font-semibold text-center text-sky-900/70 uppercase tracking-wide py-1">{d}</div>
+                  <div key={d} className="text-xs font-bold text-center text-sky-900/80 uppercase tracking-wider py-1">{d}</div>
                 ))}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {calendarRows.map((row) => {
                   const inYear = weeks.includes(row.weekIso);
                   const { entry, meta } = weekMeta(row.weekIso);
@@ -914,11 +917,14 @@ export default function Tracker() {
                   const detail = entry?.theme_text || entry?.draft_title || null;
                   const info = weekInfo(row.weekIso);
                   const stuck = inYear && info.overdueDays > 0;
-                  const awayText =
-                    info.weeksAway === 0 ? "This week"
-                      : info.weeksAway > 0 ? `In ${info.weeksAway} week${info.weeksAway > 1 ? "s" : ""}`
-                      : `${Math.abs(info.weeksAway)} week${Math.abs(info.weeksAway) > 1 ? "s" : ""} ago`;
-                  const phaseRow = (
+                  const isOpen = !!expandedPhases[row.weekIso];
+                  const toggle = () => {
+                    if (!inYear) return;
+                    setSelectedWeek(row.weekIso);
+                    setExpandedPhases((s) => ({ ...s, [row.weekIso]: !s[row.weekIso] }));
+                  };
+
+                  const phaseLine = (
                     key: "plan" | "build" | "operate",
                     emoji: string,
                     label: string,
@@ -926,24 +932,14 @@ export default function Tracker() {
                     body: React.ReactNode,
                   ) => {
                     const p = info.phases[key];
-                    const openKey = `${row.weekIso}|${key}`;
-                    const isOpen = !!expandedPhases[openKey];
                     const suffix = done
-                      ? p.doneOn ? ` (Done on ${formatDate(p.doneOn)})` : " (Done)"
-                      : p.due ? ` (Due by ${formatDate(p.due)})` : "";
+                      ? p.doneOn ? `Done on ${formatDate(p.doneOn)}` : "Done"
+                      : p.due ? `Due by ${formatDate(p.due)}` : "No due date";
                     return (
-                      <div className="text-[10px]">
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={(e) => { e.stopPropagation(); setExpandedPhases((s) => ({ ...s, [openKey]: !s[openKey] })); }}
-                          onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setExpandedPhases((s) => ({ ...s, [openKey]: !s[openKey] })); } }}
-                          className="flex items-center gap-1 font-semibold cursor-pointer hover:text-sky-700"
-                        >
-                          <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : "-rotate-90"}`} />
-                          <span>{emoji} {label}{suffix}</span>
-                        </div>
-                        {isOpen && <div className="pl-4 pt-0.5">{body}</div>}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs rounded-md bg-sky-50/70 border border-sky-100 px-2 py-1">
+                        <span className="font-semibold">{emoji} {label}</span>
+                        <span className={done ? "text-green-700 font-medium" : "text-muted-foreground"}>({suffix})</span>
+                        <span className="text-foreground">{body}</span>
                       </div>
                     );
                   };
@@ -951,14 +947,44 @@ export default function Tracker() {
                   return (
                     <div
                       key={row.weekIso}
-                      role="button"
-                      tabIndex={inYear ? 0 : -1}
-                      onClick={() => inYear && setSelectedWeek(row.weekIso)}
-                      className={`w-full text-left rounded-xl border bg-white transition-all p-2 shadow-sm hover:shadow-md border-sky-100 ${
-                        isSelected ? "ring-2 ring-sky-500 border-sky-400" : "hover:border-sky-300"
-                      } ${inYear ? "cursor-pointer" : "opacity-40 cursor-not-allowed pointer-events-none"}`}
+                      className={`rounded-2xl border-2 bg-white transition-all shadow-sm hover:shadow-lg ${
+                        isSelected ? "border-sky-500 ring-2 ring-sky-200" : "border-sky-200 hover:border-sky-400"
+                      } ${inYear ? "" : "opacity-40 pointer-events-none"}`}
                     >
-                      <div className="grid grid-cols-7 gap-1.5">
+                      {/* Header line — week number + summary, whole week collapses into it */}
+                      <div
+                        role="button"
+                        tabIndex={inYear ? 0 : -1}
+                        onClick={toggle}
+                        onKeyDown={(e) => { if (e.key === "Enter") toggle(); }}
+                        className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-sky-100 bg-sky-50/60 rounded-t-2xl cursor-pointer"
+                      >
+                        <ChevronDown className={`h-4 w-4 text-sky-700 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+                        <span className="text-sm font-bold text-sky-900">Week {weekNum > 0 ? weekNum : "—"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(row.weekIso)}
+                        </span>
+                        {info.contentType && (
+                          <span className="rounded-full bg-primary/10 border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                            {info.contentType}
+                          </span>
+                        )}
+                        {inYear && (
+                          <>
+                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            {stuck ? (
+                              <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
+                                Stuck at {info.overdueLabel ?? "phase"} · {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""} overdue
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-green-600 text-white px-2 py-0.5 text-[10px] font-semibold">On Track</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Dates of the week */}
+                      <div className="grid grid-cols-7 gap-2 p-3">
                         {row.days.map((d) => {
                           const iso = d.toISOString().slice(0, 10);
                           const other = d.getUTCMonth() !== selectedMonth;
@@ -967,33 +993,25 @@ export default function Tracker() {
                           return (
                             <div
                               key={iso}
-                              className={`h-11 rounded-lg bg-white/80 border text-[11px] px-1 py-0.5 ${
-                                other ? "text-muted-foreground/40" : "text-foreground"
-                              } ${isToday ? "border-sky-500 ring-1 ring-sky-300" : "border-sky-100"}`}
+                              className={`h-16 rounded-xl border px-2 py-1 ${
+                                other ? "bg-muted/30 text-muted-foreground/50 border-sky-100" : "bg-white text-foreground border-sky-200"
+                              } ${isToday ? "border-sky-500 ring-2 ring-sky-300 bg-sky-50" : ""}`}
                             >
-                              <div className="font-semibold tabular-nums">{d.getUTCDate()}</div>
+                              <div className="text-lg font-bold tabular-nums leading-tight">{d.getUTCDate()}</div>
                               {pubs.length > 0 && (
-                                <div className="text-[9px] text-green-700 truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
+                                <div className="text-[10px] text-green-700 font-medium truncate">● {pubs.length > 1 ? `${pubs.length} posts` : "post"}</div>
                               )}
                             </div>
                           );
                         })}
                       </div>
-                      {inYear && (
-                        <div className="mt-2 space-y-1 px-0.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {info.contentType && (
-                              <span className="rounded-full bg-primary/10 border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                {info.contentType}
-                              </span>
-                            )}
-                            <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
-                            <span className="text-[10px] text-muted-foreground">🕒 {awayText}</span>
-                          </div>
-                          {/* Row 1 — Linked project, project status, phase status, Stuck/On Track */}
-                          <div className="text-[10px] flex items-center gap-1.5 flex-wrap">
+
+                      {inYear && isOpen && (
+                        <div className="px-3 pb-3 space-y-2">
+                          {/* Linked project */}
+                          <div className="text-xs flex items-center gap-1.5 flex-wrap">
                             {(info.projectTitle || detail) ? (
-                              <span className="font-semibold truncate max-w-[45%]">📌 {info.projectTitle || detail}</span>
+                              <span className="font-semibold truncate max-w-[60%]">📌 {info.projectTitle || detail}</span>
                             ) : (
                               <span className="text-muted-foreground">No linked project</span>
                             )}
@@ -1005,25 +1023,16 @@ export default function Tracker() {
                                 onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); navigate(`/workspace/${info.projectId}`); } }}
                                 className="inline-flex items-center gap-0.5 text-sky-700 underline underline-offset-2 hover:text-sky-900 cursor-pointer"
                               >
-                                Open <ExternalLink className="h-2.5 w-2.5" />
+                                Open <ExternalLink className="h-3 w-3" />
                               </span>
                             )}
                             {info.stage && <span className="text-muted-foreground">· {info.stage}</span>}
-                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
-                            {stuck ? (
-                              <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
-                                Stuck at {info.overdueLabel ?? "phase"} · {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""} overdue
-                              </span>
-                            ) : (
-                              <span className="rounded-full bg-green-600 text-white px-2 py-0.5 text-[10px] font-semibold">On Track</span>
-                            )}
                           </div>
-                          {/* Plan */}
-                          {phaseRow("plan", "📝", "Plan", info.planDone,
+
+                          {phaseLine("plan", "📝", "Plan", info.planDone,
                             <span>{info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}</span>
                           )}
-                          {/* Build — only once Plan is done */}
-                          {info.planDone && phaseRow("build", "🛠️", "Build", info.buildDone,
+                          {info.planDone && phaseLine("build", "🛠️", "Build", info.buildDone,
                             <span>
                               {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
                               {info.reviewers.length > 0 && (
@@ -1031,10 +1040,14 @@ export default function Tracker() {
                               )}
                             </span>
                           )}
-                          {/* Publish — only once Build is done */}
-                          {info.planDone && info.buildDone && phaseRow("operate", "📮", "Publish", info.opDone,
+                          {info.planDone && info.buildDone && phaseLine("operate", "📮", "Publish", info.opDone,
                             <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>
                           )}
+
+                          {/* Full weekly workflow (assignments, notes, comments, activity) */}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {renderWeekCard(row.weekIso, false)}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1042,18 +1055,10 @@ export default function Tracker() {
 
                 })}
               </div>
-              <div className="text-[10px] text-muted-foreground mt-2">Click any week row to open its weekly card on the right.</div>
+              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its full details.</div>
             </Card>
-
-            {/* Selected week panel */}
-            <div className="lg:sticky lg:top-4">
-              {selectedWeek ? (
-                renderWeekCard(selectedWeek, false)
-              ) : (
-                <Card className="p-6 text-sm text-muted-foreground">Select a week in the calendar to see its card.</Card>
-              )}
-            </div>
           </div>
+
 
 
 
