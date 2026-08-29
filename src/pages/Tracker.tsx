@@ -946,45 +946,44 @@ export default function Tracker() {
                               </span>
                             )}
                             <span className="text-[10px] font-semibold text-muted-foreground">Week {weekNum}</span>
-                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
                             <span className="text-[10px] text-muted-foreground">🕒 {awayText}</span>
-                            {stuck && (
+                          </div>
+                          {/* Row 1 — Linked project, project status, phase status, Stuck/On Track */}
+                          <div className="text-[10px] truncate flex items-center gap-1.5 flex-wrap">
+                            {(info.projectTitle || detail) ? (
+                              <span className="font-semibold truncate">📌 {info.projectTitle || detail}</span>
+                            ) : (
+                              <span className="text-muted-foreground">No linked project</span>
+                            )}
+                            {info.stage && <span className="text-muted-foreground">· {info.stage}</span>}
+                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            {stuck ? (
                               <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
-                                Stuck for {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""}
-                                {info.overdueLabel ? ` (${info.overdueLabel} due date passed)` : ""}
+                                Stuck at {info.overdueLabel ?? "phase"} · {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""} overdue
                               </span>
+                            ) : (
+                              <span className="rounded-full bg-green-600 text-white px-2 py-0.5 text-[10px] font-semibold">On Track</span>
                             )}
                           </div>
-                          {/* Row 1 — Plan: planner, due date, linked project */}
+                          {/* Row 2 — Plan (Due by / Done on): planner names, due date */}
                           <div className="text-[10px] truncate">
-                            <span className="font-semibold">📝 Plan:</span>{" "}
+                            <span className="font-semibold">📝 Plan{info.planDone ? (info.phases.plan.doneOn ? ` (Done on ${formatDate(info.phases.plan.doneOn)})` : " (Done)") : info.phases.plan.due ? ` (Due by ${formatDate(info.phases.plan.due)})` : ""}:</span>{" "}
                             {info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}
-                            {info.phases.plan.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.plan.due)}</span>}
-                            {(info.projectTitle || detail) && (
-                              <span className="text-muted-foreground"> · 📌 {info.projectTitle || detail}</span>
+                          </div>
+                          {/* Row 3 — Build (Due by / Done on): author, project stage, reviewers */}
+                          <div className="text-[10px] truncate">
+                            <span className="font-semibold">🛠️ Build{info.buildDone ? (info.phases.build.doneOn ? ` (Done on ${formatDate(info.phases.build.doneOn)})` : " (Done)") : info.phases.build.due ? ` (Due by ${formatDate(info.phases.build.due)})` : ""}:</span>{" "}
+                            {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
+                            {info.stage && <span className="text-muted-foreground"> · {info.stage}</span>}
+                            {info.reviewers.length > 0 && (
+                              <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
                             )}
                           </div>
-                          {/* Row 2 — Build: builders, due date */}
+                          {/* Row 4 — Publish (Due by / Done on): publisher names, due date */}
                           <div className="text-[10px] truncate">
-                            <span className="font-semibold">🛠️ Build:</span>{" "}
-                            {info.phases.build.names.length ? info.phases.build.names.join(", ") : "—"}
-                            {info.phases.build.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.build.due)}</span>}
-                          </div>
-                          {/* Row 3 — Publish: operators, due date */}
-                          <div className="text-[10px] truncate">
-                            <span className="font-semibold">📮 Publish:</span>{" "}
+                            <span className="font-semibold">📮 Publish{info.opDone ? (info.phases.operate.doneOn ? ` (Done on ${formatDate(info.phases.operate.doneOn)})` : " (Done)") : info.phases.operate.due ? ` (Due by ${formatDate(info.phases.operate.due)})` : ""}:</span>{" "}
                             {info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}
-                            {info.phases.operate.due && <span className="text-muted-foreground"> · Due {formatDate(info.phases.operate.due)}</span>}
                           </div>
-                          {/* Row 4 — Linked project author + current stage */}
-                          {(info.author || info.stage) && (
-                            <div className="text-[10px] text-muted-foreground truncate">
-                              <span className="font-semibold text-foreground">📄 Draft:</span>{" "}
-                              {info.author ? `✍️ ${info.author}` : ""}
-                              {info.author && info.stage ? " · " : ""}
-                              {info.stage ?? ""}
-                            </div>
-                          )}
                         </div>
                       )}
                     </button>
