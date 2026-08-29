@@ -145,6 +145,8 @@ export default function Tracker() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
+  const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
+
 
   const weeks = useMemo(() => weeksOfYear(YEAR), []);
 
