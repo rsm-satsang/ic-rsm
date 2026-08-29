@@ -81,6 +81,7 @@ interface Props {
   operators: UserOpt[];
   isAdmin?: boolean;
   projectStatus?: string | null;
+  projectStage?: string | null;
   upsert: (week: string, patch: any) => Promise<any>;
   onReset?: (week: string) => Promise<void>;
 }
