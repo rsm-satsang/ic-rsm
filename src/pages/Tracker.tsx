@@ -693,6 +693,7 @@ export default function Tracker() {
       projectTitle: proj?.title ?? entry?.title ?? null,
       author,
       stage,
+      stageValue,
       reviewers,
       status,
       statusLabel: meta?.label ?? status,
