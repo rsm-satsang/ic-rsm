@@ -1404,24 +1404,21 @@ export default function Tracker() {
 
                 })}
               </div>
-              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its summary. The full workflow for the selected week appears on the right.</div>
+              <div className="text-xs text-muted-foreground mt-3">Click a week header to expand or collapse its summary.</div>
             </Card>
 
-            {/* Right-side panel: full weekly workflow for the selected week */}
-            <div className="w-full lg:w-[420px] lg:shrink-0 lg:sticky lg:top-4">
-              {selectedWeek && weeks.includes(selectedWeek) ? (
+            {/* Right-side panel: only the requested section (Planning / Publishing) */}
+            {panelRequest && selectedWeek === panelRequest.week && weeks.includes(panelRequest.week) && (
+              <div className="w-full lg:w-[420px] lg:shrink-0 lg:sticky lg:top-4">
                 <div className="space-y-2">
-                  <div className="text-xs font-semibold text-sky-900 bg-sky-100 border border-sky-200 rounded-md px-3 py-1.5">
-                    Selected week workflow
+                  <div className="flex items-center justify-between gap-2 text-xs font-semibold text-sky-900 bg-sky-100 border border-sky-200 rounded-md px-3 py-1.5">
+                    <span>Selected week action</span>
+                    <button type="button" className="underline" onClick={() => setPanelRequest(null)}>Close</button>
                   </div>
-                  {renderWeekCard(selectedWeek, false)}
+                  {renderWeekCard(panelRequest.week, false)}
                 </div>
-              ) : (
-                <Card className="p-6 text-sm text-muted-foreground text-center border-dashed">
-                  Select a week in the calendar to manage its Plan / Build / Publish workflow here.
-                </Card>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
 
