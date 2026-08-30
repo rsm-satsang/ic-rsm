@@ -570,17 +570,6 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
   return (
     <div className="border-t pt-2 space-y-1">
-      {solo && (
-        <div className="px-2 pb-1">
-          <button
-            type="button"
-            className="text-xs text-blue-600 hover:underline"
-            onClick={() => setSolo(null)}
-          >
-            ← Show full weekly card
-          </button>
-        </div>
-      )}
       {!solo && (entry as any)?.content_type && (
         <div className="px-2">
           <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
