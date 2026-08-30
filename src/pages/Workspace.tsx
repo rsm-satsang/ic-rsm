@@ -44,6 +44,7 @@ import ProjectImagesSection from "@/components/workspace/ProjectImagesSection";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import ReferencesDialog from "@/components/workspace/ReferencesDialog";
 import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import { useAutosave } from "@/hooks/useAutosave";
 import type { User } from "@supabase/supabase-js";
@@ -192,6 +193,7 @@ const Workspace = () => {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [draftStage, setDraftStage] = useState<DraftStage>("s1_preparing");
   const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
+  const [refsDialogOpen, setRefsDialogOpen] = useState(false);
   const [conceptAnswer, setConceptAnswer] = useState("");
   const [conceptDueDate, setConceptDueDate] = useState("");
   const [savingConcept, setSavingConcept] = useState(false);
@@ -1649,6 +1651,9 @@ const Workspace = () => {
                         >
                           {conceptNote?.answer ? "Edit submission" : "Answer"}
                         </Button>
+                        <Button variant="link" size="sm" className="px-0" onClick={() => setRefsDialogOpen(true)}>
+                          Look at References
+                        </Button>
                         {isAdmin && conceptNote?.answer && (
                           <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("concept")}>
                             Delete submission
@@ -1859,16 +1864,24 @@ const Workspace = () => {
             <Input type="date" value={conceptDueDate} onChange={(e) => setConceptDueDate(e.target.value)} />
             <p className="text-xs text-muted-foreground">Defaults to 7 days from submission.</p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="link" className="px-0" onClick={() => setRefsDialogOpen(true)}>
+              Look at References
+            </Button>
+            <div className="flex gap-2">
             <Button variant="outline" onClick={() => handleConceptDialogClose(false)} disabled={savingConcept}>
               Cancel
             </Button>
             <Button onClick={handleSaveConceptNote} disabled={savingConcept || !conceptAnswer.trim()}>
               {savingConcept ? "Saving..." : "Save"}
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reference texts popup */}
+      {projectId && <ReferencesDialog projectId={projectId} open={refsDialogOpen} onOpenChange={setRefsDialogOpen} />}
 
       {/* Review Concept outcome */}
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
@@ -1895,13 +1908,18 @@ const Workspace = () => {
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={savingReview}>
-              Cancel
+          <DialogFooter className="sm:justify-between">
+            <Button variant="link" className="px-0" onClick={() => setRefsDialogOpen(true)}>
+              Look at References
             </Button>
-            <Button onClick={handleSaveConceptReview} disabled={savingReview || !reviewOutcome}>
-              {savingReview ? "Saving..." : "Save review"}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={savingReview}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveConceptReview} disabled={savingReview || !reviewOutcome}>
+                {savingReview ? "Saving..." : "Save review"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
