@@ -184,6 +184,8 @@ const Workspace = () => {
   // it is locked for everyone except admins.
   const editLocked = !isAdmin && (draftStage === "s8_ready" || draftStage === "s9_published");
 
+  // Peer review comments only open once the draft has been submitted for Peer Review (Stg 5+).
+  const peerReviewUnlocked = ["s5_submit_peer", "s6_awaiting_peer", "s7_peer_done", "s7_awaiting_final", "s8_ready", "s9_published"].includes(draftStage);
 
 
   const [markdownContent, setMarkdownContent] = useState("");
