@@ -1027,13 +1027,14 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
-          {/* Plan/Build/Operate week status for a month range + stuck weeks */}
+          {/* Plan/Build/Operate week status for a month range */}
+          <div className="mb-3 flex items-baseline justify-between bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <h2 className="text-xl font-bold text-sky-900">Plan · Build · Operate status by week</h2>
+          </div>
           <div className="mb-6">
-            {/* Plan / Build / Operate week status for a chosen month range */}
             <div className="space-y-4">
               <Card className="p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                  <h3 className="text-sm font-semibold">Plan · Build · Operate status by week</h3>
+                <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">From</span>
                     <Select value={String(rangeFrom)} onValueChange={(v) => setRangeFrom(Number(v))}>
