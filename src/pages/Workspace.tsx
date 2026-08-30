@@ -1864,7 +1864,11 @@ const Workspace = () => {
             <Input type="date" value={conceptDueDate} onChange={(e) => setConceptDueDate(e.target.value)} />
             <p className="text-xs text-muted-foreground">Defaults to 7 days from submission.</p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="link" className="px-0" onClick={() => setRefsDialogOpen(true)}>
+              Look at References
+            </Button>
+            <div className="flex gap-2">
             <Button variant="outline" onClick={() => handleConceptDialogClose(false)} disabled={savingConcept}>
               Cancel
             </Button>
