@@ -1880,6 +1880,9 @@ const Workspace = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Reference texts popup */}
+      {id && <ReferencesDialog projectId={id} open={refsDialogOpen} onOpenChange={setRefsDialogOpen} />}
+
       {/* Review Concept outcome */}
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
         <DialogContent className="max-w-lg">
