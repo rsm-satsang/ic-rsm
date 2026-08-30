@@ -159,6 +159,19 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [openOp, setOpenOp] = useState(planDone && buildDone && ps.operate === "active");
   const [openActivity, setOpenActivity] = useState(false);
 
+  // Open a panel when the calendar (or any parent) asks for it.
+  useEffect(() => {
+    if (!panelRequest?.key) return;
+    const key = panelRequest.key as Panel;
+    setPanel(key);
+    if (key === "edit_plan" || key === "complete_plan" || key === "see_plan") setOpenPlan(true);
+    if (key === "edit_build" || key === "link_build") { setOpenPlan(true); setOpenBuild(true); }
+    if (key === "edit_op" || key === "complete_op") { setOpenPlan(true); setOpenBuild(true); setOpenOp(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelRequest?.nonce]);
+
+
+
   // Plan
   const [planAssignees, setPlanAssignees] = useState<string[]>(
     ((entry as any)?.plan_assignee_ids as string[] | null) ?? (entry?.plan_assignee_id ? [entry.plan_assignee_id] : [])
