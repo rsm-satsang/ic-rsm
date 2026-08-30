@@ -1311,7 +1311,7 @@ export default function Tracker() {
                               </span>
                               <CalLink onClick={() => notifyPhase(row.weekIso, "build")}>Notify</CalLink>
                               <span className="basis-full text-muted-foreground flex items-center gap-2 flex-wrap">
-                                <span>Reviewers: {info.reviewers.length > 0 ? info.reviewers.join(", ") : "—"}</span>
+                                <span><b className="font-semibold text-foreground">Reviewers:</b> {info.reviewers.length > 0 ? info.reviewers.join(", ") : "—"}</span>
                                 {info.projectId && (
                                   <>
                                     <CalLink onClick={() => notifyReviewers(info.projectId!)}>Notify reviewers</CalLink>
