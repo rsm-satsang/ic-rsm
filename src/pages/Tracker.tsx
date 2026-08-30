@@ -17,7 +17,7 @@ import { Loader2, RefreshCw, Calendar as CalendarIcon, ChevronDown, ExternalLink
 import { useNavigate } from "react-router-dom";
 
 import WeekWorkflow, { contentTypeLabel } from "@/components/tracker/WeekWorkflow";
-import { getDraftStage, stageLabel, DRAFT_STAGES } from "@/lib/draftStages";
+import { getDraftStage, stageLabel } from "@/lib/draftStages";
 import { formatDate } from "@/lib/datetime";
 
 
@@ -166,7 +166,6 @@ export default function Tracker() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
-  const [allProjects, setAllProjects] = useState<any[]>([]);
   const [rangeFrom, setRangeFrom] = useState<number>(0);
   const [rangeTo, setRangeTo] = useState<number>(11);
   // Map of `${channel}|${sub_channel}|${week_start_date}|${action}` → latest created_at date (ISO date)
@@ -188,17 +187,15 @@ export default function Tracker() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUserId(user?.id ?? null);
-    const [e, u, t, a, p] = await Promise.all([
+    const [e, u, t, a] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
       supabase.from("users").select("id, name, email, role, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
       supabase.from("tracker_activity" as any).select("channel, sub_channel, week_start_date, action, created_at"),
-      supabase.from("projects").select("id, title, status, metadata"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
     if (u.data) setUsers(u.data as any as UserOpt[]);
     if (t.data) setThemes(t.data as ThemeOpt[]);
-    if (p.data) setAllProjects(p.data as any[]);
     if (a.data) {
       const map: Record<string, string> = {};
       (a.data as any[]).forEach((r) => {
@@ -449,22 +446,7 @@ export default function Tracker() {
     return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
 
-  // ── Left panel: projects broken up by content type and draft stage ────────
-  const projectBreakdown = useMemo(() => {
-    const byGoal = new Map<string, { total: number; stages: Map<string, number> }>();
-    for (const p of allProjects) {
-      if ((p.metadata as any)?.archived) continue;
-      const goal = (p.metadata as any)?.goal || "other";
-      const stage = getDraftStage(p.metadata, p.status);
-      if (!byGoal.has(goal)) byGoal.set(goal, { total: 0, stages: new Map() });
-      const g = byGoal.get(goal)!;
-      g.total += 1;
-      g.stages.set(stage, (g.stages.get(stage) || 0) + 1);
-    }
-    return [...byGoal.entries()].sort((a, b) => b[1].total - a[1].total);
-  }, [allProjects]);
-
-  // ── Right panel: Plan / Build / Operate week counts across a month range ──
+  // ── Plan / Build / Operate week counts across a month range ──
   const rangeWeeks = useMemo(() => {
     const lo = Math.min(rangeFrom, rangeTo);
     const hi = Math.max(rangeFrom, rangeTo);
@@ -644,7 +626,8 @@ export default function Tracker() {
     const { entry, status, meta, planDone, buildDone, opDone } = weekMeta(week);
     const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
     const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
-    const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
+    const stageValue = proj ? getDraftStage(proj.metadata, proj.status) : null;
+    const stage = stageValue ? stageLabel(stageValue) : null;
     const reviewerIds = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
     const reviewers = reviewerIds.map((id) => nameById[id]).filter(Boolean);
 
@@ -692,6 +675,7 @@ export default function Tracker() {
       projectTitle: proj?.title ?? entry?.title ?? null,
       author,
       stage,
+      stageValue,
       reviewers,
       status,
       statusLabel: meta?.label ?? status,
@@ -707,15 +691,28 @@ export default function Tracker() {
   };
 
   // ── Stuck view: weeks whose due dates have passed, grouped by reason ──────
+  const stuckReason = (overdueLabel: string | null, stageValue: string | null): string | null => {
+    if (overdueLabel === "Plan") return "Stuck at Plan";
+    if (overdueLabel === "Build") {
+      if (stageValue === "s3_awaiting_concept") return "Stuck at Build - Awaiting Concept Review";
+      if (stageValue === "s6_awaiting_peer") return "Stuck at Build - Awaiting Peer Review";
+      if (stageValue === "s7_awaiting_final") return "Stuck at Build - Final Go Ahead";
+      return "Stuck at Build";
+    }
+    return null; // ignore Publish overdue
+  };
+
   const stuckWeeks = useMemo(() => {
     const out: { week: string; weekNum: number; reason: string; days: number; title: string | null }[] = [];
     for (const w of rangeWeeks) {
       const i = weekInfo(w);
       if (i.overdueDays > 0) {
+        const reason = stuckReason(i.overdueLabel, i.stageValue);
+        if (!reason) continue;
         out.push({
           week: w,
           weekNum: weeks.indexOf(w) + 1,
-          reason: i.overdueLabel ?? "Phase",
+          reason,
           days: i.overdueDays,
           title: i.projectTitle,
         });
@@ -1007,42 +1004,9 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
-          {/* Projects by status (left) + Plan/Build/Operate week status for a month range (right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
-            {/* Left — content types with draft/review status */}
-            <Card className="p-4">
-              <h3 className="text-sm font-semibold mb-3">Available Content Types with Draft/Review status</h3>
-              {projectBreakdown.length === 0 ? (
-                <div className="text-xs text-muted-foreground">No projects yet.</div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {projectBreakdown.map(([goal, g]) => (
-                    <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{goalLabel(goal)}</span>
-                        <Badge variant="secondary" className="text-xs">{g.total}</Badge>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {DRAFT_STAGES.map((s) => (
-                          <div
-                            key={s.value}
-                            title={s.label}
-                            className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded-md border ${
-                              (g.stages.get(s.value) || 0) > 0 ? "bg-background" : "bg-muted/20 text-muted-foreground/60"
-                            }`}
-                          >
-                            <span className="truncate">{s.label}</span>
-                            <span className="font-semibold shrink-0">{g.stages.get(s.value) || 0}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            {/* Right — Plan / Build / Operate week status for a chosen month range */}
+          {/* Plan/Build/Operate week status for a month range + stuck weeks */}
+          <div className="mb-6">
+            {/* Plan / Build / Operate week status for a chosen month range */}
             <div className="space-y-4">
               <Card className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -1093,7 +1057,7 @@ export default function Tracker() {
                     <div className="flex flex-wrap gap-2 mb-3">
                       {Object.entries(stuckByReason).map(([reason, count]) => (
                         <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
-                          Stuck at {reason}: {count}
+                          {reason}: {count}
                         </span>
                       ))}
                     </div>
