@@ -17,7 +17,7 @@ import { Loader2, RefreshCw, Calendar as CalendarIcon, ChevronDown, ExternalLink
 import { useNavigate } from "react-router-dom";
 
 import WeekWorkflow, { contentTypeLabel } from "@/components/tracker/WeekWorkflow";
-import { getDraftStage, stageLabel, DRAFT_STAGES } from "@/lib/draftStages";
+import { getDraftStage, stageLabel } from "@/lib/draftStages";
 import { formatDate } from "@/lib/datetime";
 
 
