@@ -728,6 +728,14 @@ export default function Tracker() {
     return m;
   }, [stuckWeeks]);
 
+  const stuckPlan = stuckByReason["Stuck at Plan"] || 0;
+  const stuckBuildConcept = stuckByReason["Stuck at Build - Awaiting Concept Review"] || 0;
+  const stuckBuildPeer = stuckByReason["Stuck at Build - Awaiting Peer Review"] || 0;
+  const stuckBuildFinal = stuckByReason["Stuck at Build - Final Go Ahead"] || 0;
+  const stuckBuildTotal = Object.entries(stuckByReason)
+    .filter(([reason]) => reason.startsWith("Stuck at Build"))
+    .reduce((sum, [, count]) => sum + count, 0);
+
 
 
 
