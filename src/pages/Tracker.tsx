@@ -1052,20 +1052,73 @@ export default function Tracker() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between rounded-md border bg-blue-50 px-3 py-2">
-                    <span className="text-sm">📝 Weeks with Planning Awaited</span>
-                    <b className="text-lg text-blue-800">{rangeStats.planningAwaited}</b>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border bg-amber-50 px-3 py-2">
-                    <span className="text-sm">🛠️ Weeks with Planning Complete, Build In Progress</span>
-                    <b className="text-lg text-amber-800">{rangeStats.buildInProgress}</b>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border bg-green-50 px-3 py-2">
-                    <span className="text-sm">🎉 Weeks Ready to Publish / Published</span>
-                    <b className="text-lg text-green-800">{rangeStats.readyOrPublished}</b>
-                  </div>
+                  {([
+                    { key: "planningAwaited", label: "📝 Weeks with Planning Awaited", bg: "bg-blue-50", text: "text-blue-800" },
+                    { key: "buildInProgress", label: "🛠️ Weeks with Planning Complete, Build In Progress", bg: "bg-amber-50", text: "text-amber-800" },
+                    { key: "readyOrPublished", label: "🎉 Weeks Ready to Publish / Published", bg: "bg-green-50", text: "text-green-800" },
+                  ] as const).map((row) => {
+                    const bucket = rangeBreakdown[row.key];
+                    const total = bucket.overdue.length + bucket.onTrack.length;
+                    return (
+                      <div key={row.key} className={`rounded-md border ${row.bg} px-3 py-2`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm">{row.label}</span>
+                          <b className={`text-lg ${row.text}`}>{total}</b>
+                        </div>
+                        {total > 0 && (
+                          <div className="mt-1 space-y-1">
+                            {([
+                              { sub: "overdue" as const, items: bucket.overdue, chip: "bg-red-100 border-red-200 text-red-800" },
+                              { sub: "onTrack" as const, items: bucket.onTrack, chip: "bg-emerald-100 border-emerald-200 text-emerald-800" },
+                            ]).map(({ sub, items, chip }) => {
+                              const openKey = `${row.key}-${sub}`;
+                              const open = !!openBuckets[openKey];
+                              return (
+                                <div key={sub}>
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-2 text-xs"
+                                    onClick={() => setOpenBuckets((p) => ({ ...p, [openKey]: !p[openKey] }))}
+                                  >
+                                    <ChevronDown className={`h-3 w-3 transition-transform ${open ? "" : "-rotate-90"}`} />
+                                    <span className={`rounded-full border px-2 py-0.5 font-semibold ${chip}`}>
+                                      {sub === "overdue" ? "Overdue" : "On Track"}: {items.length}
+                                    </span>
+                                  </button>
+                                  {open && (
+                                    <ul className="mt-1 ml-5 space-y-0.5 text-xs text-muted-foreground">
+                                      {items.length === 0 && <li>—</li>}
+                                      {items.map((it) => (
+                                        <li key={it.week}>
+                                          {it.projectId ? (
+                                            <button
+                                              type="button"
+                                              className="underline decoration-dotted hover:text-foreground"
+                                              onClick={() => navigate(`/project/${it.projectId}`)}
+                                            >
+                                              📌 {it.title || "Linked project"}
+                                            </button>
+                                          ) : (
+                                            <span>Week {it.weekNum} — no project linked</span>
+                                          )}
+                                          {it.stage && <span> · {it.stage}</span>}
+                                          {sub === "overdue" && it.days > 0 && (
+                                            <span className="text-red-600"> · {it.days}d overdue</span>
+                                          )}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   <div className="text-[11px] text-muted-foreground">
-                    {rangeStats.total} week(s) · {MONTH_NAMES[Math.min(rangeFrom, rangeTo)]}–{MONTH_NAMES[Math.max(rangeFrom, rangeTo)]} {YEAR} · {activeTab.label}
+                    {rangeWeeks.length} week(s) · {MONTH_NAMES[Math.min(rangeFrom, rangeTo)]}–{MONTH_NAMES[Math.max(rangeFrom, rangeTo)]} {YEAR} · {activeTab.label}
                   </div>
                 </div>
               </Card>
