@@ -187,17 +187,15 @@ export default function Tracker() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUserId(user?.id ?? null);
-    const [e, u, t, a, p] = await Promise.all([
+    const [e, u, t, a] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
       supabase.from("users").select("id, name, email, role, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
       supabase.from("tracker_activity" as any).select("channel, sub_channel, week_start_date, action, created_at"),
-      supabase.from("projects").select("id, title, status, metadata"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
     if (u.data) setUsers(u.data as any as UserOpt[]);
     if (t.data) setThemes(t.data as ThemeOpt[]);
-    if (p.data) setAllProjects(p.data as any[]);
     if (a.data) {
       const map: Record<string, string> = {};
       (a.data as any[]).forEach((r) => {
