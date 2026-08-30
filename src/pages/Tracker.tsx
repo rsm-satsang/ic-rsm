@@ -1075,7 +1075,7 @@ export default function Tracker() {
                     <div className="flex flex-wrap gap-2 mb-3">
                       {Object.entries(stuckByReason).map(([reason, count]) => (
                         <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
-                          Stuck at {reason}: {count}
+                          {reason}: {count}
                         </span>
                       ))}
                     </div>
