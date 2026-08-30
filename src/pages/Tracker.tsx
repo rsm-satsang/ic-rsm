@@ -993,28 +993,114 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
-          <div className="text-xs font-semibold text-muted-foreground mb-2">Phase progress · Full year {YEAR}</div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          {/* Projects by status (left) + Plan/Build/Operate week status for a month range (right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+            {/* Left — content types with draft/review status */}
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-3">Available Content Types with Draft/Review status</h3>
+              {projectBreakdown.length === 0 ? (
+                <div className="text-xs text-muted-foreground">No projects yet.</div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {projectBreakdown.map(([goal, g]) => (
+                    <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{goalLabel(goal)}</span>
+                        <Badge variant="secondary" className="text-xs">{g.total}</Badge>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {DRAFT_STAGES.map((s) => (
+                          <div
+                            key={s.value}
+                            title={s.label}
+                            className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded-md border ${
+                              (g.stages.get(s.value) || 0) > 0 ? "bg-background" : "bg-muted/20 text-muted-foreground/60"
+                            }`}
+                          >
+                            <span className="truncate">{s.label}</span>
+                            <span className="font-semibold shrink-0">{g.stages.get(s.value) || 0}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
 
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b>{phaseStats.planInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.planComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
-              <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{phaseStats.buildYet}</b></div>
-              <div className="text-sm flex justify-between"><span>Assigned</span><b>{phaseStats.buildAssigned}</b></div>
-              <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.buildComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.opInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.opComplete}</b></div>
-              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{phaseStats.buildComplete - phaseStats.opComplete}</b></div>
-            </Card>
+            {/* Right — Plan / Build / Operate week status for a chosen month range */}
+            <div className="space-y-4">
+              <Card className="p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-semibold">Plan · Build · Operate status by week</h3>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">From</span>
+                    <Select value={String(rangeFrom)} onValueChange={(v) => setRangeFrom(Number(v))}>
+                      <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MONTH_NAMES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-muted-foreground">To</span>
+                    <Select value={String(rangeTo)} onValueChange={(v) => setRangeTo(Number(v))}>
+                      <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MONTH_NAMES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-md border bg-blue-50 px-3 py-2">
+                    <span className="text-sm">📝 Weeks with Planning Awaited</span>
+                    <b className="text-lg text-blue-800">{rangeStats.planningAwaited}</b>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border bg-amber-50 px-3 py-2">
+                    <span className="text-sm">🛠️ Weeks with Planning Complete, Build In Progress</span>
+                    <b className="text-lg text-amber-800">{rangeStats.buildInProgress}</b>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border bg-green-50 px-3 py-2">
+                    <span className="text-sm">🎉 Weeks Ready to Publish / Published</span>
+                    <b className="text-lg text-green-800">{rangeStats.readyOrPublished}</b>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {rangeStats.total} week(s) · {MONTH_NAMES[Math.min(rangeFrom, rangeTo)]}–{MONTH_NAMES[Math.max(rangeFrom, rangeTo)]} {YEAR} · {activeTab.label}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Stuck view */}
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold mb-3">🚨 Stuck weeks (due date passed)</h3>
+                {stuckWeeks.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Nothing is overdue in this period.</div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {Object.entries(stuckByReason).map(([reason, count]) => (
+                        <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                          Stuck at {reason}: {count}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="max-h-56 overflow-y-auto space-y-1">
+                      {stuckWeeks.map((s) => (
+                        <button
+                          key={s.week}
+                          onClick={() => { setSelectedMonth(monthOf(s.week)); setSelectedWeek(s.week); }}
+                          className="w-full flex items-center justify-between gap-2 text-left text-xs rounded-md border px-2 py-1 hover:bg-muted"
+                        >
+                          <span className="truncate">Week {s.weekNum}{s.title ? ` · ${s.title}` : ""}</span>
+                          <span className="shrink-0 text-red-700 font-semibold">{s.reason} · {s.days}d</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </Card>
+            </div>
           </div>
+
 
           {/* Filters + Sync */}
           <div className="flex flex-wrap gap-3 mb-4 items-center">
