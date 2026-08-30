@@ -128,6 +128,20 @@ const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
 const YEAR = 2026;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+const GOAL_LABELS: Record<string, string> = {
+  substack_newsletter: "Substack Newsletter",
+  wordpress_blog: "WordPress Blog",
+  note: "Note",
+  book_article: "Book Article",
+  story_children: "Story (Children)",
+  story_adults: "Story (Adults)",
+  proofreading: "Proofreading",
+  translation: "Translation",
+  other: "Other",
+};
+const goalLabel = (goal?: string) =>
+  !goal ? "-" : GOAL_LABELS[goal] || goal.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 function monthBounds(year: number, month: number): { min: string; max: string } {
   const min = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
   const max = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
