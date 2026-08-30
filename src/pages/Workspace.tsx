@@ -193,6 +193,7 @@ const Workspace = () => {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [draftStage, setDraftStage] = useState<DraftStage>("s1_preparing");
   const [conceptDialogOpen, setConceptDialogOpen] = useState(false);
+  const [refsDialogOpen, setRefsDialogOpen] = useState(false);
   const [conceptAnswer, setConceptAnswer] = useState("");
   const [conceptDueDate, setConceptDueDate] = useState("");
   const [savingConcept, setSavingConcept] = useState(false);
