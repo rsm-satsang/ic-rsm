@@ -9,6 +9,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import GlobalNav from "@/components/GlobalNav";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Calendar as CalendarIcon, ChevronDown, ExternalLink } from "lucide-react";
