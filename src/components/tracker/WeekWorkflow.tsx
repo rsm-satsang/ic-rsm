@@ -147,6 +147,8 @@ function phaseStates(status: string, projectStatus?: string | null, projectStage
 export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, projectStage, upsert, onReset, panelRequest }: Props) {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
+  // When opened via a calendar action link, show ONLY the relevant section (not the whole card).
+  const [solo, setSolo] = useState<"plan" | "build" | "op" | null>(null);
 
   const status = entry?.status ?? "tbd";
   const ps = phaseStates(status, projectStatus, projectStage);
@@ -164,9 +166,19 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     if (!panelRequest?.key) return;
     const key = panelRequest.key as Panel;
     setPanel(key);
-    if (key === "edit_plan" || key === "complete_plan" || key === "see_plan") setOpenPlan(true);
-    if (key === "edit_build" || key === "link_build") { setOpenPlan(true); setOpenBuild(true); }
-    if (key === "edit_op" || key === "complete_op") { setOpenPlan(true); setOpenBuild(true); setOpenOp(true); }
+    if (key === "complete_plan" || key === "see_plan") {
+      setSolo("plan");
+      setOpenPlan(true);
+    } else if (key === "complete_op") {
+      setSolo("op");
+      setOpenOp(true);
+    } else if (key === "edit_plan") {
+      setOpenPlan(true);
+    } else if (key === "edit_build" || key === "link_build") {
+      setOpenPlan(true); setOpenBuild(true);
+    } else if (key === "edit_op") {
+      setOpenPlan(true); setOpenBuild(true); setOpenOp(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panelRequest?.nonce]);
 
