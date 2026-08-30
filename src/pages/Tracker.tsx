@@ -1348,7 +1348,44 @@ export default function Tracker() {
             </div>
           )}
 
+          {/* Change reviewers dialog */}
+          <Dialog open={!!reviewerDialog} onOpenChange={(o) => { if (!o) setReviewerDialog(null); }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reviewers · {reviewerDialog?.title}</DialogTitle>
+              </DialogHeader>
+              <div className="max-h-[50vh] overflow-y-auto space-y-1">
+                {users
+                  .filter((u) => (u as any).role === "admin" || ((u as any).content_roles ?? []).includes("builder"))
+                  .map((u) => (
+                    <label key={u.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
+                      <Checkbox
+                        checked={reviewerSel.includes(u.id)}
+                        onCheckedChange={() =>
+                          setReviewerSel((s) => (s.includes(u.id) ? s.filter((x) => x !== u.id) : [...s, u.id]))
+                        }
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{u.name || u.email}</div>
+                        <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        {(u as any).role === "admin" ? "Admin" : "Builder"}
+                      </Badge>
+                    </label>
+                  ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setReviewerDialog(null)} disabled={savingReviewers}>Cancel</Button>
+                <Button onClick={saveReviewers} disabled={savingReviewers}>
+                  {savingReviewers ? "Saving…" : "Save reviewers"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         </div>
+
       </div>
     </div>
   );
