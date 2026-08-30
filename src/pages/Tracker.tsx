@@ -1240,9 +1240,6 @@ export default function Tracker() {
                       >
                         <ChevronDown className={`h-4 w-4 text-sky-700 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                         <span className="text-sm font-bold text-sky-900">Week {weekNum > 0 ? weekNum : "—"}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(row.weekIso)}
-                        </span>
                         {(info.projectTitle || detail) && (
                           <span className="text-xs font-semibold text-sky-900 truncate max-w-[45%]">
                             · 📌 {info.projectTitle || detail}
@@ -1255,7 +1252,14 @@ export default function Tracker() {
                         )}
                         {inYear && (
                           <>
-                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            {/* During Build, the week status is strictly the linked project's draft stage */}
+                            {info.planDone && !info.opDone && info.stage ? (
+                              <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-200 text-[10px] py-0">
+                                🛠️ {info.stage}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            )}
                             {stuck ? (
                               <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
                                 Stuck at {info.overdueLabel ?? "phase"} · {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""} overdue
