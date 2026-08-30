@@ -147,6 +147,8 @@ function phaseStates(status: string, projectStatus?: string | null, projectStage
 export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, projectStage, upsert, onReset, panelRequest }: Props) {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
+  // When opened via a calendar action link, show ONLY the relevant section (not the whole card).
+  const [solo, setSolo] = useState<"plan" | "build" | "op" | null>(null);
 
   const status = entry?.status ?? "tbd";
   const ps = phaseStates(status, projectStatus, projectStage);
@@ -164,9 +166,19 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
     if (!panelRequest?.key) return;
     const key = panelRequest.key as Panel;
     setPanel(key);
-    if (key === "edit_plan" || key === "complete_plan" || key === "see_plan") setOpenPlan(true);
-    if (key === "edit_build" || key === "link_build") { setOpenPlan(true); setOpenBuild(true); }
-    if (key === "edit_op" || key === "complete_op") { setOpenPlan(true); setOpenBuild(true); setOpenOp(true); }
+    if (key === "complete_plan" || key === "see_plan") {
+      setSolo("plan");
+      setOpenPlan(true);
+    } else if (key === "complete_op") {
+      setSolo("op");
+      setOpenOp(true);
+    } else if (key === "edit_plan") {
+      setOpenPlan(true);
+    } else if (key === "edit_build" || key === "link_build") {
+      setOpenPlan(true); setOpenBuild(true);
+    } else if (key === "edit_op") {
+      setOpenPlan(true); setOpenBuild(true); setOpenOp(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panelRequest?.nonce]);
 
@@ -558,7 +570,18 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
   return (
     <div className="border-t pt-2 space-y-1">
-      {(entry as any)?.content_type && (
+      {solo && (
+        <div className="px-2 pb-1">
+          <button
+            type="button"
+            className="text-xs text-blue-600 hover:underline"
+            onClick={() => setSolo(null)}
+          >
+            ← Show full weekly card
+          </button>
+        </div>
+      )}
+      {!solo && (entry as any)?.content_type && (
         <div className="px-2">
           <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
             {contentTypeLabel((entry as any).content_type)}
@@ -566,7 +589,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         </div>
       )}
 
-      {isAdmin && (
+      {!solo && isAdmin && (
         <div className="flex justify-end">
           <Button size="sm" variant="ghost" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={handleReset}>
             <RotateCcw className="h-3 w-3 mr-1" /> Reset week (admin)
@@ -574,6 +597,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         </div>
       )}
       {/* PLAN */}
+      {(!solo || solo === "plan") && (
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
@@ -658,8 +682,10 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
         </CollapsibleContent>
       </Collapsible>
+      )}
 
       {/* BUILD */}
+      {(!solo || solo === "build") && (
       <Collapsible open={openBuild && planDone} onOpenChange={(v) => { if (planDone) setOpenBuild(v); }}>
         <SectionHeader title="Build" state={ps.build} open={openBuild && planDone} onToggle={() => setOpenBuild((v) => !v)} disabled={!planDone} stateLabel={buildLabel} />
         <CollapsibleContent className="px-2 pb-2">
@@ -744,10 +770,11 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
         </CollapsibleContent>
       </Collapsible>
+      )}
 
       {/* OPERATE / PUBLISH */}
-      {(() => {
-        const opAllowed = planDone && !!entry?.operate_assignee_id;
+      {(!solo || solo === "op") && (() => {
+        const opAllowed = (planDone && !!entry?.operate_assignee_id) || solo === "op";
         return (
       <Collapsible open={openOp && opAllowed} onOpenChange={(v) => { if (opAllowed) setOpenOp(v); }}>
         <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && opAllowed} onToggle={() => setOpenOp((v) => !v)} disabled={!opAllowed} stateLabel={operateLabel} />
@@ -807,6 +834,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
 
       {/* ACTIVITY TIMELINE */}
+      {!solo && (
       <Collapsible open={openActivity} onOpenChange={setOpenActivity}>
         <CollapsibleTrigger asChild>
           <button
@@ -844,6 +872,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
         </CollapsibleContent>
       </Collapsible>
+      )}
     </div>
   );
 }

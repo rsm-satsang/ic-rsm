@@ -1123,7 +1123,7 @@ export default function Tracker() {
 
                           {phaseLine("plan", "📝", "Plan", info.planDone,
                             <span>{info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}</span>,
-                            <span className="flex items-center gap-2 ml-auto">
+                            <span className="flex items-center gap-2">
                               <CalLink onClick={() => notifyPhase(row.weekIso, "plan")}>Notify</CalLink>
                               <CalLink onClick={() => openPanel(row.weekIso, info.planDone ? "see_plan" : "complete_plan")}>
                                 {info.planDone ? "See plan" : "Complete Planning"}
@@ -1131,28 +1131,28 @@ export default function Tracker() {
                             </span>
                           )}
                           {info.planDone && phaseLine("build", "🛠️", "Build", info.buildDone,
-                            <span>
-                              {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
-                              {info.stage && <span className="text-muted-foreground"> · {info.stage}</span>}
-                              {info.reviewers.length > 0 && (
-                                <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
-                              )}
-                            </span>,
-                            <span className="flex items-center gap-2 ml-auto">
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              <span>
+                                {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
+                                {info.stage && <span className="text-muted-foreground"> · {info.stage}</span>}
+                              </span>
                               <CalLink onClick={() => notifyPhase(row.weekIso, "build")}>Notify</CalLink>
-                              {info.projectId && (
-                                <>
-                                  <CalLink onClick={() => notifyReviewers(info.projectId!)}>Notify reviewers</CalLink>
-                                  <CalLink onClick={() => openReviewerDialog(info.projectId!, info.projectTitle || "Project")}>
-                                    Change reviewers
-                                  </CalLink>
-                                </>
-                              )}
+                              <span className="basis-full text-muted-foreground flex items-center gap-2 flex-wrap">
+                                <span>Reviewers: {info.reviewers.length > 0 ? info.reviewers.join(", ") : "—"}</span>
+                                {info.projectId && (
+                                  <>
+                                    <CalLink onClick={() => notifyReviewers(info.projectId!)}>Notify reviewers</CalLink>
+                                    <CalLink onClick={() => openReviewerDialog(info.projectId!, info.projectTitle || "Project")}>
+                                      Change reviewers
+                                    </CalLink>
+                                  </>
+                                )}
+                              </span>
                             </span>
                           )}
                           {info.planDone && info.buildDone && phaseLine("operate", "📮", "Publish", info.opDone,
                             <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>,
-                            <span className="flex items-center gap-2 ml-auto">
+                            <span className="flex items-center gap-2">
                               <CalLink onClick={() => notifyPhase(row.weekIso, "operate")}>Notify</CalLink>
                               <CalLink onClick={() => openPanel(row.weekIso, "complete_op")}>
                                 Mark as published / Moved to Substack
