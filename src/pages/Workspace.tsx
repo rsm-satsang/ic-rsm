@@ -1651,6 +1651,9 @@ const Workspace = () => {
                         >
                           {conceptNote?.answer ? "Edit submission" : "Answer"}
                         </Button>
+                        <Button variant="link" size="sm" className="px-0" onClick={() => setRefsDialogOpen(true)}>
+                          Look at References
+                        </Button>
                         {isAdmin && conceptNote?.answer && (
                           <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("concept")}>
                             Delete submission
