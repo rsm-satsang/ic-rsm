@@ -1689,10 +1689,17 @@ const Workspace = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={!peerReviewUnlocked}
+                            title={peerReviewUnlocked ? undefined : "Available once the project reaches Stg 5. Submit for Peer Review"}
                             onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
                           >
                             Add Peer Review / Respond to review comments
                           </Button>
+                          {!peerReviewUnlocked && (
+                            <p className="text-[11px] text-muted-foreground max-w-[220px] text-right">
+                              Unlocks at Stg 5. Submit for Peer Review
+                            </p>
+                          )}
                           {isAdmin && peerReviews.length > 0 && (
                             <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("peer")}>
                               Delete peer review comments
