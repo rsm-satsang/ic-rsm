@@ -459,8 +459,9 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       substack_published: subPub,
       youtube_published: ytPub,
       status: newStatus,
+      ...(pubUrl.trim() ? { source_url: pubUrl.trim() } : {}),
     });
-    await logActivity("publish_completed", { substack: subPub, youtube: ytPub });
+    await logActivity("publish_completed", { substack: subPub, youtube: ytPub, url: pubUrl.trim() || null });
     toast.success("Publish updated");
     close();
   };
