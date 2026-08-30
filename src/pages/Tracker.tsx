@@ -692,6 +692,33 @@ export default function Tracker() {
     };
   };
 
+  // ── Stuck view: weeks whose due dates have passed, grouped by reason ──────
+  const stuckWeeks = useMemo(() => {
+    const out: { week: string; weekNum: number; reason: string; days: number; title: string | null }[] = [];
+    for (const w of rangeWeeks) {
+      const i = weekInfo(w);
+      if (i.overdueDays > 0) {
+        out.push({
+          week: w,
+          weekNum: weeks.indexOf(w) + 1,
+          reason: i.overdueLabel ?? "Phase",
+          days: i.overdueDays,
+          title: i.projectTitle,
+        });
+      }
+    }
+    return out.sort((a, b) => b.days - a.days);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeWeeks, entriesByWeek, projectStatusMap, projectInfoMap, activityDoneMap, nameById]);
+
+  const stuckByReason = useMemo(() => {
+    const m: Record<string, number> = {};
+    stuckWeeks.forEach((s) => { m[s.reason] = (m[s.reason] || 0) + 1; });
+    return m;
+  }, [stuckWeeks]);
+
+
+
 
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
