@@ -676,6 +676,35 @@ export default function Tracker() {
     };
   };
 
+  // ── Range buckets with Overdue / On Track breakup and linked project lists ──
+  type RangeBucketItem = {
+    week: string;
+    weekNum: number;
+    projectId: string | null;
+    title: string | null;
+    stage: string | null;
+    days: number;
+  };
+  const rangeBreakdown = useMemo(() => {
+    const mk = () => ({ overdue: [] as RangeBucketItem[], onTrack: [] as RangeBucketItem[] });
+    const buckets = { planningAwaited: mk(), buildInProgress: mk(), readyOrPublished: mk() };
+    for (const w of rangeWeeks) {
+      const i = weekInfo(w);
+      const item: RangeBucketItem = {
+        week: w,
+        weekNum: weeks.indexOf(w) + 1,
+        projectId: i.projectId,
+        title: i.projectTitle,
+        stage: i.stageValue ? stageLabel(i.stageValue) : null,
+        days: i.overdueDays,
+      };
+      const key = !i.planDone ? "planningAwaited" : !i.buildDone ? "buildInProgress" : "readyOrPublished";
+      (i.overdueDays > 0 ? buckets[key].overdue : buckets[key].onTrack).push(item);
+    }
+    return buckets;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeWeeks, entriesByWeek, projectStatusMap, projectInfoMap, activityDoneMap, nameById, weeks]);
+
   // ── Stuck view: weeks whose due dates have passed, grouped by reason ──────
   const stuckReason = (overdueLabel: string | null, stageValue: string | null): string | null => {
     if (overdueLabel === "Plan") return "Stuck at Plan";
