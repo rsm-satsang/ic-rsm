@@ -1881,7 +1881,7 @@ const Workspace = () => {
       </Dialog>
 
       {/* Reference texts popup */}
-      {id && <ReferencesDialog projectId={id} open={refsDialogOpen} onOpenChange={setRefsDialogOpen} />}
+      {projectId && <ReferencesDialog projectId={projectId} open={refsDialogOpen} onOpenChange={setRefsDialogOpen} />}
 
       {/* Review Concept outcome */}
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
