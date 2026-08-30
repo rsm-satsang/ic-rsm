@@ -864,6 +864,7 @@ export default function Tracker() {
             }
             upsert={upsert as any}
             onReset={resetWeek as any}
+            panelRequest={panelRequest && panelRequest.week === week ? { key: panelRequest.key, nonce: panelRequest.nonce } : null}
           />
         </div>
       </Card>
