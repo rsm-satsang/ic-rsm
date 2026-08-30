@@ -184,6 +184,8 @@ const Workspace = () => {
   // it is locked for everyone except admins.
   const editLocked = !isAdmin && (draftStage === "s8_ready" || draftStage === "s9_published");
 
+  // Peer review comments only open once the draft has been submitted for Peer Review (Stg 5+).
+  const peerReviewUnlocked = ["s5_submit_peer", "s6_awaiting_peer", "s7_peer_done", "s7_awaiting_final", "s8_ready", "s9_published"].includes(draftStage);
 
 
   const [markdownContent, setMarkdownContent] = useState("");
@@ -1316,7 +1318,7 @@ const Workspace = () => {
             onChange={(e) => setProjectTitle(e.target.value)}
             readOnly={editLocked}
             placeholder="Project title"
-            className="font-medium text-sm max-w-md mx-auto text-center border-transparent hover:border-input focus-visible:border-input bg-transparent h-7"
+            className="font-bold text-xl md:text-2xl max-w-3xl mx-auto text-center border-transparent hover:border-input focus-visible:border-input bg-transparent h-11"
           />
           {editLocked && (
             <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
@@ -1689,10 +1691,17 @@ const Workspace = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={!peerReviewUnlocked}
+                            title={peerReviewUnlocked ? undefined : "Available once the project reaches Stg 5. Submit for Peer Review"}
                             onClick={() => { setPeerCommentText(""); setPeerCommentDialogOpen(true); }}
                           >
                             Add Peer Review / Respond to review comments
                           </Button>
+                          {!peerReviewUnlocked && (
+                            <p className="text-[11px] text-muted-foreground max-w-[220px] text-right">
+                              Unlocks at Stg 5. Submit for Peer Review
+                            </p>
+                          )}
                           {isAdmin && peerReviews.length > 0 && (
                             <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleAdminDelete("peer")}>
                               Delete peer review comments

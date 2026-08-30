@@ -1,7 +1,7 @@
 import { formatDate } from "@/lib/datetime";
 import { DRAFT_STAGES, getDraftStage, stageLabel, stageShort } from "@/lib/draftStages";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -164,12 +164,20 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [dbThemes, setDbThemes] = useState<string[]>([]);
   
   // Filter states
+  const [searchParams] = useSearchParams();
+  const stageParam = searchParams.get("stage");
   const [nameFilter, setNameFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(stageParam || "all");
   const [assignedToFilter, setAssignedToFilter] = useState("");
-  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>("substack_newsletter");
+  const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>(stageParam ? "all" : "substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
   const [breakdownGoalFilter, setBreakdownGoalFilter] = useState<string>("substack_newsletter");
+
+  useEffect(() => {
+    if (!stageParam) return;
+    setStatusFilter(stageParam);
+    setOutcomeTypeFilter("all");
+  }, [stageParam]);
   
   // Sort state
   const [sortField, setSortField] = useState<string>("updated_at");

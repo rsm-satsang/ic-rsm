@@ -84,6 +84,8 @@ interface Props {
   projectStage?: string | null;
   upsert: (week: string, patch: any) => Promise<any>;
   onReset?: (week: string) => Promise<void>;
+  /** External request (e.g. from the calendar) to open a specific panel. */
+  panelRequest?: { key: string; nonce: number } | null;
 }
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
@@ -142,7 +144,7 @@ function phaseStates(status: string, projectStatus?: string | null, projectStage
   };
 }
 
-export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, projectStage, upsert, onReset }: Props) {
+export default function WeekWorkflow({ week, channel, subChannel, entry, users, planners, builders, operators, isAdmin, projectStatus, projectStage, upsert, onReset, panelRequest }: Props) {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
 
@@ -156,6 +158,19 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [openBuild, setOpenBuild] = useState(planDone && ps.build === "active");
   const [openOp, setOpenOp] = useState(planDone && buildDone && ps.operate === "active");
   const [openActivity, setOpenActivity] = useState(false);
+
+  // Open a panel when the calendar (or any parent) asks for it.
+  useEffect(() => {
+    if (!panelRequest?.key) return;
+    const key = panelRequest.key as Panel;
+    setPanel(key);
+    if (key === "edit_plan" || key === "complete_plan" || key === "see_plan") setOpenPlan(true);
+    if (key === "edit_build" || key === "link_build") { setOpenPlan(true); setOpenBuild(true); }
+    if (key === "edit_op" || key === "complete_op") { setOpenPlan(true); setOpenBuild(true); setOpenOp(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelRequest?.nonce]);
+
+
 
   // Plan
   const [planAssignees, setPlanAssignees] = useState<string[]>(
@@ -183,6 +198,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [opDue, setOpDue] = useState<string>(entry?.operate_due_date ?? wednesdayOf(week));
   const [subPub, setSubPub] = useState<boolean>(!!entry?.substack_published);
   const [ytPub, setYtPub] = useState<boolean>(!!entry?.youtube_published);
+  const [pubUrl, setPubUrl] = useState<string>(entry?.source_url ?? "");
 
   // Activity timeline
   const [activity, setActivity] = useState<any[]>([]);
@@ -443,8 +459,9 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
       substack_published: subPub,
       youtube_published: ytPub,
       status: newStatus,
+      ...(pubUrl.trim() ? { source_url: pubUrl.trim() } : {}),
     });
-    await logActivity("publish_completed", { substack: subPub, youtube: ytPub });
+    await logActivity("publish_completed", { substack: subPub, youtube: ytPub, url: pubUrl.trim() || null });
     toast.success("Publish updated");
     close();
   };
@@ -770,6 +787,15 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
                 <Checkbox checked={ytPub} onCheckedChange={(v) => setYtPub(!!v)} />
                 Published on YouTube
               </label>
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground">Published link (optional)</div>
+                <Input
+                  value={pubUrl}
+                  onChange={(e) => setPubUrl(e.target.value)}
+                  placeholder="https://…"
+                  className="h-8 text-xs"
+                />
+              </div>
               <Button size="sm" className="w-full" onClick={submitCompletePublish}>Submit Publish</Button>
             </div>
           )}

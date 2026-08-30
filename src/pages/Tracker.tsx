@@ -9,6 +9,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import GlobalNav from "@/components/GlobalNav";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Calendar as CalendarIcon, ChevronDown, ExternalLink } from "lucide-react";
@@ -649,10 +651,103 @@ export default function Tracker() {
   };
 
 
-
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
+  const [panelRequest, setPanelRequest] = useState<{ week: string; key: string; nonce: number } | null>(null);
+  const [reviewerDialog, setReviewerDialog] = useState<{ projectId: string; title: string } | null>(null);
+  const [reviewerSel, setReviewerSel] = useState<string[]>([]);
+  const [savingReviewers, setSavingReviewers] = useState(false);
   const navigate = useNavigate();
+
+  const openPanel = (week: string, key: string) => {
+    setSelectedWeek(week);
+    setPanelRequest({ week, key, nonce: Date.now() });
+  };
+
+  // Send a reminder for a specific phase of a week (assignees of that phase + admins).
+  const notifyPhase = async (week: string, phase: "plan" | "build" | "operate") => {
+    const entry = (entriesByWeek.get(week) || [])[0];
+    const weekNum = weeks.indexOf(week) + 1;
+    const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
+    const ids: string[] =
+      (((entry as any)?.[`${phase}_assignee_ids`] as string[] | null) ??
+        ((entry as any)?.[`${phase}_assignee_id`] ? [(entry as any)[`${phase}_assignee_id`]] : [])) as string[];
+    if (!ids.length) return toast.error(`No one is assigned to the ${phase} phase yet`);
+    const recipients = users.filter((u) => ids.includes(u.id)).map((u) => ({ name: u.name, email: u.email, id: u.id }));
+    const description =
+      phase === "plan" ? "Plan the weekly content theme and brief."
+      : phase === "build" ? "Build the draft / produce the content."
+      : "Publish on Substack/YouTube.";
+    const due = (entry as any)?.[`${phase}_due_date`] ?? null;
+    try {
+      const { error } = await supabase.functions.invoke("notify-week-assignees", {
+        body: {
+          contentId,
+          weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+          title: entry?.title || entry?.theme_text || `Week of ${week}`,
+          status: STATUS_META[(entry?.status ?? "tbd") as Status]?.label ?? "",
+          recipients,
+          planContext: phase === "build" ? {
+            topic: entry?.theme_text || null,
+            plan_comments: entry?.plan_comments || null,
+            linked_project_title: entry?.title || null,
+            linked_project_id: entry?.project_id || null,
+          } : null,
+          plan: phase === "plan" ? { assignee_ids: ids, due, description } : {},
+          build: phase === "build" ? { assignee_ids: ids, due, description } : {},
+          operate: phase === "operate" ? { assignee_ids: ids, due, description } : {},
+        },
+      });
+      if (error) throw error;
+      toast.success(`Reminder sent to ${phase} assignees (+ admins)`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to send reminder");
+    }
+  };
+
+  const notifyReviewers = async (projectId: string) => {
+    const proj = projectInfoMap[projectId];
+    const ids: string[] = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
+    const reviewerEmails = users.filter((u) => ids.includes(u.id)).map((u) => u.email).filter(Boolean);
+    const adminEmails = users.filter((u) => (u as any).role === "admin").map((u) => u.email).filter(Boolean);
+    const emails = Array.from(new Set([...adminEmails, ...reviewerEmails]));
+    if (emails.length === 0) return toast.error("No reviewers or admins to notify");
+    try {
+      const { error } = await supabase.functions.invoke("notify-reviewers", {
+        body: { projectId, versionId: null, requesterId: currentUserId, recipientEmails: emails },
+      });
+      if (error) throw error;
+      toast.success(`Notified ${emails.length} reviewer(s)`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to notify reviewers");
+    }
+  };
+
+  const openReviewerDialog = (projectId: string, title: string) => {
+    const proj = projectInfoMap[projectId];
+    setReviewerSel(((proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? []).slice());
+    setReviewerDialog({ projectId, title });
+  };
+
+  const saveReviewers = async () => {
+    if (!reviewerDialog) return;
+    setSavingReviewers(true);
+    try {
+      const proj = projectInfoMap[reviewerDialog.projectId];
+      const metadata = { ...(proj?.metadata ?? {}), peer_reviewer_ids: reviewerSel };
+      const { error } = await supabase.from("projects").update({ metadata }).eq("id", reviewerDialog.projectId);
+      if (error) throw error;
+      setProjectInfoMap((m) => ({ ...m, [reviewerDialog.projectId]: { ...(m[reviewerDialog.projectId] ?? {}), metadata } }));
+      toast.success("Reviewers updated");
+      setReviewerDialog(null);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to update reviewers");
+    } finally {
+      setSavingReviewers(false);
+    }
+  };
+
+
   useEffect(() => {
     const monthWeeks = weeks.filter((w) => monthOf(w) === selectedMonth);
     const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
@@ -769,6 +864,7 @@ export default function Tracker() {
             }
             upsert={upsert as any}
             onReset={resetWeek as any}
+            panelRequest={panelRequest && panelRequest.week === week ? { key: panelRequest.key, nonce: panelRequest.nonce } : null}
           />
         </div>
       </Card>
@@ -924,12 +1020,25 @@ export default function Tracker() {
                     setExpandedPhases((s) => ({ ...s, [row.weekIso]: !s[row.weekIso] }));
                   };
 
+                  const CalLink = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); onClick(); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onClick(); } }}
+                      className="text-sky-700 underline underline-offset-2 hover:text-sky-900 cursor-pointer"
+                    >
+                      {children}
+                    </span>
+                  );
+
                   const phaseLine = (
                     key: "plan" | "build" | "operate",
                     emoji: string,
                     label: string,
                     done: boolean,
                     body: React.ReactNode,
+                    actions?: React.ReactNode,
                   ) => {
                     const p = info.phases[key];
                     const suffix = done
@@ -940,6 +1049,7 @@ export default function Tracker() {
                         <span className="font-semibold">{emoji} {label}</span>
                         <span className={done ? "text-green-700 font-medium" : "text-muted-foreground"}>({suffix})</span>
                         <span className="text-foreground">{body}</span>
+                        {actions}
                       </div>
                     );
                   };
@@ -964,6 +1074,11 @@ export default function Tracker() {
                         <span className="text-xs text-muted-foreground">
                           {formatDate(row.weekIso)}
                         </span>
+                        {(info.projectTitle || detail) && (
+                          <span className="text-xs font-semibold text-sky-900 truncate max-w-[45%]">
+                            · 📌 {info.projectTitle || detail}
+                          </span>
+                        )}
                         {info.contentType && (
                           <span className="rounded-full bg-primary/10 border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-primary">
                             {info.contentType}
@@ -1004,22 +1119,45 @@ export default function Tracker() {
                                 Open <ExternalLink className="h-3 w-3" />
                               </span>
                             )}
-                            {info.stage && <span className="text-muted-foreground">· {info.stage}</span>}
                           </div>
 
                           {phaseLine("plan", "📝", "Plan", info.planDone,
-                            <span>{info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}</span>
+                            <span>{info.phases.plan.names.length ? info.phases.plan.names.join(", ") : "—"}</span>,
+                            <span className="flex items-center gap-2 ml-auto">
+                              <CalLink onClick={() => notifyPhase(row.weekIso, "plan")}>Notify</CalLink>
+                              <CalLink onClick={() => openPanel(row.weekIso, info.planDone ? "see_plan" : "complete_plan")}>
+                                {info.planDone ? "See plan" : "Complete Planning"}
+                              </CalLink>
+                            </span>
                           )}
                           {info.planDone && phaseLine("build", "🛠️", "Build", info.buildDone,
                             <span>
                               {info.author ? `✍️ ${info.author}` : (info.phases.build.names.length ? info.phases.build.names.join(", ") : "—")}
+                              {info.stage && <span className="text-muted-foreground"> · {info.stage}</span>}
                               {info.reviewers.length > 0 && (
                                 <span className="text-muted-foreground"> · Reviewers: {info.reviewers.join(", ")}</span>
+                              )}
+                            </span>,
+                            <span className="flex items-center gap-2 ml-auto">
+                              <CalLink onClick={() => notifyPhase(row.weekIso, "build")}>Notify</CalLink>
+                              {info.projectId && (
+                                <>
+                                  <CalLink onClick={() => notifyReviewers(info.projectId!)}>Notify reviewers</CalLink>
+                                  <CalLink onClick={() => openReviewerDialog(info.projectId!, info.projectTitle || "Project")}>
+                                    Change reviewers
+                                  </CalLink>
+                                </>
                               )}
                             </span>
                           )}
                           {info.planDone && info.buildDone && phaseLine("operate", "📮", "Publish", info.opDone,
-                            <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>
+                            <span>{info.phases.operate.names.length ? info.phases.operate.names.join(", ") : "—"}</span>,
+                            <span className="flex items-center gap-2 ml-auto">
+                              <CalLink onClick={() => notifyPhase(row.weekIso, "operate")}>Notify</CalLink>
+                              <CalLink onClick={() => openPanel(row.weekIso, "complete_op")}>
+                                Mark as published / Moved to Substack
+                              </CalLink>
+                            </span>
                           )}
                         </div>
                       )}
@@ -1210,7 +1348,44 @@ export default function Tracker() {
             </div>
           )}
 
+          {/* Change reviewers dialog */}
+          <Dialog open={!!reviewerDialog} onOpenChange={(o) => { if (!o) setReviewerDialog(null); }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reviewers · {reviewerDialog?.title}</DialogTitle>
+              </DialogHeader>
+              <div className="max-h-[50vh] overflow-y-auto space-y-1">
+                {users
+                  .filter((u) => (u as any).role === "admin" || ((u as any).content_roles ?? []).includes("builder"))
+                  .map((u) => (
+                    <label key={u.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
+                      <Checkbox
+                        checked={reviewerSel.includes(u.id)}
+                        onCheckedChange={() =>
+                          setReviewerSel((s) => (s.includes(u.id) ? s.filter((x) => x !== u.id) : [...s, u.id]))
+                        }
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{u.name || u.email}</div>
+                        <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        {(u as any).role === "admin" ? "Admin" : "Builder"}
+                      </Badge>
+                    </label>
+                  ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setReviewerDialog(null)} disabled={savingReviewers}>Cancel</Button>
+                <Button onClick={saveReviewers} disabled={savingReviewers}>
+                  {savingReviewers ? "Saving…" : "Save reviewers"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         </div>
+
       </div>
     </div>
   );
