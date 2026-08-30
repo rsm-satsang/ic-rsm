@@ -49,6 +49,42 @@ import { useAutosave } from "@/hooks/useAutosave";
 import type { User } from "@supabase/supabase-js";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 
+function mondayOf(d: Date): Date {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return date;
+}
+
+function firstMondayOfYear(year: number): Date {
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const day = jan1.getUTCDay();
+  const offset = day === 1 ? 0 : day === 0 ? 1 : 8 - day;
+  jan1.setUTCDate(jan1.getUTCDate() + offset);
+  return jan1;
+}
+
+function weeksOfYear(year: number): string[] {
+  const out: string[] = [];
+  const start = firstMondayOfYear(year);
+  const end = mondayOf(new Date(Date.UTC(year, 11, 31)));
+  const d = new Date(start);
+  while (d.getTime() <= end.getTime()) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 7);
+  }
+  return out;
+}
+
+function weekRangeLabel(iso: string): string {
+  const start = new Date(iso + "T00:00:00Z");
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" };
+  return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}`;
+}
+
 interface Project {
   id: string;
   title: string;
