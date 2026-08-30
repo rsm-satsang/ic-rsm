@@ -834,6 +834,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
 
       {/* ACTIVITY TIMELINE */}
+      {!solo && (
       <Collapsible open={openActivity} onOpenChange={setOpenActivity}>
         <CollapsibleTrigger asChild>
           <button
