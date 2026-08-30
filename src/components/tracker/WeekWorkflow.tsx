@@ -872,6 +872,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
           )}
         </CollapsibleContent>
       </Collapsible>
+      )}
     </div>
   );
 }
