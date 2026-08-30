@@ -152,6 +152,9 @@ export default function Tracker() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [rangeFrom, setRangeFrom] = useState<number>(0);
+  const [rangeTo, setRangeTo] = useState<number>(11);
   // Map of `${channel}|${sub_channel}|${week_start_date}|${action}` → latest created_at date (ISO date)
   const [activityDoneMap, setActivityDoneMap] = useState<Record<string, string>>({});
 
