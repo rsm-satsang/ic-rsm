@@ -649,10 +649,103 @@ export default function Tracker() {
   };
 
 
-
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
+  const [panelRequest, setPanelRequest] = useState<{ week: string; key: string; nonce: number } | null>(null);
+  const [reviewerDialog, setReviewerDialog] = useState<{ projectId: string; title: string } | null>(null);
+  const [reviewerSel, setReviewerSel] = useState<string[]>([]);
+  const [savingReviewers, setSavingReviewers] = useState(false);
   const navigate = useNavigate();
+
+  const openPanel = (week: string, key: string) => {
+    setSelectedWeek(week);
+    setPanelRequest({ week, key, nonce: Date.now() });
+  };
+
+  // Send a reminder for a specific phase of a week (assignees of that phase + admins).
+  const notifyPhase = async (week: string, phase: "plan" | "build" | "operate") => {
+    const entry = (entriesByWeek.get(week) || [])[0];
+    const weekNum = weeks.indexOf(week) + 1;
+    const contentId = `NS-SBS-DFT-${week.replace(/-/g, "")}`;
+    const ids: string[] =
+      (((entry as any)?.[`${phase}_assignee_ids`] as string[] | null) ??
+        ((entry as any)?.[`${phase}_assignee_id`] ? [(entry as any)[`${phase}_assignee_id`]] : [])) as string[];
+    if (!ids.length) return toast.error(`No one is assigned to the ${phase} phase yet`);
+    const recipients = users.filter((u) => ids.includes(u.id)).map((u) => ({ name: u.name, email: u.email, id: u.id }));
+    const description =
+      phase === "plan" ? "Plan the weekly content theme and brief."
+      : phase === "build" ? "Build the draft / produce the content."
+      : "Publish on Substack/YouTube.";
+    const due = (entry as any)?.[`${phase}_due_date`] ?? null;
+    try {
+      const { error } = await supabase.functions.invoke("notify-week-assignees", {
+        body: {
+          contentId,
+          weekLabel: `Week ${weekNum} · ${fmtWeek(week)}`,
+          title: entry?.title || entry?.theme_text || `Week of ${week}`,
+          status: STATUS_META[(entry?.status ?? "tbd") as Status]?.label ?? "",
+          recipients,
+          planContext: phase === "build" ? {
+            topic: entry?.theme_text || null,
+            plan_comments: entry?.plan_comments || null,
+            linked_project_title: entry?.title || null,
+            linked_project_id: entry?.project_id || null,
+          } : null,
+          plan: phase === "plan" ? { assignee_ids: ids, due, description } : {},
+          build: phase === "build" ? { assignee_ids: ids, due, description } : {},
+          operate: phase === "operate" ? { assignee_ids: ids, due, description } : {},
+        },
+      });
+      if (error) throw error;
+      toast.success(`Reminder sent to ${phase} assignees (+ admins)`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to send reminder");
+    }
+  };
+
+  const notifyReviewers = async (projectId: string) => {
+    const proj = projectInfoMap[projectId];
+    const ids: string[] = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
+    const reviewerEmails = users.filter((u) => ids.includes(u.id)).map((u) => u.email).filter(Boolean);
+    const adminEmails = users.filter((u) => (u as any).role === "admin").map((u) => u.email).filter(Boolean);
+    const emails = Array.from(new Set([...adminEmails, ...reviewerEmails]));
+    if (emails.length === 0) return toast.error("No reviewers or admins to notify");
+    try {
+      const { error } = await supabase.functions.invoke("notify-reviewers", {
+        body: { projectId, versionId: null, requesterId: currentUserId, recipientEmails: emails },
+      });
+      if (error) throw error;
+      toast.success(`Notified ${emails.length} reviewer(s)`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to notify reviewers");
+    }
+  };
+
+  const openReviewerDialog = (projectId: string, title: string) => {
+    const proj = projectInfoMap[projectId];
+    setReviewerSel(((proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? []).slice());
+    setReviewerDialog({ projectId, title });
+  };
+
+  const saveReviewers = async () => {
+    if (!reviewerDialog) return;
+    setSavingReviewers(true);
+    try {
+      const proj = projectInfoMap[reviewerDialog.projectId];
+      const metadata = { ...(proj?.metadata ?? {}), peer_reviewer_ids: reviewerSel };
+      const { error } = await supabase.from("projects").update({ metadata }).eq("id", reviewerDialog.projectId);
+      if (error) throw error;
+      setProjectInfoMap((m) => ({ ...m, [reviewerDialog.projectId]: { ...(m[reviewerDialog.projectId] ?? {}), metadata } }));
+      toast.success("Reviewers updated");
+      setReviewerDialog(null);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to update reviewers");
+    } finally {
+      setSavingReviewers(false);
+    }
+  };
+
+
   useEffect(() => {
     const monthWeeks = weeks.filter((w) => monthOf(w) === selectedMonth);
     const todayMonday = mondayOf(new Date()).toISOString().slice(0, 10);
