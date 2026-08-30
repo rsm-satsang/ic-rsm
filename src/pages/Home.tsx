@@ -18,6 +18,7 @@ import {
   Bell,
 } from "lucide-react";
 import logoImg from "@/assets/logo_rsm_lotus.png";
+import { getDraftStage } from "@/lib/draftStages";
 
 interface NavCard {
   label: string;
