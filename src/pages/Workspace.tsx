@@ -1318,7 +1318,7 @@ const Workspace = () => {
             onChange={(e) => setProjectTitle(e.target.value)}
             readOnly={editLocked}
             placeholder="Project title"
-            className="font-medium text-sm max-w-md mx-auto text-center border-transparent hover:border-input focus-visible:border-input bg-transparent h-7"
+            className="font-bold text-xl md:text-2xl max-w-3xl mx-auto text-center border-transparent hover:border-input focus-visible:border-input bg-transparent h-11"
           />
           {editLocked && (
             <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
