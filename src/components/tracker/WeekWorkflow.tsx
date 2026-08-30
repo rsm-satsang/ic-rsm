@@ -198,6 +198,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
   const [opDue, setOpDue] = useState<string>(entry?.operate_due_date ?? wednesdayOf(week));
   const [subPub, setSubPub] = useState<boolean>(!!entry?.substack_published);
   const [ytPub, setYtPub] = useState<boolean>(!!entry?.youtube_published);
+  const [pubUrl, setPubUrl] = useState<string>(entry?.source_url ?? "");
 
   // Activity timeline
   const [activity, setActivity] = useState<any[]>([]);
