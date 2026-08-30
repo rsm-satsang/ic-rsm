@@ -44,6 +44,7 @@ import ProjectImagesSection from "@/components/workspace/ProjectImagesSection";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import TimelineFeed from "@/components/workspace/TimelineFeed";
 import InviteDialog from "@/components/workspace/InviteDialog";
+import ReferencesDialog from "@/components/workspace/ReferencesDialog";
 import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import { useAutosave } from "@/hooks/useAutosave";
 import type { User } from "@supabase/supabase-js";
