@@ -167,6 +167,7 @@ export default function Tracker() {
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
   const [rangeFrom, setRangeFrom] = useState<number>(defaultMonth);
+  const [openBuckets, setOpenBuckets] = useState<Record<string, boolean>>({});
   const [rangeTo, setRangeTo] = useState<number>(11);
   // Map of `${channel}|${sub_channel}|${week_start_date}|${action}` → latest created_at date (ISO date)
   const [activityDoneMap, setActivityDoneMap] = useState<Record<string, string>>({});
@@ -453,21 +454,6 @@ export default function Tracker() {
     return weeks.filter((w) => monthOf(w) >= lo && monthOf(w) <= hi);
   }, [weeks, rangeFrom, rangeTo]);
 
-  const rangeStats = useMemo(() => {
-    let planningAwaited = 0, buildInProgress = 0, readyOrPublished = 0;
-    for (const w of rangeWeeks) {
-      const top = (entriesByWeek.get(w) || [])[0];
-      const st = top?.status ?? "tbd";
-      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
-      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
-      const projReady = projSt === "approved" || projSt === "published";
-      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
-      if (!planDone) planningAwaited++;
-      else if (!buildDone) buildInProgress++;
-      else readyOrPublished++;
-    }
-    return { total: rangeWeeks.length, planningAwaited, buildInProgress, readyOrPublished };
-  }, [rangeWeeks, entriesByWeek, projectStatusMap]);
 
 
   const monthPublishedPosts = useMemo(() => {
