@@ -709,15 +709,28 @@ export default function Tracker() {
   };
 
   // ── Stuck view: weeks whose due dates have passed, grouped by reason ──────
+  const stuckReason = (overdueLabel: string | null, stageValue: string | null): string | null => {
+    if (overdueLabel === "Plan") return "Stuck at Plan";
+    if (overdueLabel === "Build") {
+      if (stageValue === "s3_awaiting_concept") return "Stuck at Build - Awaiting Concept Review";
+      if (stageValue === "s6_awaiting_peer") return "Stuck at Build - Awaiting Peer Review";
+      if (stageValue === "s7_awaiting_final") return "Stuck at Build - Final Go Ahead";
+      return "Stuck at Build";
+    }
+    return null; // ignore Publish overdue
+  };
+
   const stuckWeeks = useMemo(() => {
     const out: { week: string; weekNum: number; reason: string; days: number; title: string | null }[] = [];
     for (const w of rangeWeeks) {
       const i = weekInfo(w);
       if (i.overdueDays > 0) {
+        const reason = stuckReason(i.overdueLabel, i.stageValue);
+        if (!reason) continue;
         out.push({
           week: w,
           weekNum: weeks.indexOf(w) + 1,
-          reason: i.overdueLabel ?? "Phase",
+          reason,
           days: i.overdueDays,
           title: i.projectTitle,
         });
