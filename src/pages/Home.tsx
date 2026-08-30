@@ -129,6 +129,48 @@ export default function Home() {
             </div>
           </Card>
 
+          <h2 className="text-lg font-semibold mb-3">Reviews awaiting action</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <Card
+              className="p-4 cursor-pointer hover:shadow-md transition-all border-2 border-secondary/20 hover:border-secondary/40"
+              onClick={() => navigate("/dashboard?stage=s3_awaiting_concept")}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-accent rounded-xl shrink-0">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">Awaiting Concept Review</h3>
+                    {awaitingConcept > 0 && <Badge variant="destructive">{awaitingConcept}</Badge>}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Projects sitting at Stg 3, waiting for a concept review.
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card
+              className="p-4 cursor-pointer hover:shadow-md transition-all border-2 border-secondary/20 hover:border-secondary/40"
+              onClick={() => navigate("/dashboard?stage=s6_awaiting_peer")}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-accent rounded-xl shrink-0">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">Awaiting Peer Review</h3>
+                    {awaitingPeer > 0 && <Badge variant="destructive">{awaitingPeer}</Badge>}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Projects sitting at Stg 6, waiting for peer review comments.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
           <h2 className="text-lg font-semibold mb-3">Explore</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {visibleCards.map((c) => (
