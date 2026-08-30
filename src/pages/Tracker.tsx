@@ -644,7 +644,8 @@ export default function Tracker() {
     const { entry, status, meta, planDone, buildDone, opDone } = weekMeta(week);
     const proj = entry?.project_id ? projectInfoMap[entry.project_id] : null;
     const author = proj?.owner_id ? nameById[proj.owner_id] ?? null : null;
-    const stage = proj ? stageLabel(getDraftStage(proj.metadata, proj.status)) : null;
+    const stageValue = proj ? getDraftStage(proj.metadata, proj.status) : null;
+    const stage = stageValue ? stageLabel(stageValue) : null;
     const reviewerIds = (proj?.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
     const reviewers = reviewerIds.map((id) => nameById[id]).filter(Boolean);
 
