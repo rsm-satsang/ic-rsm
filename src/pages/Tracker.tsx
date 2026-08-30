@@ -17,7 +17,7 @@ import { Loader2, RefreshCw, Calendar as CalendarIcon, ChevronDown, ExternalLink
 import { useNavigate } from "react-router-dom";
 
 import WeekWorkflow, { contentTypeLabel } from "@/components/tracker/WeekWorkflow";
-import { getDraftStage, stageLabel } from "@/lib/draftStages";
+import { getDraftStage, stageLabel, DRAFT_STAGES } from "@/lib/draftStages";
 import { formatDate } from "@/lib/datetime";
 
 
@@ -128,6 +128,20 @@ const SUBSTACK_URLS: Partial<Record<Channel, string>> = {
 const YEAR = 2026;
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+const GOAL_LABELS: Record<string, string> = {
+  substack_newsletter: "Substack Newsletter",
+  wordpress_blog: "WordPress Blog",
+  note: "Note",
+  book_article: "Book Article",
+  story_children: "Story (Children)",
+  story_adults: "Story (Adults)",
+  proofreading: "Proofreading",
+  translation: "Translation",
+  other: "Other",
+};
+const goalLabel = (goal?: string) =>
+  !goal ? "-" : GOAL_LABELS[goal] || goal.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 function monthBounds(year: number, month: number): { min: string; max: string } {
   const min = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
   const max = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10);
@@ -152,6 +166,9 @@ export default function Tracker() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [rangeFrom, setRangeFrom] = useState<number>(0);
+  const [rangeTo, setRangeTo] = useState<number>(11);
   // Map of `${channel}|${sub_channel}|${week_start_date}|${action}` → latest created_at date (ISO date)
   const [activityDoneMap, setActivityDoneMap] = useState<Record<string, string>>({});
 
@@ -171,15 +188,17 @@ export default function Tracker() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUserId(user?.id ?? null);
-    const [e, u, t, a] = await Promise.all([
+    const [e, u, t, a, p] = await Promise.all([
       supabase.from("tracker_entries").select("*"),
       supabase.from("users").select("id, name, email, role, content_roles" as any).order("name"),
       supabase.from("themes").select("id, name").order("name"),
       supabase.from("tracker_activity" as any).select("channel, sub_channel, week_start_date, action, created_at"),
+      supabase.from("projects").select("id, title, status, metadata"),
     ]);
     if (e.data) setEntries(e.data as Entry[]);
     if (u.data) setUsers(u.data as any as UserOpt[]);
     if (t.data) setThemes(t.data as ThemeOpt[]);
+    if (p.data) setAllProjects(p.data as any[]);
     if (a.data) {
       const map: Record<string, string> = {};
       (a.data as any[]).forEach((r) => {
@@ -430,6 +449,43 @@ export default function Tracker() {
     return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
 
+  // ── Left panel: projects broken up by content type and draft stage ────────
+  const projectBreakdown = useMemo(() => {
+    const byGoal = new Map<string, { total: number; stages: Map<string, number> }>();
+    for (const p of allProjects) {
+      if ((p.metadata as any)?.archived) continue;
+      const goal = (p.metadata as any)?.goal || "other";
+      const stage = getDraftStage(p.metadata, p.status);
+      if (!byGoal.has(goal)) byGoal.set(goal, { total: 0, stages: new Map() });
+      const g = byGoal.get(goal)!;
+      g.total += 1;
+      g.stages.set(stage, (g.stages.get(stage) || 0) + 1);
+    }
+    return [...byGoal.entries()].sort((a, b) => b[1].total - a[1].total);
+  }, [allProjects]);
+
+  // ── Right panel: Plan / Build / Operate week counts across a month range ──
+  const rangeWeeks = useMemo(() => {
+    const lo = Math.min(rangeFrom, rangeTo);
+    const hi = Math.max(rangeFrom, rangeTo);
+    return weeks.filter((w) => monthOf(w) >= lo && monthOf(w) <= hi);
+  }, [weeks, rangeFrom, rangeTo]);
+
+  const rangeStats = useMemo(() => {
+    let planningAwaited = 0, buildInProgress = 0, readyOrPublished = 0;
+    for (const w of rangeWeeks) {
+      const top = (entriesByWeek.get(w) || [])[0];
+      const st = top?.status ?? "tbd";
+      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
+      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
+      const projReady = projSt === "approved" || projSt === "published";
+      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
+      if (!planDone) planningAwaited++;
+      else if (!buildDone) buildInProgress++;
+      else readyOrPublished++;
+    }
+    return { total: rangeWeeks.length, planningAwaited, buildInProgress, readyOrPublished };
+  }, [rangeWeeks, entriesByWeek, projectStatusMap]);
 
 
   const monthPublishedPosts = useMemo(() => {
@@ -649,6 +705,33 @@ export default function Tracker() {
       overdueLabel,
     };
   };
+
+  // ── Stuck view: weeks whose due dates have passed, grouped by reason ──────
+  const stuckWeeks = useMemo(() => {
+    const out: { week: string; weekNum: number; reason: string; days: number; title: string | null }[] = [];
+    for (const w of rangeWeeks) {
+      const i = weekInfo(w);
+      if (i.overdueDays > 0) {
+        out.push({
+          week: w,
+          weekNum: weeks.indexOf(w) + 1,
+          reason: i.overdueLabel ?? "Phase",
+          days: i.overdueDays,
+          title: i.projectTitle,
+        });
+      }
+    }
+    return out.sort((a, b) => b.days - a.days);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeWeeks, entriesByWeek, projectStatusMap, projectInfoMap, activityDoneMap, nameById]);
+
+  const stuckByReason = useMemo(() => {
+    const m: Record<string, number> = {};
+    stuckWeeks.forEach((s) => { m[s.reason] = (m[s.reason] || 0) + 1; });
+    return m;
+  }, [stuckWeeks]);
+
+
 
 
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
@@ -924,28 +1007,114 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
-          <div className="text-xs font-semibold text-muted-foreground mb-2">Phase progress · Full year {YEAR}</div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          {/* Projects by status (left) + Plan/Build/Operate week status for a month range (right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+            {/* Left — content types with draft/review status */}
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-3">Available Content Types with Draft/Review status</h3>
+              {projectBreakdown.length === 0 ? (
+                <div className="text-xs text-muted-foreground">No projects yet.</div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {projectBreakdown.map(([goal, g]) => (
+                    <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{goalLabel(goal)}</span>
+                        <Badge variant="secondary" className="text-xs">{g.total}</Badge>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {DRAFT_STAGES.map((s) => (
+                          <div
+                            key={s.value}
+                            title={s.label}
+                            className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded-md border ${
+                              (g.stages.get(s.value) || 0) > 0 ? "bg-background" : "bg-muted/20 text-muted-foreground/60"
+                            }`}
+                          >
+                            <span className="truncate">{s.label}</span>
+                            <span className="font-semibold shrink-0">{g.stages.get(s.value) || 0}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
 
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📝 Plan</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b>{phaseStats.planInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.planComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">🛠️ Build</div>
-              <div className="text-sm flex justify-between"><span>Awaiting Plan</span><b>{phaseStats.buildYet}</b></div>
-              <div className="text-sm flex justify-between"><span>Assigned</span><b>{phaseStats.buildAssigned}</b></div>
-              <div className="text-sm flex justify-between"><span>In-progress</span><b className="text-amber-700">{phaseStats.buildInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.buildComplete}</b></div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-xs text-muted-foreground font-semibold mb-1">📣 Operate</div>
-              <div className="text-sm flex justify-between"><span>In progress</span><b className="text-amber-700">{phaseStats.opInProgress}</b></div>
-              <div className="text-sm flex justify-between"><span>Complete</span><b className="text-green-700">{phaseStats.opComplete}</b></div>
-              <div className="text-sm flex justify-between"><span>Missing complete</span><b className="text-red-700">{phaseStats.buildComplete - phaseStats.opComplete}</b></div>
-            </Card>
+            {/* Right — Plan / Build / Operate week status for a chosen month range */}
+            <div className="space-y-4">
+              <Card className="p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-semibold">Plan · Build · Operate status by week</h3>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">From</span>
+                    <Select value={String(rangeFrom)} onValueChange={(v) => setRangeFrom(Number(v))}>
+                      <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MONTH_NAMES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-muted-foreground">To</span>
+                    <Select value={String(rangeTo)} onValueChange={(v) => setRangeTo(Number(v))}>
+                      <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MONTH_NAMES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-md border bg-blue-50 px-3 py-2">
+                    <span className="text-sm">📝 Weeks with Planning Awaited</span>
+                    <b className="text-lg text-blue-800">{rangeStats.planningAwaited}</b>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border bg-amber-50 px-3 py-2">
+                    <span className="text-sm">🛠️ Weeks with Planning Complete, Build In Progress</span>
+                    <b className="text-lg text-amber-800">{rangeStats.buildInProgress}</b>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border bg-green-50 px-3 py-2">
+                    <span className="text-sm">🎉 Weeks Ready to Publish / Published</span>
+                    <b className="text-lg text-green-800">{rangeStats.readyOrPublished}</b>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {rangeStats.total} week(s) · {MONTH_NAMES[Math.min(rangeFrom, rangeTo)]}–{MONTH_NAMES[Math.max(rangeFrom, rangeTo)]} {YEAR} · {activeTab.label}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Stuck view */}
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold mb-3">🚨 Stuck weeks (due date passed)</h3>
+                {stuckWeeks.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Nothing is overdue in this period.</div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {Object.entries(stuckByReason).map(([reason, count]) => (
+                        <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                          Stuck at {reason}: {count}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="max-h-56 overflow-y-auto space-y-1">
+                      {stuckWeeks.map((s) => (
+                        <button
+                          key={s.week}
+                          onClick={() => { setSelectedMonth(monthOf(s.week)); setSelectedWeek(s.week); }}
+                          className="w-full flex items-center justify-between gap-2 text-left text-xs rounded-md border px-2 py-1 hover:bg-muted"
+                        >
+                          <span className="truncate">Week {s.weekNum}{s.title ? ` · ${s.title}` : ""}</span>
+                          <span className="shrink-0 text-red-700 font-semibold">{s.reason} · {s.days}d</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </Card>
+            </div>
           </div>
+
 
           {/* Filters + Sync */}
           <div className="flex flex-wrap gap-3 mb-4 items-center">
@@ -1071,9 +1240,6 @@ export default function Tracker() {
                       >
                         <ChevronDown className={`h-4 w-4 text-sky-700 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                         <span className="text-sm font-bold text-sky-900">Week {weekNum > 0 ? weekNum : "—"}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(row.weekIso)}
-                        </span>
                         {(info.projectTitle || detail) && (
                           <span className="text-xs font-semibold text-sky-900 truncate max-w-[45%]">
                             · 📌 {info.projectTitle || detail}
@@ -1086,7 +1252,14 @@ export default function Tracker() {
                         )}
                         {inYear && (
                           <>
-                            <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            {/* During Build, the week status is strictly the linked project's draft stage */}
+                            {info.planDone && !info.opDone && info.stage ? (
+                              <Badge variant="outline" className="bg-amber-100 text-amber-900 border-amber-200 text-[10px] py-0">
+                                🛠️ {info.stage}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className={`${meta.cls} text-[10px] py-0`}>{meta.emoji} {meta.label}</Badge>
+                            )}
                             {stuck ? (
                               <span className="rounded-full bg-red-600 text-white px-2 py-0.5 text-[10px] font-semibold">
                                 Stuck at {info.overdueLabel ?? "phase"} · {info.overdueDays} day{info.overdueDays > 1 ? "s" : ""} overdue
@@ -1138,7 +1311,7 @@ export default function Tracker() {
                               </span>
                               <CalLink onClick={() => notifyPhase(row.weekIso, "build")}>Notify</CalLink>
                               <span className="basis-full text-muted-foreground flex items-center gap-2 flex-wrap">
-                                <span>Reviewers: {info.reviewers.length > 0 ? info.reviewers.join(", ") : "—"}</span>
+                                <span><b className="font-semibold text-foreground">Reviewers:</b> {info.reviewers.length > 0 ? info.reviewers.join(", ") : "—"}</span>
                                 {info.projectId && (
                                   <>
                                     <CalLink onClick={() => notifyReviewers(info.projectId!)}>Notify reviewers</CalLink>
