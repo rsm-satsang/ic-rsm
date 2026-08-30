@@ -621,9 +621,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     <div className="space-y-6">
       {/* Breakdown by outcome type and stage */}
       {breakdown.length > 0 && (
+        <div className="space-y-3">
+          <div className="bg-sky-100 border border-sky-200 rounded-md px-4 py-2">
+            <h2 className="text-xl font-bold text-sky-900">Available Content Types with Draft/Review status</h2>
+          </div>
         <div className="rounded-xl border border-border/50 bg-muted/10 p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold">Available Content Types with Draft/Review status</h3>
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={breakdownGoalFilter} onValueChange={setBreakdownGoalFilter}>
               <SelectTrigger className="w-[180px] h-8 bg-background/50 text-xs">
                 <SelectValue placeholder="Content type" />
