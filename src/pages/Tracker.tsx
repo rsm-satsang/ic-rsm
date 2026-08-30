@@ -1074,6 +1074,11 @@ export default function Tracker() {
                         <span className="text-xs text-muted-foreground">
                           {formatDate(row.weekIso)}
                         </span>
+                        {(info.projectTitle || detail) && (
+                          <span className="text-xs font-semibold text-sky-900 truncate max-w-[45%]">
+                            · 📌 {info.projectTitle || detail}
+                          </span>
+                        )}
                         {info.contentType && (
                           <span className="rounded-full bg-primary/10 border border-primary/30 px-2 py-0.5 text-[10px] font-semibold text-primary">
                             {info.contentType}
