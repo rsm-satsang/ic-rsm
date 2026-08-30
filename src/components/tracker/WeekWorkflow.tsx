@@ -785,6 +785,15 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
                 <Checkbox checked={ytPub} onCheckedChange={(v) => setYtPub(!!v)} />
                 Published on YouTube
               </label>
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground">Published link (optional)</div>
+                <Input
+                  value={pubUrl}
+                  onChange={(e) => setPubUrl(e.target.value)}
+                  placeholder="https://…"
+                  className="h-8 text-xs"
+                />
+              </div>
               <Button size="sm" className="w-full" onClick={submitCompletePublish}>Submit Publish</Button>
             </div>
           )}
