@@ -1061,12 +1061,27 @@ export default function Tracker() {
                 {stuckWeeks.length === 0 ? (
                   <div className="text-xs text-muted-foreground">Nothing is overdue in this period.</div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(stuckByReason).map(([reason, count]) => (
-                      <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
-                        {reason}: {count}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                        Stuck at Plan: {stuckPlan}
                       </span>
-                    ))}
+                      <span className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                        Stuck at Build: {stuckBuildTotal}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Build breakdown:</span>
+                      <span className="rounded-full bg-red-50 border border-red-100 text-red-700 px-2.5 py-0.5 text-[11px] font-medium">
+                        Awaiting Concept Review: {stuckBuildConcept}
+                      </span>
+                      <span className="rounded-full bg-red-50 border border-red-100 text-red-700 px-2.5 py-0.5 text-[11px] font-medium">
+                        Awaiting Peer Review: {stuckBuildPeer}
+                      </span>
+                      <span className="rounded-full bg-red-50 border border-red-100 text-red-700 px-2.5 py-0.5 text-[11px] font-medium">
+                        Final Go Ahead: {stuckBuildFinal}
+                      </span>
+                    </div>
                   </div>
                 )}
               </Card>
