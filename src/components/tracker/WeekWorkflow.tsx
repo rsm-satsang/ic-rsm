@@ -570,7 +570,18 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
   return (
     <div className="border-t pt-2 space-y-1">
-      {(entry as any)?.content_type && (
+      {solo && (
+        <div className="px-2 pb-1">
+          <button
+            type="button"
+            className="text-xs text-blue-600 hover:underline"
+            onClick={() => setSolo(null)}
+          >
+            ← Show full weekly card
+          </button>
+        </div>
+      )}
+      {!solo && (entry as any)?.content_type && (
         <div className="px-2">
           <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
             {contentTypeLabel((entry as any).content_type)}
@@ -578,7 +589,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         </div>
       )}
 
-      {isAdmin && (
+      {!solo && isAdmin && (
         <div className="flex justify-end">
           <Button size="sm" variant="ghost" className="h-7 text-xs text-red-600 hover:text-red-700" onClick={handleReset}>
             <RotateCcw className="h-3 w-3 mr-1" /> Reset week (admin)
@@ -586,6 +597,7 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
         </div>
       )}
       {/* PLAN */}
+      {(!solo || solo === "plan") && (
       <Collapsible open={openPlan} onOpenChange={setOpenPlan}>
         <SectionHeader title="Plan" state={ps.plan} open={openPlan} onToggle={() => setOpenPlan((v) => !v)} stateLabel={planLabel} />
         <CollapsibleContent className="px-2 pb-2">
