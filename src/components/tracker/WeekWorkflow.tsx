@@ -770,10 +770,11 @@ export default function WeekWorkflow({ week, channel, subChannel, entry, users, 
 
         </CollapsibleContent>
       </Collapsible>
+      )}
 
       {/* OPERATE / PUBLISH */}
-      {(() => {
-        const opAllowed = planDone && !!entry?.operate_assignee_id;
+      {(!solo || solo === "op") && (() => {
+        const opAllowed = (planDone && !!entry?.operate_assignee_id) || solo === "op";
         return (
       <Collapsible open={openOp && opAllowed} onOpenChange={(v) => { if (opAllowed) setOpenOp(v); }}>
         <SectionHeader title="Operate / Publish" state={ps.operate} open={openOp && opAllowed} onToggle={() => setOpenOp((v) => !v)} disabled={!opAllowed} stateLabel={operateLabel} />
