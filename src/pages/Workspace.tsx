@@ -557,6 +557,14 @@ const Workspace = () => {
       setProject(data);
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
+
+      const { data: linked } = await supabase
+        .from("tracker_entries")
+        .select("week_start_date, build_due_date")
+        .eq("project_id", data.id)
+        .maybeSingle();
+      setLinkedEntry((linked as any) ?? null);
+
       const meta = (data as any).metadata || {};
       const rawStage: string | undefined = meta.draft_stage;
       const mapped =
