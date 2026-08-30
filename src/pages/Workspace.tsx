@@ -1875,6 +1875,7 @@ const Workspace = () => {
             <Button onClick={handleSaveConceptNote} disabled={savingConcept || !conceptAnswer.trim()}>
               {savingConcept ? "Saving..." : "Save"}
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
