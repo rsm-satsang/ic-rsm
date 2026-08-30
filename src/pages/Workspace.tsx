@@ -1370,6 +1370,14 @@ const Workspace = () => {
               This draft is locked for editing (Stg 9 onwards). Only admins can make changes.
             </p>
           )}
+          {linkedEntry && (
+            <div className="mt-2 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-400 text-white px-4 py-1.5 text-sm font-medium shadow-sm">
+                <CalendarIcon className="h-4 w-4" />
+                Included in the plan to publish during Week {weeksOfYear(new Date(linkedEntry.week_start_date + "T00:00:00Z").getUTCFullYear()).indexOf(linkedEntry.week_start_date) + 1} ({weekRangeLabel(linkedEntry.week_start_date)}) · Build due: {formatDate(linkedEntry.build_due_date)}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
