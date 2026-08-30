@@ -435,6 +435,43 @@ export default function Tracker() {
     return { planInProgress, planComplete, buildYet, buildAssigned, buildInProgress, buildComplete, opInProgress, opComplete };
   }, [weeks, entriesByWeek, selectedMonth, projectStatusMap]);
 
+  // ── Left panel: projects broken up by content type and draft stage ────────
+  const projectBreakdown = useMemo(() => {
+    const byGoal = new Map<string, { total: number; stages: Map<string, number> }>();
+    for (const p of allProjects) {
+      if ((p.metadata as any)?.archived) continue;
+      const goal = (p.metadata as any)?.goal || "other";
+      const stage = getDraftStage(p.metadata, p.status);
+      if (!byGoal.has(goal)) byGoal.set(goal, { total: 0, stages: new Map() });
+      const g = byGoal.get(goal)!;
+      g.total += 1;
+      g.stages.set(stage, (g.stages.get(stage) || 0) + 1);
+    }
+    return [...byGoal.entries()].sort((a, b) => b[1].total - a[1].total);
+  }, [allProjects]);
+
+  // ── Right panel: Plan / Build / Operate week counts across a month range ──
+  const rangeWeeks = useMemo(() => {
+    const lo = Math.min(rangeFrom, rangeTo);
+    const hi = Math.max(rangeFrom, rangeTo);
+    return weeks.filter((w) => monthOf(w) >= lo && monthOf(w) <= hi);
+  }, [weeks, rangeFrom, rangeTo]);
+
+  const rangeStats = useMemo(() => {
+    let planningAwaited = 0, buildInProgress = 0, readyOrPublished = 0;
+    for (const w of rangeWeeks) {
+      const top = (entriesByWeek.get(w) || [])[0];
+      const st = top?.status ?? "tbd";
+      const projSt = top?.project_id ? projectStatusMap[top.project_id] : undefined;
+      const planDone = ["plan_complete","build_assigned","build_in_progress","operate_assigned","publish_complete","published"].includes(st);
+      const projReady = projSt === "approved" || projSt === "published";
+      const buildDone = ["operate_assigned","publish_complete","published"].includes(st) || (planDone && projReady);
+      if (!planDone) planningAwaited++;
+      else if (!buildDone) buildInProgress++;
+      else readyOrPublished++;
+    }
+    return { total: rangeWeeks.length, planningAwaited, buildInProgress, readyOrPublished };
+  }, [rangeWeeks, entriesByWeek, projectStatusMap]);
 
 
   const monthPublishedPosts = useMemo(() => {
