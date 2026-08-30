@@ -166,7 +166,7 @@ export default function Tracker() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectStatusMap, setProjectStatusMap] = useState<Record<string, string>>({});
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, any>>({});
-  const [rangeFrom, setRangeFrom] = useState<number>(0);
+  const [rangeFrom, setRangeFrom] = useState<number>(defaultMonth);
   const [rangeTo, setRangeTo] = useState<number>(11);
   // Map of `${channel}|${sub_channel}|${week_start_date}|${action}` → latest created_at date (ISO date)
   const [activityDoneMap, setActivityDoneMap] = useState<Record<string, string>>({});
@@ -728,6 +728,14 @@ export default function Tracker() {
     return m;
   }, [stuckWeeks]);
 
+  const stuckPlan = stuckByReason["Stuck at Plan"] || 0;
+  const stuckBuildConcept = stuckByReason["Stuck at Build - Awaiting Concept Review"] || 0;
+  const stuckBuildPeer = stuckByReason["Stuck at Build - Awaiting Peer Review"] || 0;
+  const stuckBuildFinal = stuckByReason["Stuck at Build - Final Go Ahead"] || 0;
+  const stuckBuildTotal = Object.entries(stuckByReason)
+    .filter(([reason]) => reason.startsWith("Stuck at Build"))
+    .reduce((sum, [, count]) => sum + count, 0);
+
 
 
 
@@ -1053,12 +1061,27 @@ export default function Tracker() {
                 {stuckWeeks.length === 0 ? (
                   <div className="text-xs text-muted-foreground">Nothing is overdue in this period.</div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(stuckByReason).map(([reason, count]) => (
-                      <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
-                        {reason}: {count}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                        Stuck at Plan: {stuckPlan}
                       </span>
-                    ))}
+                      <span className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                        Stuck at Build: {stuckBuildTotal}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Build breakdown:</span>
+                      <span className="rounded-full bg-red-50 border border-red-100 text-red-700 px-2.5 py-0.5 text-[11px] font-medium">
+                        Awaiting Concept Review: {stuckBuildConcept}
+                      </span>
+                      <span className="rounded-full bg-red-50 border border-red-100 text-red-700 px-2.5 py-0.5 text-[11px] font-medium">
+                        Awaiting Peer Review: {stuckBuildPeer}
+                      </span>
+                      <span className="rounded-full bg-red-50 border border-red-100 text-red-700 px-2.5 py-0.5 text-[11px] font-medium">
+                        Final Go Ahead: {stuckBuildFinal}
+                      </span>
+                    </div>
                   </div>
                 )}
               </Card>

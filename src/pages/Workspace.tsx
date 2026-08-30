@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2, PanelRightOpen, PanelRightClose, ChevronDown, Type } from "lucide-react";
+import { ArrowLeft, Save, Settings, Trash2, CheckCircle, Eye, Code, MessageSquare, ListTodo, ImageIcon, Send, FileCheck2, PanelRightOpen, PanelRightClose, ChevronDown, Type, CalendarIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import GenerateImageDialog from "@/components/workspace/GenerateImageDialog";
@@ -48,6 +48,42 @@ import PageNavigationBanner from "@/components/ui/PageNavigationBanner";
 import { useAutosave } from "@/hooks/useAutosave";
 import type { User } from "@supabase/supabase-js";
 import { formatDate, formatDateTime } from "@/lib/datetime";
+
+function mondayOf(d: Date): Date {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return date;
+}
+
+function firstMondayOfYear(year: number): Date {
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const day = jan1.getUTCDay();
+  const offset = day === 1 ? 0 : day === 0 ? 1 : 8 - day;
+  jan1.setUTCDate(jan1.getUTCDate() + offset);
+  return jan1;
+}
+
+function weeksOfYear(year: number): string[] {
+  const out: string[] = [];
+  const start = firstMondayOfYear(year);
+  const end = mondayOf(new Date(Date.UTC(year, 11, 31)));
+  const d = new Date(start);
+  while (d.getTime() <= end.getTime()) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 7);
+  }
+  return out;
+}
+
+function weekRangeLabel(iso: string): string {
+  const start = new Date(iso + "T00:00:00Z");
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" };
+  return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}`;
+}
 
 interface Project {
   id: string;
@@ -131,6 +167,7 @@ const Workspace = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [project, setProject] = useState<Project | null>(null);
+  const [linkedEntry, setLinkedEntry] = useState<{ week_start_date: string; build_due_date: string | null } | null>(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [newVersionName, setNewVersionName] = useState("");
   const [currentStatus, setCurrentStatus] = useState<"draft" | "in_progress" | "review" | "approved" | "published">(
@@ -520,6 +557,14 @@ const Workspace = () => {
       setProject(data);
       setProjectTitle(data.title);
       setCurrentStatus(data.status);
+
+      const { data: linked } = await supabase
+        .from("tracker_entries")
+        .select("week_start_date, build_due_date")
+        .eq("project_id", data.id)
+        .maybeSingle();
+      setLinkedEntry((linked as any) ?? null);
+
       const meta = (data as any).metadata || {};
       const rawStage: string | undefined = meta.draft_stage;
       const mapped =
@@ -1324,6 +1369,14 @@ const Workspace = () => {
             <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
               This draft is locked for editing (Stg 9 onwards). Only admins can make changes.
             </p>
+          )}
+          {linkedEntry && (
+            <div className="mt-2 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-400 text-white px-4 py-1.5 text-sm font-medium shadow-sm">
+                <CalendarIcon className="h-4 w-4" />
+                Included in the plan to publish during Week {weeksOfYear(new Date(linkedEntry.week_start_date + "T00:00:00Z").getUTCFullYear()).indexOf(linkedEntry.week_start_date) + 1} ({weekRangeLabel(linkedEntry.week_start_date)}) · Build due: {formatDate(linkedEntry.build_due_date)}
+              </div>
+            </div>
           )}
         </div>
       </div>
