@@ -1053,27 +1053,13 @@ export default function Tracker() {
                 {stuckWeeks.length === 0 ? (
                   <div className="text-xs text-muted-foreground">Nothing is overdue in this period.</div>
                 ) : (
-                  <>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {Object.entries(stuckByReason).map(([reason, count]) => (
-                        <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
-                          {reason}: {count}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="max-h-56 overflow-y-auto space-y-1">
-                      {stuckWeeks.map((s) => (
-                        <button
-                          key={s.week}
-                          onClick={() => { setSelectedMonth(monthOf(s.week)); setSelectedWeek(s.week); }}
-                          className="w-full flex items-center justify-between gap-2 text-left text-xs rounded-md border px-2 py-1 hover:bg-muted"
-                        >
-                          <span className="truncate">Week {s.weekNum}{s.title ? ` · ${s.title}` : ""}</span>
-                          <span className="shrink-0 text-red-700 font-semibold">{s.reason} · {s.days}d</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(stuckByReason).map(([reason, count]) => (
+                      <span key={reason} className="rounded-full bg-red-100 border border-red-200 text-red-800 px-3 py-1 text-xs font-semibold">
+                        {reason}: {count}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </Card>
             </div>
