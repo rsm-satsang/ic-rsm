@@ -43,6 +43,8 @@ export default function Home() {
   const [name, setName] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [awaitingConcept, setAwaitingConcept] = useState(0);
+  const [awaitingPeer, setAwaitingPeer] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -69,6 +71,20 @@ export default function Home() {
         .eq("user_id", user.id)
         .is("read_at", null);
       setUnread(count || 0);
+
+      const { data: projects } = await supabase
+        .from("projects")
+        .select("id, status, metadata")
+        .limit(1000);
+      let concept = 0;
+      let peer = 0;
+      (projects || []).forEach((p: any) => {
+        const stage = getDraftStage(p.metadata, p.status);
+        if (stage === "s3_awaiting_concept") concept++;
+        if (stage === "s6_awaiting_peer") peer++;
+      });
+      setAwaitingConcept(concept);
+      setAwaitingPeer(peer);
     })();
   }, [navigate]);
 
