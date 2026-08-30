@@ -675,6 +675,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             ))}
           </div>
         </div>
+        </div>
       )}
 
       {/* Filters - Single Row */}
