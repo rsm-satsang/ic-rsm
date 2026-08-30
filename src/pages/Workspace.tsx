@@ -167,6 +167,7 @@ const Workspace = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [project, setProject] = useState<Project | null>(null);
+  const [linkedEntry, setLinkedEntry] = useState<{ week_start_date: string; build_due_date: string | null } | null>(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [newVersionName, setNewVersionName] = useState("");
   const [currentStatus, setCurrentStatus] = useState<"draft" | "in_progress" | "review" | "approved" | "published">(
