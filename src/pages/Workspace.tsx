@@ -1905,13 +1905,18 @@ const Workspace = () => {
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={savingReview}>
-              Cancel
+          <DialogFooter className="sm:justify-between">
+            <Button variant="link" className="px-0" onClick={() => setRefsDialogOpen(true)}>
+              Look at References
             </Button>
-            <Button onClick={handleSaveConceptReview} disabled={savingReview || !reviewOutcome}>
-              {savingReview ? "Saving..." : "Save review"}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setReviewDialogOpen(false)} disabled={savingReview}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveConceptReview} disabled={savingReview || !reviewOutcome}>
+                {savingReview ? "Saving..." : "Save review"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
