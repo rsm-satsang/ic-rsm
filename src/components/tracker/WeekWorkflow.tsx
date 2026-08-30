@@ -84,6 +84,8 @@ interface Props {
   projectStage?: string | null;
   upsert: (week: string, patch: any) => Promise<any>;
   onReset?: (week: string) => Promise<void>;
+  /** External request (e.g. from the calendar) to open a specific panel. */
+  panelRequest?: { key: string; nonce: number } | null;
 }
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
