@@ -1020,12 +1020,25 @@ export default function Tracker() {
                     setExpandedPhases((s) => ({ ...s, [row.weekIso]: !s[row.weekIso] }));
                   };
 
+                  const CalLink = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); onClick(); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onClick(); } }}
+                      className="text-sky-700 underline underline-offset-2 hover:text-sky-900 cursor-pointer"
+                    >
+                      {children}
+                    </span>
+                  );
+
                   const phaseLine = (
                     key: "plan" | "build" | "operate",
                     emoji: string,
                     label: string,
                     done: boolean,
                     body: React.ReactNode,
+                    actions?: React.ReactNode,
                   ) => {
                     const p = info.phases[key];
                     const suffix = done
@@ -1036,6 +1049,7 @@ export default function Tracker() {
                         <span className="font-semibold">{emoji} {label}</span>
                         <span className={done ? "text-green-700 font-medium" : "text-muted-foreground"}>({suffix})</span>
                         <span className="text-foreground">{body}</span>
+                        {actions}
                       </div>
                     );
                   };
