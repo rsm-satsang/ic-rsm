@@ -1007,42 +1007,9 @@ export default function Tracker() {
               <div className="text-2xl font-bold text-red-700">{stats.missing}</div>
             </Card>
           </div>
-          {/* Projects by status (left) + Plan/Build/Operate week status for a month range (right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
-            {/* Left — content types with draft/review status */}
-            <Card className="p-4">
-              <h3 className="text-sm font-semibold mb-3">Available Content Types with Draft/Review status</h3>
-              {projectBreakdown.length === 0 ? (
-                <div className="text-xs text-muted-foreground">No projects yet.</div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {projectBreakdown.map(([goal, g]) => (
-                    <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{goalLabel(goal)}</span>
-                        <Badge variant="secondary" className="text-xs">{g.total}</Badge>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {DRAFT_STAGES.map((s) => (
-                          <div
-                            key={s.value}
-                            title={s.label}
-                            className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded-md border ${
-                              (g.stages.get(s.value) || 0) > 0 ? "bg-background" : "bg-muted/20 text-muted-foreground/60"
-                            }`}
-                          >
-                            <span className="truncate">{s.label}</span>
-                            <span className="font-semibold shrink-0">{g.stages.get(s.value) || 0}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            {/* Right — Plan / Build / Operate week status for a chosen month range */}
+          {/* Plan/Build/Operate week status for a month range + stuck weeks */}
+          <div className="mb-6">
+            {/* Plan / Build / Operate week status for a chosen month range */}
             <div className="space-y-4">
               <Card className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
