@@ -79,6 +79,7 @@ interface Project {
 }
 
 interface ProjectWithDetails extends Project {
+  authorName: string | null;
   assignedToName: string | null;
   lastUpdatedByName: string | null;
   lastNote: string | null;
@@ -171,6 +172,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [assignedToFilter, setAssignedToFilter] = useState("");
   const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>(stageParam ? "all" : "substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
+  const [authorFilter, setAuthorFilter] = useState<string>("all");
   const [breakdownGoalFilter, setBreakdownGoalFilter] = useState<string>("substack_newsletter");
 
   useEffect(() => {
