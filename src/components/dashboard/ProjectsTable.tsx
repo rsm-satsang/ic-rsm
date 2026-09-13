@@ -380,9 +380,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     setAssignedToFilter("");
     setOutcomeTypeFilter("all");
     setThemeFilter("all");
+    setAuthorFilter("all");
   };
 
-  const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter || outcomeTypeFilter !== "all" || themeFilter !== "all";
+  const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter || outcomeTypeFilter !== "all" || themeFilter !== "all" || authorFilter !== "all";
 
   const formatGoal = (goal: string | undefined) => {
     if (!goal) return "-";
@@ -416,7 +417,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         const matchesOutcomeType = outcomeTypeFilter === "all" || projectGoal === outcomeTypeFilter;
         const projectTheme = (project.metadata as any)?.theme || "";
         const matchesTheme = themeFilter === "all" || projectTheme === themeFilter;
-        return matchesName && matchesStatus && matchesAssigned && matchesOutcomeType && matchesTheme;
+        const matchesAuthor = authorFilter === "all" || (project.authorName || "Unknown") === authorFilter;
+        return matchesName && matchesStatus && matchesAssigned && matchesOutcomeType && matchesTheme && matchesAuthor;
       })
       .sort((a, b) => {
         let aVal: any, bVal: any;
@@ -463,6 +465,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
   const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
   const uniqueThemes = dbThemes.length > 0 ? dbThemes : [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
+  const uniqueAuthors = [...new Set(projectsWithDetails.map(p => p.authorName || "Unknown"))].sort();
 
   if (loading) {
     return (
