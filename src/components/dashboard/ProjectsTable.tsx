@@ -519,6 +519,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </div>
       </TableCell>
       
+      {/* Author */}
+      <TableCell className="py-4">
+        <span className="text-sm font-medium">{project.authorName || "—"}</span>
+      </TableCell>
+
       {/* Assigned To */}
       <TableCell className="py-4">
         <span className="text-sm text-muted-foreground">
@@ -739,6 +744,18 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           </SelectContent>
         </Select>
         
+        <Select value={authorFilter} onValueChange={setAuthorFilter}>
+          <SelectTrigger className="w-[150px] h-9 bg-background/50">
+            <SelectValue placeholder="Author" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Authors</SelectItem>
+            {uniqueAuthors.map(a => (
+              <SelectItem key={a} value={a}>{a}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Input
           placeholder="Assigned to..."
           value={assignedToFilter}
@@ -767,6 +784,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   Project
                   <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
+              </TableHead>
+              <TableHead className="py-4">
+                <span className="font-semibold">Author</span>
               </TableHead>
               <TableHead className="py-4">
                 <span className="font-semibold">Currently Assigned to</span>
