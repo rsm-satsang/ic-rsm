@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.notify-review-workflow]
 verify_jwt = true
+
+[functions.notify-pending-reviews]
+verify_jwt = false

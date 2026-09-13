@@ -79,6 +79,7 @@ interface Project {
 }
 
 interface ProjectWithDetails extends Project {
+  authorName: string | null;
   assignedToName: string | null;
   lastUpdatedByName: string | null;
   lastNote: string | null;
@@ -171,6 +172,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [assignedToFilter, setAssignedToFilter] = useState("");
   const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>(stageParam ? "all" : "substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
+  const [authorFilter, setAuthorFilter] = useState<string>("all");
   const [breakdownGoalFilter, setBreakdownGoalFilter] = useState<string>("substack_newsletter");
 
   useEffect(() => {
@@ -269,6 +271,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         
         return {
           ...project,
+          authorName: userMap.get(project.owner_id) || null,
           assignedToName: activeTask ? userMap.get(activeTask.assigned_to) || null : null,
           lastUpdatedByName: latestVersion ? userMap.get(latestVersion.created_by) || null : userMap.get(project.owner_id) || null,
           lastNote: latestNote?.content || null,
@@ -377,9 +380,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     setAssignedToFilter("");
     setOutcomeTypeFilter("all");
     setThemeFilter("all");
+    setAuthorFilter("all");
   };
 
-  const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter || outcomeTypeFilter !== "all" || themeFilter !== "all";
+  const hasActiveFilters = nameFilter || statusFilter !== "all" || assignedToFilter || outcomeTypeFilter !== "all" || themeFilter !== "all" || authorFilter !== "all";
 
   const formatGoal = (goal: string | undefined) => {
     if (!goal) return "-";
@@ -413,7 +417,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         const matchesOutcomeType = outcomeTypeFilter === "all" || projectGoal === outcomeTypeFilter;
         const projectTheme = (project.metadata as any)?.theme || "";
         const matchesTheme = themeFilter === "all" || projectTheme === themeFilter;
-        return matchesName && matchesStatus && matchesAssigned && matchesOutcomeType && matchesTheme;
+        const matchesAuthor = authorFilter === "all" || (project.authorName || "Unknown") === authorFilter;
+        return matchesName && matchesStatus && matchesAssigned && matchesOutcomeType && matchesTheme && matchesAuthor;
       })
       .sort((a, b) => {
         let aVal: any, bVal: any;
@@ -460,6 +465,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
 
   const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
   const uniqueThemes = dbThemes.length > 0 ? dbThemes : [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
+  const uniqueAuthors = [...new Set(projectsWithDetails.map(p => p.authorName || "Unknown"))].sort();
 
   if (loading) {
     return (
@@ -513,6 +519,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </div>
       </TableCell>
       
+      {/* Author */}
+      <TableCell className="py-4">
+        <span className="text-sm font-medium">{project.authorName || "—"}</span>
+      </TableCell>
+
       {/* Assigned To */}
       <TableCell className="py-4">
         <span className="text-sm text-muted-foreground">
@@ -733,6 +744,18 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           </SelectContent>
         </Select>
         
+        <Select value={authorFilter} onValueChange={setAuthorFilter}>
+          <SelectTrigger className="w-[150px] h-9 bg-background/50">
+            <SelectValue placeholder="Author" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Authors</SelectItem>
+            {uniqueAuthors.map(a => (
+              <SelectItem key={a} value={a}>{a}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Input
           placeholder="Assigned to..."
           value={assignedToFilter}
@@ -763,6 +786,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                 </div>
               </TableHead>
               <TableHead className="py-4">
+                <span className="font-semibold">Author</span>
+              </TableHead>
+              <TableHead className="py-4">
                 <span className="font-semibold">Currently Assigned to</span>
               </TableHead>
               <TableHead 
@@ -789,7 +815,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           <TableBody>
             {filteredActiveProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-40 text-center">
+                <TableCell colSpan={6} className="h-40 text-center">
                   <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <div className="p-4 rounded-full bg-muted/50">
                       <FileText className="h-8 w-8" />
@@ -834,6 +860,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <TableRow className="bg-muted/20 border-b">
                     <TableHead className="py-3">
                       <span className="font-semibold text-muted-foreground">Project</span>
+                    </TableHead>
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Author</span>
                     </TableHead>
                     <TableHead className="py-3">
                       <span className="font-semibold text-muted-foreground">Currently Assigned to</span>
