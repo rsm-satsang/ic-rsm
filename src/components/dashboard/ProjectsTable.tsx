@@ -271,6 +271,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         
         return {
           ...project,
+          authorName: userMap.get(project.owner_id) || null,
           assignedToName: activeTask ? userMap.get(activeTask.assigned_to) || null : null,
           lastUpdatedByName: latestVersion ? userMap.get(latestVersion.created_by) || null : userMap.get(project.owner_id) || null,
           lastNote: latestNote?.content || null,
