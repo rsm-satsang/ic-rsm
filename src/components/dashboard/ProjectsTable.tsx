@@ -815,7 +815,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           <TableBody>
             {filteredActiveProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-40 text-center">
+                <TableCell colSpan={6} className="h-40 text-center">
                   <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <div className="p-4 rounded-full bg-muted/50">
                       <FileText className="h-8 w-8" />
@@ -860,6 +860,9 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   <TableRow className="bg-muted/20 border-b">
                     <TableHead className="py-3">
                       <span className="font-semibold text-muted-foreground">Project</span>
+                    </TableHead>
+                    <TableHead className="py-3">
+                      <span className="font-semibold text-muted-foreground">Author</span>
                     </TableHead>
                     <TableHead className="py-3">
                       <span className="font-semibold text-muted-foreground">Currently Assigned to</span>
