@@ -953,7 +953,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                 <TableBody>
                   {filteredPublishedProjects.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No published projects match the filters</TableCell></TableRow>
-                  ) : filteredPublishedProjects.map(renderProjectRow)}
+                  ) : filteredPublishedProjects.map(p => renderProjectRow(p))}
                 </TableBody>
               </Table>
             </div>
@@ -998,7 +998,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredArchivedProjects.map(renderProjectRow)}
+                  {filteredArchivedProjects.map(p => renderProjectRow(p))}
                 </TableBody>
               </Table>
             </div>
