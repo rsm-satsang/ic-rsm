@@ -438,6 +438,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       proofreading: "Proofreading",
       translation: "Translation",
       other: "Other",
+      other_contents: "Other Contents",
     };
     return goalLabels[goal] || goal.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   };
