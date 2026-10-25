@@ -1351,8 +1351,6 @@ const Workspace = () => {
       {/* Page Navigation Banner */}
       <PageNavigationBanner
         title="Edit and Refine"
-        leftLabel="Bring ideas and create first draft"
-        leftPath={`/project/${projectId}/intake`}
         rightLabel="Publish"
         rightPath={`/publish/${projectId}`}
       />
@@ -1387,6 +1385,10 @@ const Workspace = () => {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-end gap-3 flex-wrap">
+            <Button onClick={() => navigate(`/dashboard?project=${project.id}`)} variant="outline" className="gap-2 mr-auto">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Drafts list
+            </Button>
             <Button onClick={() => navigate(`/tracker?project=${project.id}`)} variant="outline" className="gap-2">
               Tracker
             </Button>
@@ -1397,6 +1399,9 @@ const Workspace = () => {
 
 
             <AssignDialog projectId={project.id} versionId={currentVersionId} />
+            <Button onClick={() => navigate(`/project/${project.id}/intake`)} variant="outline" className="gap-2">
+              See references
+            </Button>
 
             {user && (
               <NotifyReviewersDialog
