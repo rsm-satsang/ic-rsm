@@ -205,6 +205,9 @@ const Workspace = () => {
   const [reviewOutcome, setReviewOutcome] = useState<ConceptOutcome | "">("");
   const [savingReview, setSavingReview] = useState(false);
   const [peerDialogOpen, setPeerDialogOpen] = useState(false);
+  const [guidelinesOpen, setGuidelinesOpen] = useState(false);
+  const [guidelinesTarget, setGuidelinesTarget] = useState<"concept" | "peer">("concept");
+
   const [builders, setBuilders] = useState<{ id: string; name: string; email: string }[]>([]);
   const [peerReviewerIds, setPeerReviewerIds] = useState<string[]>([]);
   const [peerReviewers, setPeerReviewers] = useState<{ id: string; name: string }[]>([]);
