@@ -39,10 +39,10 @@ Deno.serve(async req => {
     const [projects, entries, users] = await Promise.all([
       allRows('projects', 'id,title,status,metadata'),
       allRows('tracker_entries', 'id,channel,sub_channel,status,source,source_url,publish_date,week_start_date,substack_published'),
-      allRows('users', 'id,email,approval_status'),
+      allRows('users', 'id,email,approval_status,role'),
     ]);
     const report = makeReport(run.report_date, projects, entries);
-    const recipients = users.filter(u => u.approval_status === 'approved' && z.string().email().safeParse(u.email).success);
+    const recipients = users.filter(u => u.role === 'admin' && u.approval_status === 'approved' && z.string().email().safeParse(u.email).success);
     const unique = recipients.filter((u, i) => recipients.findIndex(v => v.email.toLowerCase() === u.email.toLowerCase()) === i);
     const { error: saveError } = await db.from('weekly_newsletter_report_runs').update({ report_text: report.text, recipient_count: unique.length }).eq('id', run.id);
     if (saveError) throw saveError;
