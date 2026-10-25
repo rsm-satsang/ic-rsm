@@ -1,0 +1,4 @@
+CREATE POLICY "Report runs service access" ON public.weekly_newsletter_report_runs FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Report deliveries service access" ON public.weekly_newsletter_report_deliveries FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE TRIGGER update_weekly_report_runs BEFORE UPDATE ON public.weekly_newsletter_report_runs FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_weekly_report_deliveries BEFORE UPDATE ON public.weekly_newsletter_report_deliveries FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
