@@ -1,0 +1,3 @@
+# Architecture rules
+- Generate weekly newsletter reports in the scheduled Edge Function from live projects and tracker entries; keep formatting and calculations in its testable report module to avoid stale summaries.
+- Weekly report callbacks must reference a pending server-created run, claim it atomically, and record individual Gmail results; private delivery tables prevent public triggering and duplicate weekly sends.
