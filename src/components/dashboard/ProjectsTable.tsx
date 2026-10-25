@@ -28,7 +28,20 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
+
+const CONTENT_TYPE_OPTIONS = [
+  "substack_newsletter",
+  "shorts_reels_script",
+  "longform_video_script",
+  "daily_inspiration",
+  "video_to_youtube_short",
+  "translation",
+  "other_contents",
+];
 import {
   Collapsible,
   CollapsibleContent,
@@ -176,6 +189,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [authorFilter, setAuthorFilter] = useState<string>("all");
   const focusProjectId = searchParams.get("project");
   const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    supabase.from("users").select("role").eq("id", userId).maybeSingle()
+      .then(({ data }) => setIsAdmin(data?.role === "admin"));
+  }, [userId]);
 
   useEffect(() => {
     if (!focusProjectId) return;
@@ -488,7 +507,15 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const filteredPublishedProjects = filterAndSortProjects(publishedProjects);
   const filteredArchivedProjects = filterAndSortProjects(archivedProjects);
 
-  const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
+  const uniqueGoals = [...new Set([...projects.map(p => (p.metadata as any)?.goal).filter(Boolean), "other_contents"])];
+
+  const handleChangeContentType = async (project: ProjectWithDetails, goal: string) => {
+    const metadata = { ...((project.metadata as any) || {}), goal, project_kind: goal };
+    const { error } = await supabase.from("projects").update({ metadata }).eq("id", project.id);
+    if (error) { toast.error("Failed to change content type"); return; }
+    setProjectsWithDetails(prev => prev.map(p => p.id === project.id ? { ...p, metadata } : p));
+    toast.success(`Content type changed to ${formatGoal(goal)}`);
+  };
   const uniqueThemes = dbThemes.length > 0 ? dbThemes : [...new Set(projects.map(p => (p.metadata as any)?.theme).filter(Boolean))];
   const uniqueAuthors = [...new Set(projectsWithDetails.map(p => p.authorName || "Unknown"))].sort();
 
@@ -501,11 +528,11 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     );
   }
 
-  const renderProjectRow = (project: ProjectWithDetails) => (
+  const renderProjectRow = (project: ProjectWithDetails, advanced = false) => (
     <TableRow 
       key={project.id} 
       id={`project-row-${project.id}`}
-      className={`hover:bg-muted/20 transition-colors border-b last:border-b-0 ${highlightId === project.id ? "bg-primary/15 ring-2 ring-primary/40" : ""}`}
+      className={`transition-colors border-b last:border-b-0 ${advanced ? "bg-green-50 hover:bg-green-100 dark:bg-green-950/30 dark:hover:bg-green-950/50" : "hover:bg-muted/20"} ${highlightId === project.id ? "bg-primary/15 ring-2 ring-primary/40" : ""}`}
     >
       {/* Merged Project Column */}
       <TableCell className="py-4">
@@ -611,6 +638,22 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             <DropdownMenuItem onClick={() => navigate(`/project/${project.id}/intake`)}>
               Add References
             </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Change Content Type</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {CONTENT_TYPE_OPTIONS.map(opt => (
+                    <DropdownMenuItem
+                      key={opt}
+                      onClick={() => handleChangeContentType(project, opt)}
+                      className={(project.metadata as any)?.goal === opt ? "font-semibold text-primary" : ""}
+                    >
+                      {formatGoal(opt)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleArchiveProject(project)}>
               {project.isArchived ? (
@@ -852,7 +895,23 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
                 </TableCell>
               </TableRow>
             ) : (
-              filteredActiveProjects.map(renderProjectRow)
+              (() => {
+                const advanced = filteredActiveProjects.filter(p => getDraftStage(p.metadata, p.status) !== "s1_preparing");
+                const early = filteredActiveProjects.filter(p => getDraftStage(p.metadata, p.status) === "s1_preparing");
+                return (
+                  <>
+                    {advanced.map(p => renderProjectRow(p, true))}
+                    {advanced.length > 0 && early.length > 0 && (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={6} className="py-2 bg-muted/40">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stage 1 · Preparing first draft</span>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {early.map(p => renderProjectRow(p))}
+                  </>
+                );
+              })()
             )}
           </TableBody>
         </Table>
