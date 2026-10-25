@@ -1054,7 +1054,13 @@ const Workspace = () => {
 
   const persistStage = async (stage: DraftStage, extraMeta?: Record<string, any>) => {
     if (!project) return;
-    const metadata = { ...(project.metadata || {}), draft_stage: stage, ...(extraMeta || {}) };
+    const prevStage = (project.metadata as any)?.draft_stage;
+    const metadata = {
+      ...(project.metadata || {}),
+      draft_stage: stage,
+      ...(prevStage !== stage ? { draft_stage_at: new Date().toISOString() } : {}),
+      ...(extraMeta || {}),
+    };
     const { error } = await supabase
       .from("projects")
       .update({ metadata, updated_at: new Date().toISOString() } as any)
