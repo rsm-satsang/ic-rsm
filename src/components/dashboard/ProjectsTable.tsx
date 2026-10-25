@@ -173,6 +173,27 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const [outcomeTypeFilter, setOutcomeTypeFilter] = useState<string>(stageParam ? "all" : "substack_newsletter");
   const [themeFilter, setThemeFilter] = useState<string>("all");
   const [authorFilter, setAuthorFilter] = useState<string>("all");
+  const focusProjectId = searchParams.get("project");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusProjectId) return;
+    setNameFilter(""); setStatusFilter("all"); setAssignedToFilter("");
+    setOutcomeTypeFilter("all"); setThemeFilter("all"); setAuthorFilter("all");
+  }, [focusProjectId]);
+
+  useEffect(() => {
+    if (!focusProjectId || loading) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`project-row-${focusProjectId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightId(focusProjectId);
+        setTimeout(() => setHighlightId(null), 3000);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [focusProjectId, loading]);
   const [breakdownGoalFilter, setBreakdownGoalFilter] = useState<string>("substack_newsletter");
 
   useEffect(() => {
@@ -401,8 +422,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
     return goalLabels[goal] || goal.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   };
 
-  // Separate active and archived projects
-  const activeProjects = projectsWithDetails.filter(p => !p.isArchived);
+  // Separate active, published and archived projects
+  const isPublished = (p: ProjectWithDetails) => getDraftStage(p.metadata, p.status) === "s9_published";
+  const activeProjects = projectsWithDetails.filter(p => !p.isArchived && !isPublished(p));
+  const publishedProjects = projectsWithDetails.filter(p => !p.isArchived && isPublished(p));
   const archivedProjects = projectsWithDetails.filter(p => p.isArchived);
 
   const filterAndSortProjects = (projectList: ProjectWithDetails[]) => {
@@ -461,6 +484,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   };
 
   const filteredActiveProjects = filterAndSortProjects(activeProjects);
+  const filteredPublishedProjects = filterAndSortProjects(publishedProjects);
   const filteredArchivedProjects = filterAndSortProjects(archivedProjects);
 
   const uniqueGoals = [...new Set(projects.map(p => (p.metadata as any)?.goal).filter(Boolean))];
@@ -479,7 +503,8 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   const renderProjectRow = (project: ProjectWithDetails) => (
     <TableRow 
       key={project.id} 
-      className="hover:bg-muted/20 transition-colors border-b last:border-b-0"
+      id={`project-row-${project.id}`}
+      className={`hover:bg-muted/20 transition-colors border-b last:border-b-0 ${highlightId === project.id ? "bg-primary/15 ring-2 ring-primary/40" : ""}`}
     >
       {/* Merged Project Column */}
       <TableCell className="py-4">
@@ -840,9 +865,44 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
         </span>
       </div>
 
+      {/* Published Projects Table */}
+      {publishedProjects.length > 0 && (
+        <Collapsible defaultOpen={!!focusProjectId && publishedProjects.some(p => p.id === focusProjectId)} className="space-y-4">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center gap-2 mt-8 pt-6 border-t cursor-pointer hover:text-foreground/80 transition-colors">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Published Projects</h3>
+              <Badge variant="secondary" className="ml-2">{publishedProjects.length}</Badge>
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border rounded-xl overflow-hidden shadow-sm bg-card/50">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/20 border-b">
+                    <TableHead className="py-3"><span className="font-semibold">Project</span></TableHead>
+                    <TableHead className="py-3"><span className="font-semibold">Author</span></TableHead>
+                    <TableHead className="py-3"><span className="font-semibold">Currently Assigned to</span></TableHead>
+                    <TableHead className="py-3"><span className="font-semibold">Last Updated</span></TableHead>
+                    <TableHead className="py-3 text-center"><Users className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
+                    <TableHead className="w-[50px] py-3"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPublishedProjects.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No published projects match the filters</TableCell></TableRow>
+                  ) : filteredPublishedProjects.map(renderProjectRow)}
+                </TableBody>
+              </Table>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {/* Archived Projects Table */}
       {archivedProjects.length > 0 && (
-        <Collapsible defaultOpen={false} className="space-y-4">
+        <Collapsible defaultOpen={!!focusProjectId && archivedProjects.some(p => p.id === focusProjectId)} className="space-y-4">
           <CollapsibleTrigger asChild>
             <div className="flex items-center gap-2 mt-8 pt-6 border-t cursor-pointer hover:text-foreground/80 transition-colors">
               <Archive className="h-5 w-5 text-muted-foreground" />
