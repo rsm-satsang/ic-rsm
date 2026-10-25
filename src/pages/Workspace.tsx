@@ -205,6 +205,9 @@ const Workspace = () => {
   const [reviewOutcome, setReviewOutcome] = useState<ConceptOutcome | "">("");
   const [savingReview, setSavingReview] = useState(false);
   const [peerDialogOpen, setPeerDialogOpen] = useState(false);
+  const [guidelinesOpen, setGuidelinesOpen] = useState(false);
+  const [guidelinesTarget, setGuidelinesTarget] = useState<"concept" | "peer">("concept");
+
   const [builders, setBuilders] = useState<{ id: string; name: string; email: string }[]>([]);
   const [peerReviewerIds, setPeerReviewerIds] = useState<string[]>([]);
   const [peerReviewers, setPeerReviewers] = useState<{ id: string; name: string }[]>([]);
@@ -1114,22 +1117,20 @@ const Workspace = () => {
   const handleDraftStageChange = async (stage: DraftStage) => {
     if (!project || !user) return;
 
-    // Stg 2 requires the concept questionnaire — open it, revert to Stg 1 if unanswered
+    // Stg 2 submission first shows the newsletter guidelines checklist
     if (stage === "s2_submit_concept") {
-      setConceptAnswer(conceptNote?.answer ?? "");
-      setConceptDueDate(conceptNote?.due_date || addDays(7));
-      setConceptDialogOpen(true);
+      setGuidelinesTarget("concept");
+      setGuidelinesOpen(true);
       return;
     }
 
-    // Stg 5 requires picking two peer reviewers from the Builders team
+    // Stg 5 submission first shows the newsletter guidelines checklist
     if (stage === "s5_submit_peer") {
-      await fetchBuilders();
-      setPeerSubmitNote(peerRequest?.note ?? "");
-      setPeerDueDate(peerRequest?.due_date || addDays(4));
-      setPeerDialogOpen(true);
+      setGuidelinesTarget("peer");
+      setGuidelinesOpen(true);
       return;
     }
+
 
 
     setMarkingReady(true);
@@ -1155,7 +1156,23 @@ const Workspace = () => {
     }
   };
 
+  // After the user accepts the guidelines checklist, open the actual submission dialog
+  const proceedToSubmission = async (target: "concept" | "peer") => {
+    if (!project || !user) return;
+    if (target === "concept") {
+      setConceptAnswer(conceptNote?.answer ?? "");
+      setConceptDueDate(conceptNote?.due_date || addDays(7));
+      setConceptDialogOpen(true);
+      return;
+    }
+    await fetchBuilders();
+    setPeerSubmitNote(peerRequest?.note ?? "");
+    setPeerDueDate(peerRequest?.due_date || addDays(4));
+    setPeerDialogOpen(true);
+  };
+
   const handleConceptDialogClose = (open: boolean) => {
+
     setConceptDialogOpen(open);
     // Cancelled without a saved questionnaire → stay/revert to Stg 1
     if (!open && !conceptNote?.answer && draftStage !== "s1_preparing") {
@@ -1655,10 +1672,16 @@ const Workspace = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setConceptAnswer(conceptNote?.answer ?? "");
-                            setConceptDueDate(conceptNote?.due_date || addDays(7));
-                            setConceptDialogOpen(true);
+                            if (conceptNote?.answer) {
+                              setConceptAnswer(conceptNote.answer);
+                              setConceptDueDate(conceptNote.due_date || addDays(7));
+                              setConceptDialogOpen(true);
+                            } else {
+                              setGuidelinesTarget("concept");
+                              setGuidelinesOpen(true);
+                            }
                           }}
+
                         >
                           {conceptNote?.answer ? "Edit submission" : "Answer"}
                         </Button>
@@ -1857,8 +1880,41 @@ const Workspace = () => {
         </div>
       </div>
 
+      {/* Newsletter guidelines checklist before submitting for review */}
+      <Dialog open={guidelinesOpen} onOpenChange={setGuidelinesOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Guidelines for a good substack newsletter</DialogTitle>
+            <DialogDescription>Ask these questions before submitting for review:</DialogDescription>
+          </DialogHeader>
+          <ol className="list-decimal pl-5 space-y-2 text-sm">
+            <li>What is the central message we are conveying?</li>
+            <li>Is that aligned with RSM deeply!</li>
+            <li>Is that reflected in the title or subtitle?</li>
+            <li>Is it worth the reader's time?</li>
+            <li>Is it worth my time (who is doing seva of RSM mission)?</li>
+            <li>Did we spend a few (at least 1h) hours manually editing to remove AI quirks, unnecessary poetic language and some not so spiritual or RSM nuances!</li>
+            <li>Are we wrapping up confirming the takeaway(s)?</li>
+          </ol>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setGuidelinesOpen(false)}>
+              Go back and make changes to comply with guidelines
+            </Button>
+            <Button
+              onClick={() => {
+                setGuidelinesOpen(false);
+                proceedToSubmission(guidelinesTarget);
+              }}
+            >
+              Go ahead and submit for review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Concept Review Questionnaire */}
       <Dialog open={conceptDialogOpen} onOpenChange={handleConceptDialogClose}>
+
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Concept Review Submission</DialogTitle>
