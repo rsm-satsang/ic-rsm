@@ -1672,10 +1672,16 @@ const Workspace = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setConceptAnswer(conceptNote?.answer ?? "");
-                            setConceptDueDate(conceptNote?.due_date || addDays(7));
-                            setConceptDialogOpen(true);
+                            if (conceptNote?.answer) {
+                              setConceptAnswer(conceptNote.answer);
+                              setConceptDueDate(conceptNote.due_date || addDays(7));
+                              setConceptDialogOpen(true);
+                            } else {
+                              setGuidelinesTarget("concept");
+                              setGuidelinesOpen(true);
+                            }
                           }}
+
                         >
                           {conceptNote?.answer ? "Edit submission" : "Answer"}
                         </Button>
