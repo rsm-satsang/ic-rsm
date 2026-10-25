@@ -1874,8 +1874,41 @@ const Workspace = () => {
         </div>
       </div>
 
+      {/* Newsletter guidelines checklist before submitting for review */}
+      <Dialog open={guidelinesOpen} onOpenChange={setGuidelinesOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Guidelines for a good substack newsletter</DialogTitle>
+            <DialogDescription>Ask these questions before submitting for review:</DialogDescription>
+          </DialogHeader>
+          <ol className="list-decimal pl-5 space-y-2 text-sm">
+            <li>What is the central message we are conveying?</li>
+            <li>Is that aligned with RSM deeply!</li>
+            <li>Is that reflected in the title or subtitle?</li>
+            <li>Is it worth the reader's time?</li>
+            <li>Is it worth my time (who is doing seva of RSM mission)?</li>
+            <li>Did we spend a few (at least 1h) hours manually editing to remove AI quirks, unnecessary poetic language and some not so spiritual or RSM nuances!</li>
+            <li>Are we wrapping up confirming the takeaway(s)?</li>
+          </ol>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setGuidelinesOpen(false)}>
+              Go back and make changes to comply with guidelines
+            </Button>
+            <Button
+              onClick={() => {
+                setGuidelinesOpen(false);
+                proceedToSubmission(guidelinesTarget);
+              }}
+            >
+              Go ahead and submit for review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Concept Review Questionnaire */}
       <Dialog open={conceptDialogOpen} onOpenChange={handleConceptDialogClose}>
+
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Concept Review Submission</DialogTitle>
