@@ -1,3 +1,4 @@
+import { CheckCircle2 } from "lucide-react";
 import { formatDate } from "@/lib/datetime";
 import { DRAFT_STAGES, getDraftStage, stageLabel, stageShort } from "@/lib/draftStages";
 import { useState, useEffect } from "react";
