@@ -96,12 +96,36 @@ Deno.serve(async (req) => {
 
     let peerSent = 0;
     let conceptSent = 0;
+    let skipped = 0;
+    const MAX = 10;
+    const DAY = 86400000;
+    const now = Date.now();
 
     for (const p of projects || []) {
       const stage = stageOf(p.metadata, p.status);
+      if (stage !== "s6_awaiting_peer" && stage !== "s3_awaiting_concept") continue;
       const link = `${APP_URL}/workspace/${p.id}`;
       const title = p.title || "Untitled";
 
+      // Reminder cap tracking
+      let rr: any = p.metadata?.review_reminders;
+      if (!rr || rr.stage !== stage) {
+        const enteredAt = p.metadata?.draft_stage_at || null;
+        rr = { stage, count: 0, first_sent_at: null };
+        if (enteredAt && now - new Date(enteredAt).getTime() >= MAX * DAY) {
+          rr = { stage, count: MAX, first_sent_at: enteredAt };
+        }
+      }
+      const expired = rr.first_sent_at && now - new Date(rr.first_sent_at).getTime() >= MAX * DAY;
+      if (rr.count >= MAX || expired) {
+        skipped++;
+        if (p.metadata?.review_reminders?.stage !== stage || p.metadata?.review_reminders?.count !== rr.count) {
+          await supabase.from("projects").update({ metadata: { ...(p.metadata || {}), review_reminders: rr } }).eq("id", p.id);
+        }
+        continue;
+      }
+
+      let ok = false;
       if (stage === "s6_awaiting_peer") {
         const ids: string[] = (p.metadata?.peer_reviewer_ids as string[] | undefined) ?? [];
         const reviewerNames = ids.map((id) => nameById.get(id)).filter(Boolean) as string[];
@@ -122,18 +146,23 @@ Deno.serve(async (req) => {
         const body = `
           <p>The draft <b>${esc(title)}</b> is <b>awaiting Peer Review</b>.</p>
           <p>Please share your review comments at the earliest.</p>`;
-        if (await send("Srijan Peer Review", to, cc, `Peer Review pending: ${title}`, shell("Peer Review pending", greeting, body, link))) peerSent++;
-      }
-
-      if (stage === "s3_awaiting_concept") {
+        ok = await send("Srijan Peer Review", to, cc, `Peer Review pending: ${title}`, shell("Peer Review pending", greeting, body, link));
+        if (ok) peerSent++;
+      } else {
         const cc = admins.map((a: any) => a.email).filter((e: string) => e !== CONCEPT_REVIEWER_EMAIL);
         const greeting = "Dear Sanjiv Bhaiyaji,";
         const body = `<p>The draft <b>${esc(title)}</b> is <b>awaiting your Concept Review</b>.</p>`;
-        if (await send("Srijan Concept Review", CONCEPT_REVIEWER_EMAIL, cc, `Concept Review pending: ${title}`, shell("Concept Review pending", greeting, body, link))) conceptSent++;
+        ok = await send("Srijan Concept Review", CONCEPT_REVIEWER_EMAIL, cc, `Concept Review pending: ${title}`, shell("Concept Review pending", greeting, body, link));
+        if (ok) conceptSent++;
+      }
+
+      if (ok) {
+        rr = { stage, count: rr.count + 1, first_sent_at: rr.first_sent_at || new Date().toISOString() };
+        await supabase.from("projects").update({ metadata: { ...(p.metadata || {}), review_reminders: rr } }).eq("id", p.id);
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, peerSent, conceptSent }), {
+    return new Response(JSON.stringify({ ok: true, peerSent, conceptSent, skipped }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
