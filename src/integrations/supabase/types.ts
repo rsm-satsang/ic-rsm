@@ -1547,6 +1547,86 @@ export type Database = {
           },
         ]
       }
+      weekly_newsletter_report_deliveries: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          message_id: string | null
+          run_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string | null
+          run_id: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string | null
+          run_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_newsletter_report_deliveries_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_newsletter_report_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_newsletter_report_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          failed_count: number
+          id: string
+          recipient_count: number
+          report_date: string
+          report_text: string | null
+          sent_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          failed_count?: number
+          id?: string
+          recipient_count?: number
+          report_date: string
+          report_text?: string | null
+          sent_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          failed_count?: number
+          id?: string
+          recipient_count?: number
+          report_date?: string
+          report_text?: string | null
+          sent_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
