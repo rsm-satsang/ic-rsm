@@ -79,6 +79,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Project {
   id: string;
@@ -225,6 +226,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
   // Sort state
   const [sortField, setSortField] = useState<string>("updated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [keepAdvancedOnTop, setKeepAdvancedOnTop] = useState<boolean>(true);
 
   useEffect(() => {
     fetchProjectDetails();
@@ -483,6 +485,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           case "updated_at":
             aVal = new Date(a.updated_at).getTime();
             bVal = new Date(b.updated_at).getTime();
+            break;
+          case "created_at":
+            aVal = new Date(a.created_at).getTime();
+            bVal = new Date(b.created_at).getTime();
             break;
           case "daysOld":
             aVal = a.daysOld;
@@ -832,6 +838,45 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           onChange={(e) => setAssignedToFilter(e.target.value)}
           className="w-[140px] h-9 bg-background/50"
         />
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Order by</span>
+          <Select
+            value={sortField}
+            onValueChange={(v) => {
+              setSortField(v);
+              setSortDirection(v === "updated_at" ? "desc" : "asc");
+            }}
+          >
+            <SelectTrigger className="w-[190px] h-9 bg-background/50">
+              <SelectValue placeholder="Order by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated_at">Date since last update</SelectItem>
+              <SelectItem value="created_at">Date since creation</SelectItem>
+              <SelectItem value="title">Title</SelectItem>
+              <SelectItem value="status">Stage</SelectItem>
+              <SelectItem value="collaboratorCount">Collaborators</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+            className="h-9 text-xs"
+            title="Toggle ascending / descending"
+          >
+            {sortDirection === "asc" ? "Oldest first" : "Newest first"}
+          </Button>
+        </div>
+
+        <label className="flex items-center gap-2 h-9 px-3 rounded-md border border-primary/20 bg-background/50 cursor-pointer select-none">
+          <Checkbox
+            checked={keepAdvancedOnTop}
+            onCheckedChange={(v) => setKeepAdvancedOnTop(v === true)}
+          />
+          <span className="text-xs font-medium whitespace-nowrap">Stage 2+ on top</span>
+        </label>
         
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-muted-foreground hover:text-foreground">
@@ -897,8 +942,12 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
               </TableRow>
             ) : (
               (() => {
-                const advanced = filteredActiveProjects.filter(p => getDraftStage(p.metadata, p.status) !== "s1_preparing");
-                const early = filteredActiveProjects.filter(p => getDraftStage(p.metadata, p.status) === "s1_preparing");
+                const isAdvanced = (p: ProjectWithDetails) => getDraftStage(p.metadata, p.status) !== "s1_preparing";
+                if (!keepAdvancedOnTop) {
+                  return filteredActiveProjects.map(p => renderProjectRow(p, isAdvanced(p)));
+                }
+                const advanced = filteredActiveProjects.filter(p => isAdvanced(p));
+                const early = filteredActiveProjects.filter(p => !isAdvanced(p));
                 return (
                   <>
                     {advanced.map(p => renderProjectRow(p, true))}
