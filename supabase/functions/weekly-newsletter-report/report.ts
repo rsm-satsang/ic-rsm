@@ -37,7 +37,7 @@ export function makeReport(today: string, projects: Project[], entries: Publicat
   // Count posts, not occupied weeks; source URLs suppress duplicate imported rows.
   const seen = new Set<string>();
   const publications = entries.filter(e => {
-    if (!['substack_satsang', 'substack_lifequest'].includes(e.channel) || e.sub_channel !== 'newsletter' || !(e.substack_published || e.status === 'published' || e.source === 'substack')) return false;
+    if (e.channel !== 'substack_satsang' || e.sub_channel !== 'newsletter' || e.source !== 'substack' || !e.source_url || !e.publish_date) return false;
     const date = e.publish_date || e.week_start_date;
     if (date > today) return false;
     const key = e.source_url || e.id;
@@ -54,7 +54,7 @@ export function makeReport(today: string, projects: Project[], entries: Publicat
     `**Week ${elapsed} · ${fmt(weekStart)} – ${fmt(weekEnd)}, ${year}**`, '',
     '### 🕊️ Overall Newsletter Status',
     `* **Elapsed Weeks (${year}):** ${elapsed}`,
-    `* **Newsletters Published:** ${published}`,
+    `* **Satsang Newsletters Published:** ${published}`,
     `* **Weeks Remaining:** ${totalWeeks - elapsed}`,
     `* **Days Since Last Recorded Publication:** ${days === null ? 'Not available' : `${days} (${last})`}`,
     `* **Substack Drafts in Pipeline:** ${pipeline.length} active drafts`,

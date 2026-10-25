@@ -30,3 +30,11 @@ Deno.test('publication count counts posts and uses real dates for elapsed days',
   assertEquals(r.published, 2);
   assertEquals(r.days, 57);
 });
+Deno.test('15 verified Satsang posts exclude four manual weeks and one Lifequest post', () => {
+  const base = { id: '1', channel: 'substack_satsang', sub_channel: 'newsletter', status: 'published', source: 'substack', source_url: 'post1', publish_date: '2026-09-28', week_start_date: '2026-09-28', substack_published: false };
+  const posts = Array.from({ length: 15 }, (_, i) => ({ ...base, id: `post-${i}`, source_url: `post-${i}` }));
+  const manual = Array.from({ length: 4 }, (_, i) => ({ ...base, id: `manual-${i}`, source: 'auto', source_url: null, publish_date: null, substack_published: true }));
+  const r = makeReport('2026-10-25', [], [...posts, ...manual, { ...base, id: 'lifequest', channel: 'substack_lifequest', source_url: 'lifequest-post' }]);
+  assertEquals(r.published, 15);
+  assertEquals(r.days, 27);
+});
