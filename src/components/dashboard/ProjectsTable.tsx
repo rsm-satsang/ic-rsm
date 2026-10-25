@@ -866,7 +866,13 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
             className="h-9 text-xs"
             title="Toggle ascending / descending"
           >
-            {sortDirection === "asc" ? "Oldest first" : "Newest first"}
+            {sortField === "title"
+              ? (sortDirection === "asc" ? "A → Z" : "Z → A")
+              : sortField === "status"
+                ? (sortDirection === "asc" ? "Earliest stage" : "Latest stage")
+                : sortField === "collaboratorCount"
+                  ? (sortDirection === "asc" ? "Fewest first" : "Most first")
+                  : (sortDirection === "asc" ? "Oldest first" : "Newest first")}
           </Button>
         </div>
 
