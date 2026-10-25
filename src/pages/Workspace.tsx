@@ -1114,22 +1114,20 @@ const Workspace = () => {
   const handleDraftStageChange = async (stage: DraftStage) => {
     if (!project || !user) return;
 
-    // Stg 2 requires the concept questionnaire — open it, revert to Stg 1 if unanswered
+    // Stg 2 submission first shows the newsletter guidelines checklist
     if (stage === "s2_submit_concept") {
-      setConceptAnswer(conceptNote?.answer ?? "");
-      setConceptDueDate(conceptNote?.due_date || addDays(7));
-      setConceptDialogOpen(true);
+      setGuidelinesTarget("concept");
+      setGuidelinesOpen(true);
       return;
     }
 
-    // Stg 5 requires picking two peer reviewers from the Builders team
+    // Stg 5 submission first shows the newsletter guidelines checklist
     if (stage === "s5_submit_peer") {
-      await fetchBuilders();
-      setPeerSubmitNote(peerRequest?.note ?? "");
-      setPeerDueDate(peerRequest?.due_date || addDays(4));
-      setPeerDialogOpen(true);
+      setGuidelinesTarget("peer");
+      setGuidelinesOpen(true);
       return;
     }
+
 
 
     setMarkingReady(true);
