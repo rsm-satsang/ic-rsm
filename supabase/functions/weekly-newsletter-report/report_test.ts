@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { eligibleAdmins, makeReport } from './report.ts';
+import { eligibleUsers, makeReport } from './report.ts';
 const p = (title: string, goal = 'substack_newsletter', archived = false, stage = 's1_preparing') => ({ title, status: 'in_progress', metadata: { goal, archived, draft_stage: stage } });
 Deno.test('pipeline excludes archived and non-newsletter projects', () => {
   const r = makeReport('2026-10-25', [p('Keep'), p('Archived', undefined, true), p('Video', 'video_to_youtube_short')], []);
@@ -20,9 +20,9 @@ Deno.test('titles appear under each draft stage', () => {
   assertStringIncludes(r.text, 'Restoring the Forgotten Light Within');
   assertEquals(r.pipelineCount, 2);
 });
-Deno.test('weekly report goes only to approved admins', () => {
+Deno.test('weekly report includes approved users and admins but not suspended or rejected accounts', () => {
   const base = { id: 'admin', email: 'admin@example.com', role: 'admin', approval_status: 'approved' };
-  assertEquals(eligibleAdmins([base, { ...base, id: 'user', role: 'user' }, { ...base, id: 'suspended', approval_status: 'suspended' }]).map(u => u.id), ['admin']);
+  assertEquals(eligibleUsers([base, { ...base, id: 'user', role: 'user' }, { ...base, id: 'suspended', approval_status: 'suspended' }, { ...base, id: 'rejected', approval_status: 'rejected' }]).map(u => u.id), ['admin', 'user']);
 });
 Deno.test('publication count counts posts and uses real dates for elapsed days', () => {
   const e = { id: '1', channel: 'substack_satsang', sub_channel: 'newsletter', status: 'published', source: 'substack', source_url: 'post1', publish_date: '2026-08-29', week_start_date: '2026-08-24', substack_published: true };

@@ -12,8 +12,8 @@ export const STAGES = [
 ] as const;
 type Project = { title: string; status: string; metadata?: Record<string, unknown> | null };
 type Publication = { id: string; channel: string; sub_channel: string; status: string; source: string; source_url?: string | null; publish_date?: string | null; week_start_date: string; substack_published: boolean };
-export function eligibleAdmins(users: { id: string; email: string; role: string; approval_status: string }[]) {
-  return users.filter(u => u.role === 'admin' && u.approval_status === 'approved');
+export function eligibleUsers(users: { id: string; email: string; role: string; approval_status: string }[]) {
+  return users.filter(u => u.approval_status === 'approved');
 }
 const DAY = 86400000;
 export function stageOf(p: Project): string {
