@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.notify-pending-reviews]
 verify_jwt = false
+
+[functions.weekly-newsletter-report]
+verify_jwt = false
