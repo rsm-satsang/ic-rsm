@@ -12,6 +12,9 @@ export const STAGES = [
 ] as const;
 type Project = { title: string; status: string; metadata?: Record<string, unknown> | null };
 type Publication = { id: string; channel: string; sub_channel: string; status: string; source: string; source_url?: string | null; publish_date?: string | null; week_start_date: string; substack_published: boolean };
+export function eligibleAdmins(users: { id: string; email: string; role: string; approval_status: string }[]) {
+  return users.filter(u => u.role === 'admin' && u.approval_status === 'approved');
+}
 const DAY = 86400000;
 export function stageOf(p: Project): string {
   const raw = p.metadata?.draft_stage;
@@ -53,13 +56,17 @@ export function makeReport(today: string, projects: Project[], entries: Publicat
     `* **Elapsed Weeks (${year}):** ${elapsed}`,
     `* **Newsletters Published:** ${published}`,
     `* **Weeks Remaining:** ${totalWeeks - elapsed}`,
-    `* **Days Since Last Published:** ${days === null ? 'Not available' : `${days} (${last})`}`,
+    `* **Days Since Last Recorded Publication:** ${days === null ? 'Not available' : `${days} (${last})`}`,
     `* **Substack Drafts in Pipeline:** ${pipeline.length} active drafts`,
   ];
-  for (const [stage, label] of STAGES) {
+  for (const [stage, label] of [...STAGES].reverse()) {
     const titles = pipeline.filter(p => stageOf(p) === stage).map(p => p.title).sort((a, b) => a.localeCompare(b));
     if (!titles.length) continue;
-    lines.push(`  * **${label} (${titles.length}):**`, ...titles.map(title => `    * ${title.replace(/[\r\n]+/g, ' ')}`));
+    lines.push(stage === 's1_preparing'
+      ? `  * **${label}:** ${titles.length} drafts in initial preparation`
+      : `  * **${label} (${titles.length}):** ${titles.map(title => title.replace(/[\r\n]+/g, ' ')).join('; ')}`);
   }
+  const undated = publications.filter(e => !e.publish_date && e.week_start_date.startsWith(`${year}-`)).length;
+  if (undated) lines.push(`\n*${undated} published entries have no exact publication date.*`);
   return { text: lines.join('\n'), elapsed, published, remaining: totalWeeks - elapsed, days, pipelineCount: pipeline.length };
 }
