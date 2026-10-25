@@ -1153,7 +1153,23 @@ const Workspace = () => {
     }
   };
 
+  // After the user accepts the guidelines checklist, open the actual submission dialog
+  const proceedToSubmission = async (target: "concept" | "peer") => {
+    if (!project || !user) return;
+    if (target === "concept") {
+      setConceptAnswer(conceptNote?.answer ?? "");
+      setConceptDueDate(conceptNote?.due_date || addDays(7));
+      setConceptDialogOpen(true);
+      return;
+    }
+    await fetchBuilders();
+    setPeerSubmitNote(peerRequest?.note ?? "");
+    setPeerDueDate(peerRequest?.due_date || addDays(4));
+    setPeerDialogOpen(true);
+  };
+
   const handleConceptDialogClose = (open: boolean) => {
+
     setConceptDialogOpen(open);
     // Cancelled without a saved questionnaire → stay/revert to Stg 1
     if (!open && !conceptNote?.answer && draftStage !== "s1_preparing") {
