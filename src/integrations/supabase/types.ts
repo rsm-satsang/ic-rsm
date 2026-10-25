@@ -1590,6 +1590,7 @@ export type Database = {
       }
       weekly_newsletter_report_runs: {
         Row: {
+          batch_key: string
           created_at: string
           error: string | null
           failed_count: number
@@ -1602,6 +1603,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          batch_key?: string
           created_at?: string
           error?: string | null
           failed_count?: number
@@ -1614,6 +1616,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          batch_key?: string
           created_at?: string
           error?: string | null
           failed_count?: number
