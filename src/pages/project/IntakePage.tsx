@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ReferenceUploader } from "@/components/upload/ReferenceUploader";
@@ -80,7 +80,7 @@ export default function IntakePage() {
   const [newThemeName, setNewThemeName] = useState("");
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [draftMode, setDraftMode] = useState<"generate" | "ready">("generate");
+  const [draftMode, setDraftMode] = useState<"generate" | "ready" | null>(null);
   const [usedModel, setUsedModel] = useState<string | null>(() => {
     if (projectId) {
       return localStorage.getItem(`draft_model_${projectId}`);
@@ -1102,31 +1102,44 @@ FORMAT RULES:
 
           {/* Draft Mode Choice */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-3">How do you want to start?</h2>
-            <RadioGroup
-              value={draftMode}
-              onValueChange={(v) => setDraftMode(v as "generate" | "ready")}
-              className="space-y-2"
-            >
-              <div className="flex items-start gap-2 p-3 border rounded-md">
-                <RadioGroupItem value="generate" id="dm-generate" className="mt-1" />
-                <Label htmlFor="dm-generate" className="cursor-pointer font-normal">
-                  <span className="font-semibold">I wish to generate the first draft</span>
-                  <span className="block text-sm text-muted-foreground">
-                    Add references and let AI generate a draft for you.
-                  </span>
-                </Label>
-              </div>
-              <div className="flex items-start gap-2 p-3 border rounded-md">
-                <RadioGroupItem value="ready" id="dm-ready" className="mt-1" />
-                <Label htmlFor="dm-ready" className="cursor-pointer font-normal">
-                  <span className="font-semibold">I have a draft ready</span>
-                  <span className="block text-sm text-muted-foreground">
-                    Skip references and paste your draft directly in Edit and Refine.
-                  </span>
-                </Label>
-              </div>
-            </RadioGroup>
+            <h2 className="text-2xl font-bold mb-4">How do you want to start?</h2>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+              <Button
+                type="button"
+                variant="outline"
+                aria-pressed={draftMode === "generate"}
+                onClick={() => setDraftMode("generate")}
+                className={cn(
+                  "h-auto whitespace-normal flex-col items-start gap-1 px-5 py-4 text-left",
+                  draftMode === "generate" && "border-primary bg-primary/5 ring-2 ring-primary/25"
+                )}
+              >
+                <span className="font-semibold">I wish to generate the first draft</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  Add references and let AI generate a draft for you.
+                </span>
+              </Button>
+
+              <span className="justify-self-center px-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                OR
+              </span>
+
+              <Button
+                type="button"
+                variant="outline"
+                aria-pressed={draftMode === "ready"}
+                onClick={() => setDraftMode("ready")}
+                className={cn(
+                  "h-auto whitespace-normal flex-col items-start gap-1 px-5 py-4 text-left",
+                  draftMode === "ready" && "border-primary bg-primary/5 ring-2 ring-primary/25"
+                )}
+              >
+                <span className="font-semibold">I have a draft ready</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  Skip references and paste your draft directly in Edit and Refine.
+                </span>
+              </Button>
+            </div>
 
             {draftMode === "ready" && (
               <div className="mt-4">
