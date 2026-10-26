@@ -28,6 +28,8 @@ import { ShortBuilder } from "@/components/video/ShortBuilder";
 
 const VIDEO_PROMPT = `You are an expert short-form video scriptwriter. Based on the provided video reference(s), create a punchy, engaging YouTube Shorts script (under 60 seconds, ~150 words max). Include: a strong 3-second hook, a tight narrative or insight from the source video, on-screen text suggestions in [brackets], suggested b-roll/cut points, and a clear CTA at the end. Keep language simple, energetic, and optimized for vertical video.`;
 
+const DEFAULT_TITLE_RE = /^(New Project|New Video Project|Quick Note|Substack Newsletter|Hindi Sahitya|Shorts\/Reels|Daily Inspiration|Long-form Video Script|Shorts\/Reels Script) - /;
+
 export default function VideoIntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -35,10 +37,8 @@ export default function VideoIntakePage() {
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState("english");
   const [selectedModel, setSelectedModel] = useState("gpt-5");
-  const [projectTitle, setProjectTitle] = useState(() => {
-    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-    return `New Video Project - ${today}`;
-  });
+  const [projectTitle, setProjectTitle] = useState("");
+  const isDefaultTitle = DEFAULT_TITLE_RE.test(projectTitle.trim());
   const [savingTitle, setSavingTitle] = useState(false);
   const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -460,6 +460,10 @@ export default function VideoIntakePage() {
   };
 
   const handleGenerateVersions = async () => {
+    if (!projectTitle.trim() || isDefaultTitle) {
+      toast.error("Please write a fresh name for the project before generating");
+      return;
+    }
     setGenerating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -563,7 +567,7 @@ export default function VideoIntakePage() {
               <h2 className="text-lg font-semibold mb-1">Name Your Project</h2>
               <p className="text-xs text-muted-foreground mb-3">Give your project a descriptive name to easily identify it later</p>
               <div className="flex items-center gap-2">
-                <Input value={projectTitle} onChange={(e) => handleTitleChange(e.target.value)} className="flex-1 text-lg font-medium" placeholder="Project title..." />
+                <Input value={projectTitle} onChange={(e) => handleTitleChange(e.target.value)} onFocus={() => { if (isDefaultTitle) setProjectTitle(""); }} className={`flex-1 text-lg font-medium ${isDefaultTitle ? "text-muted-foreground" : ""}`} placeholder={`e.g. New Video Project - ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`} />
                 {savingTitle && <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>}
               </div>
             </div>
@@ -595,7 +599,7 @@ export default function VideoIntakePage() {
               <h2 className="text-2xl font-bold mb-4">Define Outcome</h2>
               <div className="pl-4 space-y-4">
                 <div>
-                  <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
+                  <Label className="text-base font-semibold mb-2 block">What do you want to create?</Label>
                   <Select value="video_to_youtube_short" onValueChange={() => {}}>
                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
