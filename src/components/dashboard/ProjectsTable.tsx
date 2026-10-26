@@ -893,6 +893,10 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
       </div>
 
       {/* Active Projects Table */}
+      <div className="mt-8 mb-2 flex items-center gap-2">
+        <h3 className="text-lg font-semibold">Drafts</h3>
+        <span className="text-lg font-semibold text-muted-foreground">({filteredActiveProjects.length})</span>
+      </div>
       <div className="border rounded-xl overflow-hidden shadow-sm bg-card">
         <Table>
           <TableHeader>
@@ -987,8 +991,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           <CollapsibleTrigger asChild>
             <div className="flex items-center gap-2 mt-8 pt-6 border-t cursor-pointer hover:text-foreground/80 transition-colors">
               <CheckCircle2 className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Published Projects</h3>
-              <Badge variant="secondary" className="ml-2">{publishedProjects.length}</Badge>
+              <h3 className="text-lg font-semibold">Published Projects ({filteredPublishedProjects.length})</h3>
               <ChevronDown className="h-5 w-5 text-muted-foreground" />
             </div>
           </CollapsibleTrigger>
@@ -1022,10 +1025,7 @@ const ProjectsTable = ({ projects, userId, onProjectDeleted }: ProjectsTableProp
           <CollapsibleTrigger asChild>
             <div className="flex items-center gap-2 mt-8 pt-6 border-t cursor-pointer hover:text-foreground/80 transition-colors">
               <Archive className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-lg font-semibold text-muted-foreground">Archived Projects</h3>
-              <Badge variant="secondary" className="ml-2">
-                {archivedProjects.length}
-              </Badge>
+              <h3 className="text-lg font-semibold text-muted-foreground">Archived Projects ({filteredArchivedProjects.length})</h3>
               <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 [[data-state=open]>div>&]:rotate-180" />
             </div>
           </CollapsibleTrigger>
