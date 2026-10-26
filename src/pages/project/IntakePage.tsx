@@ -33,6 +33,8 @@ import {
 import { GoogleDrivePickerDialog } from "@/components/upload/GoogleDrivePickerDialog";
 import ImportReferenceDialog, { type ImportedRef } from "@/components/workspace/ImportReferenceDialog";
 
+const DEFAULT_TITLE_RE = /^(New Project|New Video Project|Quick Note|Substack Newsletter|Hindi Sahitya|Shorts\/Reels|Daily Inspiration|Long-form Video Script|Shorts\/Reels Script) - /;
+
 export default function IntakePage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -47,10 +49,8 @@ export default function IntakePage() {
   const [selectedModel, setSelectedModel] = useState("gpt-5");
   const [llmInstructions, setLlmInstructions] = useState("");
   const [vocabulary, setVocabulary] = useState("");
-  const [projectTitle, setProjectTitle] = useState(() => {
-    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-    return `New Project - ${today}`;
-  });
+  const [projectTitle, setProjectTitle] = useState("");
+  const isDefaultTitle = DEFAULT_TITLE_RE.test(projectTitle.trim());
   const [savingTitle, setSavingTitle] = useState(false);
   const titleSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -667,6 +667,10 @@ FORMAT RULES:
   };
 
   const handleGenerateVersions = async () => {
+    if (!projectTitle.trim() || isDefaultTitle) {
+      toast.error("Please write a fresh name for the project before generating");
+      return;
+    }
     setGenerating(true);
     try {
       const {
@@ -955,8 +959,14 @@ FORMAT RULES:
               <Input
                 value={projectTitle}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="flex-1 text-lg font-medium"
-                placeholder="Project title..."
+                onFocus={() => {
+                  if (isDefaultTitle) {
+                    setProjectTitle("");
+                    if (titleSaveTimerRef.current) clearTimeout(titleSaveTimerRef.current);
+                  }
+                }}
+                className={`flex-1 text-lg font-medium ${isDefaultTitle ? "text-muted-foreground" : ""}`}
+                placeholder={`e.g. New Project - ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}`}
               />
               {savingTitle && <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>}
             </div>
@@ -1012,7 +1022,7 @@ FORMAT RULES:
             <div className="pl-4 space-y-4">
               {/* Output Goal */}
               <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-                <Label className="text-base font-semibold md:w-64 shrink-0">What do you want to generate?</Label>
+                <Label className="text-base font-semibold md:w-64 shrink-0">What do you want to create?</Label>
                 <div className="flex-1 min-w-0">
                 <Select value={goal} onValueChange={setGoal} disabled={isSubstackGoal}>
                   <SelectTrigger className="w-full">
@@ -1037,7 +1047,7 @@ FORMAT RULES:
                 </Select>
                 {goal === "other" && (
                   <Input
-                    placeholder="Describe what you want to generate..."
+                    placeholder="Describe what you want to create..."
                     value={customGoal}
                     onChange={(e) => setCustomGoal(e.target.value)}
                     className="mt-2"
@@ -1353,7 +1363,7 @@ FORMAT RULES:
                 className="font-mono text-sm"
               />
               <div className="mt-4 flex gap-3">
-                <Button onClick={handleGenerateVersions} disabled={generating} size="lg" className="flex-1">
+                <Button onClick={handleGenerateVersions} disabled={generating || !projectTitle.trim() || isDefaultTitle} size="lg" className="flex-1">
                   {generating ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
