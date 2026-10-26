@@ -41,6 +41,7 @@ export default function IntakePage() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [goal, setGoal] = useState("substack_newsletter");
+  const isSubstackGoal = goal === "substack_newsletter";
   const [customGoal, setCustomGoal] = useState("");
   const [language, setLanguage] = useState("english");
   const [selectedModel, setSelectedModel] = useState("gpt-5");
@@ -948,11 +949,9 @@ FORMAT RULES:
         {/* Header */}
         <div className="mb-8">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-1">Name Your Project</h2>
-            <p className="text-xs text-muted-foreground mb-3">
-              Give your project a descriptive name to easily identify it later
-            </p>
-            <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold mb-3">Project Name & Theme</h2>
+            <Label className="text-base font-semibold mb-2 block">Name your project</Label>
+            <div className="flex items-center gap-2 mb-4">
               <Input
                 value={projectTitle}
                 onChange={(e) => handleTitleChange(e.target.value)}
@@ -961,14 +960,7 @@ FORMAT RULES:
               />
               {savingTitle && <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>}
             </div>
-          </div>
-
-          {/* Choose Theme */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-1">Choose Theme</h2>
-            <p className="text-xs text-muted-foreground mb-3">
-              Categorize your project under a theme for easy filtering
-            </p>
+            <Label className="text-base font-semibold mb-2 block">Choose theme</Label>
             {!showAddTheme ? (
               <Select value={selectedTheme} onValueChange={handleThemeChange}>
                 <SelectTrigger className="w-full">
@@ -1019,9 +1011,10 @@ FORMAT RULES:
 
             <div className="pl-4 space-y-4">
               {/* Output Goal */}
-              <div>
-                <Label className="text-base font-semibold mb-2 block">What do you want to generate?</Label>
-                <Select value={goal} onValueChange={setGoal}>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+                <Label className="text-base font-semibold md:w-64 shrink-0">What do you want to generate?</Label>
+                <div className="flex-1 min-w-0">
+                <Select value={goal} onValueChange={setGoal} disabled={isSubstackGoal}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select content type" />
                   </SelectTrigger>
@@ -1050,14 +1043,16 @@ FORMAT RULES:
                     className="mt-2"
                   />
                 )}
+                </div>
               </div>
 
               {/* Language Selection */}
-              <div>
-                <Label className="text-base font-semibold mb-2 block">
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+                <Label className="text-base font-semibold md:w-64 shrink-0">
                   What language you want your final content to be in
                 </Label>
-                <Select value={language} onValueChange={setLanguage}>
+                <div className="flex-1 min-w-0">
+                <Select value={language} onValueChange={setLanguage} disabled={isSubstackGoal}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
@@ -1068,12 +1063,14 @@ FORMAT RULES:
                     <SelectItem value="german">German</SelectItem>
                   </SelectContent>
                 </Select>
+                </div>
               </div>
 
               {/* Model Selection */}
-              <div>
-                <Label className="text-base font-semibold mb-2 block">Which AI model to use</Label>
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+                <Label className="text-base font-semibold md:w-64 shrink-0">Which AI model to use</Label>
+                <div className="flex-1 min-w-0">
+                <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isSubstackGoal}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select AI model" />
                   </SelectTrigger>
@@ -1086,6 +1083,7 @@ FORMAT RULES:
                     <SelectItem value="gpt-5-nano">GPT-5 Nano (Fastest & Most Economical)</SelectItem>
                   </SelectContent>
                 </Select>
+                </div>
               </div>
             </div>
           </div>

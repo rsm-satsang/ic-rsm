@@ -347,19 +347,19 @@ const Dashboard = () => {
                   <CardDescription className="mb-3">Choose the type of project to create</CardDescription>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={createNewProject}>
-                      <Mail className="h-3 w-3 mr-1" /> Create Substack Newsletter
+                      <Mail className="h-3 w-3 mr-1" /> Create/Upload Substack Newsletter
                     </Button>
                     <Button size="sm" variant="outline" onClick={createNewVideoProject}>
-                      <Video className="h-3 w-3 mr-1" /> Create Shorts/Reels
+                      <Video className="h-3 w-3 mr-1" /> Create/Upload Shorts/Reels
                     </Button>
                     <Button size="sm" variant="outline" onClick={createShortsScriptProject}>
-                      <FileText className="h-3 w-3 mr-1" /> Create Script for Shorts/Reels
+                      <FileText className="h-3 w-3 mr-1" /> Create/Upload Script for Shorts/Reels
                     </Button>
                     <Button size="sm" variant="outline" onClick={createDailyInspirationProject}>
-                      <Sparkles className="h-3 w-3 mr-1" /> Create Daily Inspiration
+                      <Sparkles className="h-3 w-3 mr-1" /> Create/Upload Daily Inspiration
                     </Button>
                     <Button size="sm" variant="outline" onClick={createLongformScriptProject}>
-                      <FileText className="h-3 w-3 mr-1" /> Create Script for Long form Video
+                      <FileText className="h-3 w-3 mr-1" /> Create/Upload Script for Long form Video
                     </Button>
                   </div>
                 </div>
